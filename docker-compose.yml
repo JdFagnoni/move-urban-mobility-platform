@@ -13,7 +13,10 @@ services:
       - pg_data:/var/lib/postgresql/data
 
   api-gateway:
-    build: ./api-gateway
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+      target: prod
     ports:
       - "3000:3000"
     environment:
@@ -25,7 +28,10 @@ services:
       - traslados-service
 
   reservas-service:
-    build: ./reservas-service
+    build:
+      context: .
+      dockerfile: reservas-service/Dockerfile
+      target: prod
     ports:
       - "3001:3001"
     environment:
@@ -36,7 +42,10 @@ services:
       - postgres
 
   traslados-service:
-    build: ./traslados-service
+    build:
+      context: .
+      dockerfile: traslados-service/Dockerfile
+      target: prod
     ports:
       - "3002:3002"
     environment:
@@ -47,7 +56,10 @@ services:
       - postgres
 
   categorizer-service:
-    build: ./categorizer-service
+    build:
+      context: .
+      dockerfile: categorizer-service/Dockerfile
+      target: prod
     ports:
       - "3003:3003"
     environment:

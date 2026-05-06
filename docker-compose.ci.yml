@@ -1,3 +1,4 @@
+# CI override: skips ollama (too heavy) and uses in-memory DB for speed
 version: "3.9"
 
 services:
@@ -9,20 +10,18 @@ services:
       POSTGRES_DB: move_platform
     ports:
       - "5432:5432"
-    volumes:
-      - pg_data_dev:/var/lib/postgresql/data
+    tmpfs:
+      - /var/lib/postgresql/data
 
   api-gateway:
     build:
       context: .
       dockerfile: api-gateway/Dockerfile
-      target: dev
+      target: prod
     ports:
       - "3000:3000"
-    volumes:
-      - ./api-gateway/src:/app/api-gateway/src
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       RESERVAS_SERVICE_URL: http://reservas-service:3001
       TRASLADOS_SERVICE_URL: http://traslados-service:3002
     depends_on:
@@ -33,13 +32,11 @@ services:
     build:
       context: .
       dockerfile: reservas-service/Dockerfile
-      target: dev
+      target: prod
     ports:
       - "3001:3001"
-    volumes:
-      - ./reservas-service/src:/app/reservas-service/src
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
       PORT: "3001"
     depends_on:
@@ -49,56 +46,27 @@ services:
     build:
       context: .
       dockerfile: traslados-service/Dockerfile
-      target: dev
+      target: prod
     ports:
       - "3002:3002"
-    volumes:
-      - ./traslados-service/src:/app/traslados-service/src
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
       PORT: "3002"
     depends_on:
       - postgres
-      - gps-simulator
 
   categorizer-service:
     build:
       context: .
       dockerfile: categorizer-service/Dockerfile
-      target: dev
+      target: prod
     ports:
       - "3003:3003"
-    volumes:
-      - ./categorizer-service/src:/app/categorizer-service/src
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
       PORT: "3003"
-      OLLAMA_URL: http://ollama:11434
+      OLLAMA_URL: http://localhost:11434
     depends_on:
       - postgres
-      - ollama
-
-  gps-simulator:
-    build:
-      context: .
-      dockerfile: traslados-service/simulator/Dockerfile
-      target: dev
-    environment:
-      NODE_ENV: development
-      TRASLADOS_SERVICE_URL: http://traslados-service:3002
-      INTERVAL_MS: "2000"
-    depends_on:
-      - traslados-service
-
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data_dev:/root/.ollama
-
-volumes:
-  pg_data_dev:
-  ollama_data_dev:
