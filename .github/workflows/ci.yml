@@ -1,10 +1,13 @@
 name: CI
 
 on:
+  # Runs once after the final develop → main merge (release confirmation)
   push:
-    branches: [main, develop]
+    branches: [main]
+  # Runs on every PR: feature/* → develop, and develop → main
   pull_request:
     branches: [main, develop]
+    types: [opened, synchronize, reopened]
 
 jobs:
   # ── 1. Lint & format ───────────────────────────────────────────────────────
