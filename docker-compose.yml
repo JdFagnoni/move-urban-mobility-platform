@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: move
+      POSTGRES_PASSWORD: move_secret
+      POSTGRES_DB: move_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      RESERVAS_SERVICE_URL: http://reservas-service:3001
+      TRASLADOS_SERVICE_URL: http://traslados-service:3002
+    depends_on:
+      - reservas-service
+      - traslados-service
+
+  reservas-service:
+    build: ./reservas-service
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      PORT: "3001"
+    depends_on:
+      - postgres
+
+  traslados-service:
+    build: ./traslados-service
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      PORT: "3002"
+    depends_on:
+      - postgres
+
+  categorizer-service:
+    build: ./categorizer-service
+    ports:
+      - "3003:3003"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      PORT: "3003"
+      OLLAMA_URL: http://ollama:11434
+    depends_on:
+      - postgres
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  pg_data:
+  ollama_data:

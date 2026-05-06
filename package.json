@@ -1,0 +1,21 @@
+{
+  "name": "move-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "api-gateway",
+    "reservas-service",
+    "traslados-service",
+    "categorizer-service"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev": "docker-compose -f docker-compose.dev.yml up",
+    "prod": "docker-compose up",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

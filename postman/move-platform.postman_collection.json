@@ -1,0 +1,46 @@
+{
+  "info": {
+    "name": "move-platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Checks",
+      "item": [
+        { "name": "api-gateway", "request": { "method": "GET", "url": "{{gateway_url}}/health" } },
+        { "name": "reservas-service", "request": { "method": "GET", "url": "{{reservas_url}}/health" } },
+        { "name": "traslados-service", "request": { "method": "GET", "url": "{{traslados_url}}/health" } },
+        { "name": "categorizer-service", "request": { "method": "GET", "url": "{{categorizer_url}}/health" } }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}/reservas/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"test@neve.com\",\"password\":\"secret\",\"name\":\"Test User\",\"role\":\"passenger\"}" }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}/reservas/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"test@neve.com\",\"password\":\"secret\"}" }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "gateway_url", "value": "http://localhost:3000" },
+    { "key": "reservas_url", "value": "http://localhost:3001" },
+    { "key": "traslados_url", "value": "http://localhost:3002" },
+    { "key": "categorizer_url", "value": "http://localhost:3003" }
+  ]
+}
