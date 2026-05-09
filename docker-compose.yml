@@ -4,11 +4,11 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: move
-      POSTGRES_PASSWORD: move_secret
-      POSTGRES_DB: move_platform
+      POSTGRES_USER: ${POSTGRES_USER:-move}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-move_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-move_platform}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
 
@@ -18,11 +18,12 @@ services:
       dockerfile: api-gateway/Dockerfile
       target: prod
     ports:
-      - "3000:3000"
+      - "${API_GATEWAY_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
-      RESERVAS_SERVICE_URL: http://reservas-service:3001
-      TRASLADOS_SERVICE_URL: http://traslados-service:3002
+      RESERVAS_SERVICE_URL: ${RESERVAS_SERVICE_URL:-http://reservas-service:3001}
+      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://traslados-service:3002}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
     depends_on:
       - reservas-service
       - traslados-service
@@ -33,10 +34,11 @@ services:
       dockerfile: reservas-service/Dockerfile
       target: prod
     ports:
-      - "3001:3001"
+      - "${RESERVAS_SERVICE_PORT:-3001}:3001"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
       PORT: "3001"
     depends_on:
       - postgres
@@ -47,10 +49,10 @@ services:
       dockerfile: traslados-service/Dockerfile
       target: prod
     ports:
-      - "3002:3002"
+      - "${TRASLADOS_SERVICE_PORT:-3002}:3002"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
       PORT: "3002"
     depends_on:
       - postgres
@@ -61,12 +63,12 @@ services:
       dockerfile: categorizer-service/Dockerfile
       target: prod
     ports:
-      - "3003:3003"
+      - "${CATEGORIZER_SERVICE_PORT:-3003}:3003"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
       PORT: "3003"
-      OLLAMA_URL: http://ollama:11434
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
     depends_on:
       - postgres
       - ollama
@@ -74,7 +76,7 @@ services:
   ollama:
     image: ollama/ollama:latest
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama_data:/root/.ollama
 

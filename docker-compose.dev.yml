@@ -4,11 +4,11 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: move
-      POSTGRES_PASSWORD: move_secret
-      POSTGRES_DB: move_platform
+      POSTGRES_USER: ${POSTGRES_USER:-move}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-move_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-move_platform}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pg_data_dev:/var/lib/postgresql/data
 
@@ -18,13 +18,14 @@ services:
       dockerfile: api-gateway/Dockerfile
       target: dev
     ports:
-      - "3000:3000"
+      - "${API_GATEWAY_PORT:-3000}:3000"
     volumes:
       - ./api-gateway/src:/app/api-gateway/src
     environment:
       NODE_ENV: development
-      RESERVAS_SERVICE_URL: http://reservas-service:3001
-      TRASLADOS_SERVICE_URL: http://traslados-service:3002
+      RESERVAS_SERVICE_URL: ${RESERVAS_SERVICE_URL:-http://reservas-service:3001}
+      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://traslados-service:3002}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
     depends_on:
       - reservas-service
       - traslados-service
@@ -35,12 +36,13 @@ services:
       dockerfile: reservas-service/Dockerfile
       target: dev
     ports:
-      - "3001:3001"
+      - "${RESERVAS_SERVICE_PORT:-3001}:3001"
     volumes:
       - ./reservas-service/src:/app/reservas-service/src
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
       PORT: "3001"
     depends_on:
       - postgres
@@ -51,16 +53,15 @@ services:
       dockerfile: traslados-service/Dockerfile
       target: dev
     ports:
-      - "3002:3002"
+      - "${TRASLADOS_SERVICE_PORT:-3002}:3002"
     volumes:
       - ./traslados-service/src:/app/traslados-service/src
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
       PORT: "3002"
     depends_on:
       - postgres
-      - gps-simulator
 
   categorizer-service:
     build:
@@ -68,14 +69,14 @@ services:
       dockerfile: categorizer-service/Dockerfile
       target: dev
     ports:
-      - "3003:3003"
+      - "${CATEGORIZER_SERVICE_PORT:-3003}:3003"
     volumes:
       - ./categorizer-service/src:/app/categorizer-service/src
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
       PORT: "3003"
-      OLLAMA_URL: http://ollama:11434
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
     depends_on:
       - postgres
       - ollama
@@ -87,15 +88,15 @@ services:
       target: dev
     environment:
       NODE_ENV: development
-      TRASLADOS_SERVICE_URL: http://traslados-service:3002
-      INTERVAL_MS: "2000"
+      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://traslados-service:3002}
+      INTERVAL_MS: ${GPS_SIMULATOR_INTERVAL_MS:-2000}
     depends_on:
       - traslados-service
 
   ollama:
     image: ollama/ollama:latest
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama_data_dev:/root/.ollama
 
