@@ -8,9 +8,8 @@ import type {
   UserDTO,
   UserRole,
   UserStatus,
-  HttpError,
 } from "@move/shared";
-import { query } from "@move/shared";
+import { HttpError, query } from "@move/shared";
 import { mapUserRow, type UserRow } from "./mapper";
 
 const userRoles: readonly UserRole[] = ["admin", "operator", "client", "driver"];

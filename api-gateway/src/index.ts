@@ -17,7 +17,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "api-gateway" });
 });
 
-app.use("/reservas", authenticate, reservasRouter);
+app.use("/reservas", reservasRouter);
 app.use("/traslados", authenticate, trasladosRouter);
 
 app.listen(Number(PORT), () => {

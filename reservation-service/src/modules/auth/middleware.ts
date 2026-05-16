@@ -1,12 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
-import type { UserDTO, UserRole } from "@move/shared";
-import { getRequestContext } from "@move/shared";
-import { verifyAccessToken, type OidcClaims } from "./oidc";
+import { HttpError, type UserDTO, type UserRole, getRequestContext } from "@move/shared";
 import { recordAuditLog } from "./audit";
-import { getUserByAuthSubject, touchLastLogin } from "../users/service";
+import { getUserByAuthSubject } from "../users/service";
 
 export interface AuthenticatedRequestUser {
-  claims: OidcClaims;
   profile: UserDTO;
 }
 
@@ -16,33 +13,34 @@ declare module "express-serve-static-core" {
   }
 }
 
-function getBearerToken(req: Request): string | null {
-  const authHeader = req.headers["authorization"];
-  if (!authHeader?.startsWith("Bearer ")) {
+function getAuthSubjectHeader(req: Request): string | null {
+  const header = req.headers["x-auth-subject"];
+  if (typeof header !== "string") {
     return null;
   }
-  return authHeader.slice(7);
+
+  const authSubject = header.trim();
+  return authSubject || null;
 }
 
 export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   const context = getRequestContext(req);
-  const token = getBearerToken(req);
+  const authSubject = getAuthSubjectHeader(req);
 
-  if (!token) {
+  if (!authSubject) {
     await recordAuditLog({
       ...context,
-      eventType: "token_rejected",
+      eventType: "access_denied",
       decision: "denied",
       statusCode: 401,
-      reason: "Missing bearer token",
+      reason: "Missing gateway authentication context",
     });
-    res.status(401).json({ success: false, error: "Missing bearer token" });
+    res.status(401).json({ success: false, error: "Authentication required" });
     return;
   }
 
   try {
-    const claims = await verifyAccessToken(token);
-    const user = await getUserByAuthSubject(claims.sub);
+    const user = await getUserByAuthSubject(authSubject);
 
     if (!user) {
       await recordAuditLog({
@@ -50,7 +48,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
         eventType: "access_denied",
         decision: "denied",
         statusCode: 403,
-        authSubject: claims.sub,
+        authSubject,
         reason: "Authenticated subject is not registered in MOVE",
       });
       res.status(403).json({ success: false, error: "User is not registered" });
@@ -74,29 +72,20 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    req.authenticatedUser = { claims, profile: user };
-    await touchLastLogin(user.id);
-    await recordAuditLog({
-      ...context,
-      eventType: "token_accepted",
-      decision: "authorized",
-      statusCode: 200,
-      userId: user.id,
-      authSubject: user.authSubject,
-      email: user.email,
-      role: user.role,
-      clientType: user.clientType,
-    });
+    req.authenticatedUser = { profile: user };
     next();
   } catch (error) {
+    const message =
+      error instanceof HttpError ? error.message : "Gateway authentication context is invalid";
     await recordAuditLog({
       ...context,
-      eventType: "token_rejected",
+      eventType: "access_denied",
       decision: "denied",
       statusCode: 401,
-      reason: error instanceof Error ? error.message : "Invalid token",
+      authSubject,
+      reason: message,
     });
-    res.status(401).json({ success: false, error: "Invalid token" });
+    res.status(401).json({ success: false, error: "Authentication required" });
   }
 }
 

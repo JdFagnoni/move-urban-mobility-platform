@@ -9,7 +9,7 @@ export interface RequestContext {
 export interface RequestContextSource {
   method: string;
   originalUrl: string;
-  ip?: string;
+  ip: string | undefined;
   headers: Record<string, string | string[] | undefined>;
 }
 

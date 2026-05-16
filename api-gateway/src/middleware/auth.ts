@@ -39,14 +39,6 @@ function getIssuer(): string {
   return `https://${getAuth0Domain()}/`;
 }
 
-function isPublicRoute(req: Request): boolean {
-  return (
-    req.baseUrl === "/reservas" &&
-    ((req.method === "POST" && req.path === "/auth/register") ||
-      (req.method === "GET" && req.path === "/health"))
-  );
-}
-
 function getBearerToken(req: Request): string | null {
   const authHeader = req.headers["authorization"];
   if (!authHeader?.startsWith("Bearer ")) {
@@ -98,11 +90,6 @@ async function verifyAccessToken(token: string): Promise<OidcClaims> {
 }
 
 export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
-  if (isPublicRoute(req)) {
-    next();
-    return;
-  }
-
   const token = getBearerToken(req);
   if (!token) {
     res.status(401).json({ success: false, error: "Missing bearer token" });
