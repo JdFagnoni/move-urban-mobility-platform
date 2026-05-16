@@ -4,12 +4,14 @@ import type {
   ClientType,
   ListUsersQueryDTO,
   PaginatedResult,
+  RequestContext,
   UpdateUserDTO,
   UserDTO,
   UserRole,
   UserStatus,
 } from "@move/shared";
 import { HttpError, query } from "@move/shared";
+import { recordAuditLog } from "../auth/audit";
 import { mapUserRow, type UserRow } from "./mapper";
 
 const userRoles: readonly UserRole[] = ["admin", "operator", "client", "driver"];
@@ -49,6 +51,11 @@ function normalizeOptionalText(value: string | null | undefined): string | null 
   return normalized || null;
 }
 
+function parsePage(value: unknown): number | undefined {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 function assertRole(value: string): asserts value is UserRole {
   if (!userRoles.includes(value as UserRole)) {
     throw new HttpError(400, "Invalid user role", "invalid_user_role");
@@ -79,6 +86,62 @@ function validateRoleAndClientType(
   }
 
   return null;
+}
+
+function requireCurrentUser(currentUser: UserDTO | undefined): UserDTO {
+  if (!currentUser) {
+    throw new HttpError(401, "Authentication required", "authentication_required");
+  }
+
+  return currentUser;
+}
+
+function isAdmin(user: UserDTO): boolean {
+  return user.role === "admin";
+}
+
+function buildSelfUpdateDTO(body: Partial<UpdateUserDTO>): UpdateUserDTO {
+  const dto: UpdateUserDTO = {};
+  if (body.name !== undefined) {
+    dto.name = body.name;
+  }
+  if (body.phone !== undefined) {
+    dto.phone = body.phone;
+  }
+  if (body.documentType !== undefined) {
+    dto.documentType = body.documentType;
+  }
+  if (body.documentNumber !== undefined) {
+    dto.documentNumber = body.documentNumber;
+  }
+  if (body.companyName !== undefined) {
+    dto.companyName = body.companyName;
+  }
+  if (body.taxId !== undefined) {
+    dto.taxId = body.taxId;
+  }
+  return dto;
+}
+
+async function auditAccessDenied(
+  context: RequestContext,
+  currentUser: UserDTO | undefined,
+  reason: string
+): Promise<never> {
+  await recordAuditLog({
+    ...context,
+    eventType: "access_denied",
+    decision: "denied",
+    statusCode: 403,
+    userId: currentUser?.id,
+    authSubject: currentUser?.authSubject,
+    email: currentUser?.email,
+    role: currentUser?.role,
+    clientType: currentUser?.clientType,
+    reason,
+  });
+
+  throw new HttpError(403, "Forbidden", "forbidden");
 }
 
 function isUniqueViolation(error: unknown): boolean {
@@ -227,6 +290,46 @@ export async function listUsers(
   };
 }
 
+export interface ListUsersInput {
+  role?: unknown;
+  status?: unknown;
+  clientType?: unknown;
+  email?: unknown;
+  page?: unknown;
+  pageSize?: unknown;
+}
+
+export async function listUsersForHttp(
+  input: ListUsersInput = {}
+): Promise<PaginatedResult<UserDTO>> {
+  const filters: ListUsersQueryDTO = {};
+
+  if (typeof input.role === "string") {
+    filters.role = input.role as UserRole;
+  }
+  if (typeof input.status === "string") {
+    filters.status = input.status as UserStatus;
+  }
+  if (typeof input.clientType === "string") {
+    filters.clientType = input.clientType as ClientType;
+  }
+  if (typeof input.email === "string") {
+    filters.email = input.email;
+  }
+
+  const page = parsePage(input.page);
+  if (page !== undefined) {
+    filters.page = page;
+  }
+
+  const pageSize = parsePage(input.pageSize);
+  if (pageSize !== undefined) {
+    filters.pageSize = pageSize;
+  }
+
+  return listUsers(filters);
+}
+
 export async function updateUser(id: string, dto: UpdateUserDTO): Promise<UserDTO | null> {
   const current = await getUser(id);
   if (!current) {
@@ -298,4 +401,111 @@ export async function touchLastLogin(id: string): Promise<void> {
 export async function deleteUser(id: string): Promise<boolean> {
   const result = await updateUserStatus(id, "disabled");
   return Boolean(result);
+}
+
+async function requireUser(id: string): Promise<UserDTO> {
+  const user = await getUser(id);
+  if (!user) {
+    throw new HttpError(404, "User not found", "user_not_found");
+  }
+
+  return user;
+}
+
+export interface GetUserProfileInput {
+  id: string;
+  currentUser: UserDTO | undefined;
+  context: RequestContext;
+}
+
+export async function getUserProfile(input: GetUserProfileInput): Promise<UserDTO> {
+  const currentUser = requireCurrentUser(input.currentUser);
+  if (!isAdmin(currentUser) && currentUser.id !== input.id) {
+    return auditAccessDenied(input.context, currentUser, "Users can only read their own profile");
+  }
+
+  return requireUser(input.id);
+}
+
+export interface UpdateUserProfileInput {
+  id: string;
+  dto: Partial<UpdateUserDTO>;
+  currentUser: UserDTO | undefined;
+  context: RequestContext;
+}
+
+export async function updateUserProfile(input: UpdateUserProfileInput): Promise<UserDTO> {
+  const currentUser = requireCurrentUser(input.currentUser);
+  if (!isAdmin(currentUser) && currentUser.id !== input.id) {
+    return auditAccessDenied(input.context, currentUser, "Users can only update their own profile");
+  }
+
+  const dto = isAdmin(currentUser) ? input.dto : buildSelfUpdateDTO(input.dto);
+  const result = await updateUser(input.id, dto);
+  if (!result) {
+    throw new HttpError(404, "User not found", "user_not_found");
+  }
+
+  await recordAuditLog({
+    ...input.context,
+    eventType: "profile_updated",
+    decision: "success",
+    statusCode: 200,
+    userId: result.id,
+    authSubject: result.authSubject,
+    email: result.email,
+    role: result.role,
+    clientType: result.clientType,
+    metadata: { changedBy: currentUser.id },
+  });
+
+  return result;
+}
+
+export interface UpdateUserStatusInput {
+  id: string;
+  status?: unknown;
+  context: RequestContext;
+}
+
+export async function updateUserStatusForHttp(input: UpdateUserStatusInput): Promise<UserDTO> {
+  if (typeof input.status !== "string" || !input.status) {
+    throw new HttpError(400, "status is required", "invalid_user_status");
+  }
+
+  const result = await updateUserStatus(input.id, input.status as UserStatus);
+  if (!result) {
+    throw new HttpError(404, "User not found", "user_not_found");
+  }
+
+  await recordAuditLog({
+    ...input.context,
+    eventType: "status_changed",
+    decision: "success",
+    statusCode: 200,
+    userId: result.id,
+    authSubject: result.authSubject,
+    email: result.email,
+    role: result.role,
+    clientType: result.clientType,
+    metadata: { status: result.status },
+  });
+
+  return result;
+}
+
+export async function deleteUserForHttp(id: string, context: RequestContext): Promise<void> {
+  const disabled = await deleteUser(id);
+  if (!disabled) {
+    throw new HttpError(404, "User not found", "user_not_found");
+  }
+
+  await recordAuditLog({
+    ...context,
+    eventType: "status_changed",
+    decision: "success",
+    statusCode: 204,
+    userId: id,
+    metadata: { status: "disabled" },
+  });
 }

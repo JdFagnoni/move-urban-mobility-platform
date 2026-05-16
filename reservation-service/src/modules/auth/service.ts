@@ -1,7 +1,15 @@
-import type { RegisterClientDTO, UserDTO } from "@move/shared";
-import { HttpError, type RequestContext } from "@move/shared";
+import type {
+  AuthAuditEventType,
+  AuthAuditLogDTO,
+  ListAuthAuditLogsQueryDTO,
+  PaginatedResult,
+  RegisterClientDTO,
+  RequestContext,
+  UserDTO,
+} from "@move/shared";
+import { HttpError } from "@move/shared";
 import { createAuth0User } from "./auth0-provider";
-import { recordAuditLog } from "./audit";
+import { listAuditLogs, recordAuditLog } from "./audit";
 import { createUserRecord, getUserByEmail } from "../users/service";
 
 function normalizeEmail(email: string): string {
@@ -24,6 +32,21 @@ function validatePassword(password: string): void {
   if (password.length < 8) {
     throw new HttpError(400, "Password must have at least 8 characters", "invalid_registration");
   }
+}
+
+function parsePage(value: unknown): number | undefined {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+export interface ListAuditLogsInput {
+  eventType?: unknown;
+  email?: unknown;
+  userId?: unknown;
+  from?: unknown;
+  to?: unknown;
+  page?: unknown;
+  pageSize?: unknown;
 }
 
 export async function registerClient(
@@ -80,4 +103,48 @@ export async function registerClient(
     });
     throw error;
   }
+}
+
+export async function getAuthenticatedProfile(
+  user: UserDTO | undefined
+): Promise<{ user: UserDTO }> {
+  if (!user) {
+    throw new HttpError(401, "Authentication required", "authentication_required");
+  }
+
+  return { user };
+}
+
+export async function listAuthAuditLogsForHttp(
+  input: ListAuditLogsInput
+): Promise<PaginatedResult<AuthAuditLogDTO>> {
+  const filters: ListAuthAuditLogsQueryDTO = {};
+
+  if (typeof input.eventType === "string") {
+    filters.eventType = input.eventType as AuthAuditEventType;
+  }
+  if (typeof input.email === "string") {
+    filters.email = input.email;
+  }
+  if (typeof input.userId === "string") {
+    filters.userId = input.userId;
+  }
+  if (typeof input.from === "string") {
+    filters.from = input.from;
+  }
+  if (typeof input.to === "string") {
+    filters.to = input.to;
+  }
+
+  const page = parsePage(input.page);
+  if (page !== undefined) {
+    filters.page = page;
+  }
+
+  const pageSize = parsePage(input.pageSize);
+  if (pageSize !== undefined) {
+    filters.pageSize = pageSize;
+  }
+
+  return listAuditLogs(filters);
 }

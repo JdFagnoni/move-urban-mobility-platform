@@ -1,48 +1,62 @@
 import type { Request, Response } from "express";
 import {
   listCategories,
-  getCategory,
+  getCategoryForHttp,
   createCategory,
   updateCategory,
   deleteCategory,
 } from "./service";
 import type { CategoryDTO } from "@move/shared";
+import { handleServiceError } from "../../http/handler";
 
 export async function listHandler(_req: Request, res: Response): Promise<void> {
-  res.json({ success: true, data: await listCategories() });
+  const result = await handleServiceError(res, () => listCategories());
+  if (!result.ok) {
+    return;
+  }
+
+  res.json({ success: true, data: result.data });
 }
 
 export async function getHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
-  const result = await getCategory(id);
-  if (!result) {
-    res.status(404).json({ success: false, error: "Category not found" });
+  const result = await handleServiceError(res, () => getCategoryForHttp(id));
+  if (!result.ok) {
     return;
   }
-  res.json({ success: true, data: result });
+
+  res.json({ success: true, data: result.data });
 }
 
 export async function createHandler(req: Request, res: Response): Promise<void> {
-  const dto = req.body as Omit<CategoryDTO, "id">;
-  res.status(201).json({ success: true, data: await createCategory(dto) });
+  const result = await handleServiceError(res, () =>
+    createCategory(req.body as Omit<CategoryDTO, "id">)
+  );
+  if (!result.ok) {
+    return;
+  }
+
+  res.status(201).json({ success: true, data: result.data });
 }
 
 export async function updateHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
-  const result = await updateCategory(id, req.body as Partial<Omit<CategoryDTO, "id">>);
-  if (!result) {
-    res.status(404).json({ success: false, error: "Category not found" });
+  const result = await handleServiceError(res, () =>
+    updateCategory(id, req.body as Partial<Omit<CategoryDTO, "id">>)
+  );
+  if (!result.ok) {
     return;
   }
-  res.json({ success: true, data: result });
+
+  res.json({ success: true, data: result.data });
 }
 
 export async function deleteHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
-  const ok = await deleteCategory(id);
-  if (!ok) {
-    res.status(404).json({ success: false, error: "Category not found" });
+  const result = await handleServiceError(res, () => deleteCategory(id));
+  if (!result.ok) {
     return;
   }
+
   res.status(204).end();
 }
