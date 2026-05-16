@@ -24,6 +24,8 @@ services:
       NODE_ENV: production
       RESERVAS_SERVICE_URL: http://reservas-service:3001
       TRASLADOS_SERVICE_URL: http://traslados-service:3002
+      AUTH0_DOMAIN: ""
+      AUTH0_AUDIENCE: https://move-platform-api
     depends_on:
       - reservas-service
       - traslados-service
@@ -38,6 +40,14 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      AUTH0_DOMAIN: ""
+      AUTH0_AUDIENCE: https://move-platform-api
+      AUTH0_DB_CONNECTION: Username-Password-Authentication
+      AUTH0_MGMT_CLIENT_ID: ""
+      AUTH0_MGMT_CLIENT_SECRET: ""
+      BOOTSTRAP_ADMIN_AUTH_SUBJECT: ""
+      BOOTSTRAP_ADMIN_EMAIL: ""
+      BOOTSTRAP_ADMIN_NAME: MOVE Admin
       PORT: "3001"
     depends_on:
       - postgres
