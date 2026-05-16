@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import {
   createReservation,
   getReservation,
-  listPassengerReservations,
+  listClientReservations,
   confirmReservation,
   cancelReservation,
 } from "./service";
@@ -24,11 +24,11 @@ export async function getHandler(req: Request, res: Response): Promise<void> {
   res.json({ success: true, data: result });
 }
 
-export async function listByPassengerHandler(req: Request, res: Response): Promise<void> {
-  const { passengerId } = req.params as { passengerId: string };
+export async function listByClientHandler(req: Request, res: Response): Promise<void> {
+  const { clientId } = req.params as { clientId: string };
   const page = Number(req.query["page"] ?? 1);
   const pageSize = Number(req.query["pageSize"] ?? 20);
-  const result = await listPassengerReservations(passengerId, page, pageSize);
+  const result = await listClientReservations(clientId, page, pageSize);
   res.json({ success: true, data: result });
 }
 

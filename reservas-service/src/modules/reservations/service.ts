@@ -1,13 +1,7 @@
-import type {
-  CreateReservationDTO,
-  ReservationDTO,
-  PaginatedResult,
-} from "@move/shared";
+import type { CreateReservationDTO, ReservationDTO, PaginatedResult } from "@move/shared";
 
 // F4.1 – crear reserva
-export async function createReservation(
-  dto: CreateReservationDTO
-): Promise<ReservationDTO> {
+export async function createReservation(dto: CreateReservationDTO): Promise<ReservationDTO> {
   // TODO: validate zone, assign vehicle, persist to DB
   const reservation: ReservationDTO = {
     id: crypto.randomUUID(),
@@ -25,14 +19,14 @@ export async function getReservation(id: string): Promise<ReservationDTO | null>
   return null;
 }
 
-// F5 – listar reservas del pasajero
-export async function listPassengerReservations(
-  passengerId: string,
+// F7 – listar reservas del cliente
+export async function listClientReservations(
+  clientId: string,
   page: number,
   pageSize: number
 ): Promise<PaginatedResult<ReservationDTO>> {
   // TODO: fetch from DB with pagination
-  void passengerId;
+  void clientId;
   return { data: [], total: 0, page, pageSize };
 }
 

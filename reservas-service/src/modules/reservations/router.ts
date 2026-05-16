@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   createHandler,
   getHandler,
-  listByPassengerHandler,
+  listByClientHandler,
   confirmHandler,
   cancelHandler,
 } from "./controller";
@@ -10,7 +10,7 @@ import {
 export const reservationsRouter = Router();
 
 reservationsRouter.post("/", createHandler);
+reservationsRouter.get("/client/:clientId", listByClientHandler);
 reservationsRouter.get("/:id", getHandler);
-reservationsRouter.get("/passenger/:passengerId", listByPassengerHandler);
 reservationsRouter.patch("/:id/confirm", confirmHandler);
 reservationsRouter.patch("/:id/cancel", cancelHandler);

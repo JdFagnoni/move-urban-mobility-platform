@@ -14,6 +14,7 @@ RUN npm ci --ignore-scripts
 FROM base AS dev
 COPY shared/ ./shared/
 COPY traslados-service/ ./traslados-service/
+RUN npm run build --workspace=@move/shared
 WORKDIR /app/traslados-service
 EXPOSE 3002
 CMD ["npm", "run", "dev"]

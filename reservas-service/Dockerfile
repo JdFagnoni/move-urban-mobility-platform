@@ -14,6 +14,7 @@ RUN npm ci --ignore-scripts
 FROM base AS dev
 COPY shared/ ./shared/
 COPY reservas-service/ ./reservas-service/
+RUN npm run build --workspace=@move/shared
 WORKDIR /app/reservas-service
 EXPOSE 3001
 CMD ["npm", "run", "dev"]

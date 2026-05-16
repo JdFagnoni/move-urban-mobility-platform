@@ -14,6 +14,7 @@ RUN npm ci --ignore-scripts
 FROM base AS dev
 COPY shared/ ./shared/
 COPY categorizer-service/ ./categorizer-service/
+RUN npm run build --workspace=@move/shared
 WORKDIR /app/categorizer-service
 EXPOSE 3003
 CMD ["npm", "run", "dev"]
