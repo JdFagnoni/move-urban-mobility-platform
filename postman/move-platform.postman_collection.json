@@ -17,21 +17,41 @@
       "name": "Auth",
       "item": [
         {
-          "name": "Register",
+          "name": "Register Client",
           "request": {
             "method": "POST",
             "url": "{{gateway_url}}/reservas/auth/register",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"email\":\"test@neve.com\",\"password\":\"secret\",\"name\":\"Test User\",\"role\":\"passenger\"}" }
+            "body": { "mode": "raw", "raw": "{\"email\":\"test@move.com\",\"password\":\"Secret123!\",\"name\":\"Test Client\",\"clientType\":\"individual\"}" }
           }
         },
         {
-          "name": "Login",
+          "name": "Current User",
           "request": {
-            "method": "POST",
-            "url": "{{gateway_url}}/reservas/auth/login",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"email\":\"test@neve.com\",\"password\":\"secret\"}" }
+            "method": "GET",
+            "url": "{{gateway_url}}/reservas/auth/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }]
+          }
+        },
+        {
+          "name": "Auth Audit Logs",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/reservas/auth/audit-logs",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/reservas/users?page=1&pageSize=20",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }]
           }
         }
       ]
@@ -41,6 +61,7 @@
     { "key": "gateway_url", "value": "http://localhost:3000" },
     { "key": "reservas_url", "value": "http://localhost:3001" },
     { "key": "traslados_url", "value": "http://localhost:3002" },
-    { "key": "categorizer_url", "value": "http://localhost:3003" }
+    { "key": "categorizer_url", "value": "http://localhost:3003" },
+    { "key": "auth_token", "value": "" }
   ]
 }
