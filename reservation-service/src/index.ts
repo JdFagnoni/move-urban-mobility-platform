@@ -1,5 +1,7 @@
 import "dotenv/config";
 import express from "express";
+import { runMigrations } from "./db/migrations";
+import { seedBootstrapAdmin } from "./db/seed";
 import { authRouter } from "./modules/auth/router";
 import { reservationsRouter } from "./modules/reservations/router";
 import { categoriesRouter } from "./modules/categories/router";
@@ -23,6 +25,15 @@ app.use("/zones", zonesRouter);
 app.use("/vehicles", vehiclesRouter);
 app.use("/users", usersRouter);
 
-app.listen(Number(PORT), () => {
-  console.log(`reservas-service running on port ${PORT}`);
+async function start(): Promise<void> {
+  await runMigrations();
+  await seedBootstrapAdmin();
+  app.listen(Number(PORT), () => {
+    process.stdout.write(`reservas-service running on port ${PORT}\n`);
+  });
+}
+
+start().catch((error) => {
+  process.stderr.write(`reservas-service failed to start: ${String(error)}\n`);
+  process.exit(1);
 });
