@@ -35,7 +35,7 @@ function mountProtectedRoute(path: string): void {
 
 reservasRouter.get("/health", reservasProxy());
 reservasRouter.post("/auth/register", reservasProxy());
-reservasRouter.use("/reservations", reservasProxy());
+mountProtectedRoute("/reservations");
 reservasRouter.use("/categories", reservasProxy());
 reservasRouter.use("/vehicles", reservasProxy());
 reservasRouter.use("/zones", reservasProxy());

@@ -1,16 +1,12 @@
 import { Router } from "express";
-import {
-  createHandler,
-  getHandler,
-  listByClientHandler,
-  confirmHandler,
-  cancelHandler,
-} from "./controller";
+import { createHandler, getHandler, listHandler, cancelHandler } from "./controller";
+import { authenticate } from "../auth/middleware";
 
 export const reservationsRouter = Router();
 
+reservationsRouter.use(authenticate);
+
 reservationsRouter.post("/", createHandler);
-reservationsRouter.get("/client/:clientId", listByClientHandler);
+reservationsRouter.get("/", listHandler);
 reservationsRouter.get("/:id", getHandler);
-reservationsRouter.patch("/:id/confirm", confirmHandler);
 reservationsRouter.patch("/:id/cancel", cancelHandler);
