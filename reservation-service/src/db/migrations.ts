@@ -95,4 +95,80 @@ export async function runMigrations(): Promise<void> {
     CREATE INDEX IF NOT EXISTS auth_audit_logs_email_idx
       ON auth_audit_logs (lower(email));
   `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id uuid PRIMARY KEY,
+      name text NOT NULL,
+      active boolean NOT NULL DEFAULT true,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+
+  await query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS categories_name_unique
+      ON categories (lower(name));
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS reservations (
+      id uuid PRIMARY KEY,
+      client_id uuid NOT NULL REFERENCES users(id),
+      origin jsonb NOT NULL,
+      destination jsonb NOT NULL,
+      scheduled_at timestamptz NOT NULL,
+      status text NOT NULL DEFAULT 'pending_classification',
+      quoted_price numeric(12,2),
+      vehicle_id uuid,
+      driver_id uuid,
+      payment_id uuid,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT reservations_status_check CHECK (
+        status IN (
+          'pending_classification',
+          'pending_quote',
+          'pending_confirmation',
+          'confirmed',
+          'assigned',
+          'in_progress',
+          'completed',
+          'cancelled'
+        )
+      )
+    );
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS reservations_client_id_idx
+      ON reservations (client_id);
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS reservations_status_idx
+      ON reservations (status);
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS reservations_scheduled_at_idx
+      ON reservations (scheduled_at);
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS goods (
+      id uuid PRIMARY KEY,
+      reservation_id uuid NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+      description text NOT NULL,
+      estimated_value numeric(12,2),
+      size text,
+      category_id uuid REFERENCES categories(id),
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS goods_reservation_id_idx
+      ON goods (reservation_id);
+  `);
 }
