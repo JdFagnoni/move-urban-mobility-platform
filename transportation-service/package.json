@@ -1,5 +1,5 @@
 {
-  "name": "@move/traslados-service",
+  "name": "@move/transportation-service",
   "version": "1.0.0",
   "scripts": {
     "build": "tsc",

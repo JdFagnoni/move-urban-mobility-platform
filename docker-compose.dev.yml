@@ -23,23 +23,23 @@ services:
       - ./api-gateway/src:/app/api-gateway/src
     environment:
       NODE_ENV: development
-      RESERVAS_SERVICE_URL: ${RESERVAS_SERVICE_URL:-http://reservas-service:3001}
-      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://traslados-service:3002}
+      RESERVAS_SERVICE_URL: ${RESERVAS_SERVICE_URL:-http://reservation-service:3001}
+      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://transportation-service:3002}
       AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://move-platform-api}
     depends_on:
-      - reservas-service
-      - traslados-service
+      - reservation-service
+      - transportation-service
 
-  reservas-service:
+  reservation-service:
     build:
       context: .
-      dockerfile: reservas-service/Dockerfile
+      dockerfile: reservation-service/Dockerfile
       target: dev
     ports:
       - "${RESERVAS_SERVICE_PORT:-3001}:3001"
     volumes:
-      - ./reservas-service/src:/app/reservas-service/src
+      - ./reservation-service/src:/app/reservation-service/src
     environment:
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
@@ -51,19 +51,21 @@ services:
       BOOTSTRAP_ADMIN_AUTH_SUBJECT: ${BOOTSTRAP_ADMIN_AUTH_SUBJECT:-}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
       BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-MOVE Admin}
+      CATEGORIZER_SERVICE_URL: ${CATEGORIZER_SERVICE_URL:-http://categorizer-service:3003}
       PORT: "3001"
     depends_on:
       - postgres
+      - categorizer-service
 
-  traslados-service:
+  transportation-service:
     build:
       context: .
-      dockerfile: traslados-service/Dockerfile
+      dockerfile: transportation-service/Dockerfile
       target: dev
     ports:
       - "${TRASLADOS_SERVICE_PORT:-3002}:3002"
     volumes:
-      - ./traslados-service/src:/app/traslados-service/src
+      - ./transportation-service/src:/app/transportation-service/src
     environment:
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
@@ -92,14 +94,14 @@ services:
   gps-simulator:
     build:
       context: .
-      dockerfile: traslados-service/simulator/Dockerfile
+      dockerfile: transportation-service/simulator/Dockerfile
       target: dev
     environment:
       NODE_ENV: development
-      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://traslados-service:3002}
+      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://transportation-service:3002}
       INTERVAL_MS: ${GPS_SIMULATOR_INTERVAL_MS:-2000}
     depends_on:
-      - traslados-service
+      - transportation-service
 
   ollama:
     image: ollama/ollama:latest

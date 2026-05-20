@@ -21,18 +21,18 @@ services:
       - "${API_GATEWAY_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
-      RESERVAS_SERVICE_URL: ${RESERVAS_SERVICE_URL:-http://reservas-service:3001}
-      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://traslados-service:3002}
+      RESERVAS_SERVICE_URL: ${RESERVAS_SERVICE_URL:-http://reservation-service:3001}
+      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://transportation-service:3002}
       AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://move-platform-api}
     depends_on:
-      - reservas-service
-      - traslados-service
+      - reservation-service
+      - transportation-service
 
-  reservas-service:
+  reservation-service:
     build:
       context: .
-      dockerfile: reservas-service/Dockerfile
+      dockerfile: reservation-service/Dockerfile
       target: prod
     ports:
       - "${RESERVAS_SERVICE_PORT:-3001}:3001"
@@ -47,14 +47,16 @@ services:
       BOOTSTRAP_ADMIN_AUTH_SUBJECT: ${BOOTSTRAP_ADMIN_AUTH_SUBJECT:-}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
       BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-MOVE Admin}
+      CATEGORIZER_SERVICE_URL: ${CATEGORIZER_SERVICE_URL:-http://categorizer-service:3003}
       PORT: "3001"
     depends_on:
       - postgres
+      - categorizer-service
 
-  traslados-service:
+  transportation-service:
     build:
       context: .
-      dockerfile: traslados-service/Dockerfile
+      dockerfile: transportation-service/Dockerfile
       target: prod
     ports:
       - "${TRASLADOS_SERVICE_PORT:-3002}:3002"
