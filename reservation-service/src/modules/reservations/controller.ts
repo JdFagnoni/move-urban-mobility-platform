@@ -29,7 +29,7 @@ export async function listHandler(req: Request, res: Response): Promise<void> {
   const filters: ListReservationsQueryDTO = {};
   if (typeof req.query["scheduledFrom"] === "string") filters.scheduledFrom = req.query["scheduledFrom"];
   if (typeof req.query["scheduledTo"] === "string") filters.scheduledTo = req.query["scheduledTo"];
-  if (typeof req.query["status"] === "string") filters.status = req.query["status"] as ListReservationsQueryDTO["status"];
+  if (typeof req.query["status"] === "string") filters.status = req.query["status"] as NonNullable<ListReservationsQueryDTO["status"]>;
   if (typeof req.query["page"] === "string") filters.page = Number(req.query["page"]);
   if (typeof req.query["pageSize"] === "string") filters.pageSize = Number(req.query["pageSize"]);
   const result = await handleServiceError(res, () => listReservations(clientUser, filters));
