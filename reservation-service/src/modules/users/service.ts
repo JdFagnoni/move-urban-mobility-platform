@@ -232,7 +232,7 @@ export async function listUsers(
 
   const result = await UserModel.findAndCountAll({
     where,
-    order: [["createdAt", "DESC"]],
+    order: [["created_at", "DESC"]],
     limit: pageSize,
     offset,
   });

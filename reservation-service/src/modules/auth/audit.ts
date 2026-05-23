@@ -102,7 +102,7 @@ export async function listAuditLogs(
 
   const result = await AuthAuditLogModel.findAndCountAll({
     where,
-    order: [["occurredAt", "DESC"]],
+    order: [["occurred_at", "DESC"]],
     limit: pageSize,
     offset,
   });

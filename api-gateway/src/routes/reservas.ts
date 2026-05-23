@@ -7,6 +7,7 @@ const RESERVAS_URL =
   process.env["RESERVAS_SERVICE_URL"] ?? "http://localhost:3001";
 
 export const reservasRouter = Router();
+const RESERVAS_PREFIX = "/reservas";
 
 const forwardIdentityHeaders = (proxyReqOpts: ClientRequestArgs, srcReq: Request) => {
   const claims = srcReq.user;
@@ -26,6 +27,7 @@ const forwardIdentityHeaders = (proxyReqOpts: ClientRequestArgs, srcReq: Request
 function reservasProxy(options?: { forwardIdentity?: boolean }) {
   return proxy(RESERVAS_URL, {
     proxyReqOptDecorator: options?.forwardIdentity ? forwardIdentityHeaders : undefined,
+    proxyReqPathResolver: (req) => req.originalUrl.replace(new RegExp(`^${RESERVAS_PREFIX}`), ""),
   });
 }
 

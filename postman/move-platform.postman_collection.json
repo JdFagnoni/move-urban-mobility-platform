@@ -1,67 +1,280 @@
 {
-  "info": {
-    "name": "move-platform",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "Health Checks",
-      "item": [
-        { "name": "api-gateway", "request": { "method": "GET", "url": "{{gateway_url}}/health" } },
-        { "name": "reservas-service", "request": { "method": "GET", "url": "{{reservas_url}}/health" } },
-        { "name": "traslados-service", "request": { "method": "GET", "url": "{{traslados_url}}/health" } },
-        { "name": "categorizer-service", "request": { "method": "GET", "url": "{{categorizer_url}}/health" } }
-      ]
-    },
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Register Client",
-          "request": {
-            "method": "POST",
-            "url": "{{gateway_url}}/reservas/auth/register",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\"email\":\"test@move.com\",\"password\":\"Secret123!\",\"name\":\"Test Client\",\"clientType\":\"individual\"}" }
-          }
-        },
-        {
-          "name": "Current User",
-          "request": {
-            "method": "GET",
-            "url": "{{gateway_url}}/reservas/auth/me",
-            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }]
-          }
-        },
-        {
-          "name": "Auth Audit Logs",
-          "request": {
-            "method": "GET",
-            "url": "{{gateway_url}}/reservas/auth/audit-logs",
-            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }]
-          }
-        }
-      ]
-    },
-    {
-      "name": "Users",
-      "item": [
-        {
-          "name": "List Users",
-          "request": {
-            "method": "GET",
-            "url": "{{gateway_url}}/reservas/users?page=1&pageSize=20",
-            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }]
-          }
-        }
-      ]
-    }
-  ],
-  "variable": [
-    { "key": "gateway_url", "value": "http://localhost:3000" },
-    { "key": "reservas_url", "value": "http://localhost:3001" },
-    { "key": "traslados_url", "value": "http://localhost:3002" },
-    { "key": "categorizer_url", "value": "http://localhost:3003" },
-    { "key": "auth_token", "value": "" }
-  ]
+	"info": {
+		"_postman_id": "4ebaa85a-9066-479c-a6c1-9f6e066c2800",
+		"name": "move-platform",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "37423762"
+	},
+	"item": [
+		{
+			"name": "Health Checks",
+			"item": [
+				{
+					"name": "api-gateway",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/health",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "reservas-service",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{reservas_url}}/health",
+							"host": [
+								"{{reservas_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "traslados-service",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{traslados_url}}/health",
+							"host": [
+								"{{traslados_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "categorizer-service",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{categorizer_url}}/health",
+							"host": [
+								"{{categorizer_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register Client",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@move.com\",\n    \"password\": \"Secret123!\",\n    \"name\": \"Test Client\",\n    \"clientType\": \"individual\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservas/auth/register",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservas",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/reservas/auth/me",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservas",
+								"auth",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Auth Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/reservas/auth/audit-logs",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservas",
+								"auth",
+								"audit-logs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "User Access Token",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n    \"username\": \"admin@move.local\",\n    \"password\": \"Admin123\",\n    \"audience\": \"https://move-platform-api\",\n    \"scope\": \"openid profile email\",\n    \"client_id\": \"GDBLzzXNN1C0CdiiPIGQ4WKyO0Ajpynh\",\n    \"client_secret\": \"eUWuMRwP21QTjYRSP6fMKSNGRwYYrbvVgaUTVNrsxqr6qNLOMvQYlzZhMbchpVUx\",\n    \"realm\": \"Username-Password-Authentication\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://dev-v18wbrah03r8lc5v.us.auth0.com/oauth/token",
+							"protocol": "https",
+							"host": [
+								"dev-v18wbrah03r8lc5v",
+								"us",
+								"auth0",
+								"com"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "List Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/reservas/users?page=1&pageSize=20",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservas",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "gateway_url",
+			"value": "http://localhost:3000"
+		},
+		{
+			"key": "reservas_url",
+			"value": "http://localhost:3001"
+		},
+		{
+			"key": "traslados_url",
+			"value": "http://localhost:3002"
+		},
+		{
+			"key": "categorizer_url",
+			"value": "http://localhost:3003"
+		},
+		{
+			"key": "auth_token",
+			"value": ""
+		}
+	]
 }
