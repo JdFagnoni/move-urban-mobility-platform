@@ -5,15 +5,15 @@
   "workspaces": [
     "shared",
     "api-gateway",
-    "reservas-service",
-    "traslados-service",
+    "reservation-service",
+    "transportation-service",
     "categorizer-service"
   ],
   "scripts": {
     "build": "npm run build --workspaces",
     "dev": "docker-compose -f docker-compose.dev.yml up",
     "prod": "docker-compose up",
-    "lint": "eslint \"{api-gateway,reservas-service,traslados-service,categorizer-service,shared}/**/*.ts\" --ext .ts",
+    "lint": "eslint \"{api-gateway,reservation-service,transportation-service,categorizer-service,shared}/**/*.ts\" --ext .ts",
     "lint:fix": "npm run lint -- --fix",
     "format": "prettier --write \"**/*.{ts,json,yml,md}\" --ignore-path .prettierignore",
     "format:check": "prettier --check \"**/*.{ts,json,yml,md}\" --ignore-path .prettierignore"

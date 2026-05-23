@@ -4,11 +4,11 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: move
-      POSTGRES_PASSWORD: move_secret
-      POSTGRES_DB: move_platform
+      POSTGRES_USER: ${POSTGRES_USER:-move}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-move_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-move_platform}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
 
@@ -18,39 +18,51 @@ services:
       dockerfile: api-gateway/Dockerfile
       target: prod
     ports:
-      - "3000:3000"
+      - "${API_GATEWAY_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
-      RESERVAS_SERVICE_URL: http://reservas-service:3001
-      TRASLADOS_SERVICE_URL: http://traslados-service:3002
+      RESERVATIONS_URL: ${RESERVATIONS_URL:-http://reservations:3001}
+      TRANSPORTATIONS_URL: ${TRANSPORTATIONS_URL:-http://transportations:3002}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://move-platform-api}
     depends_on:
-      - reservas-service
-      - traslados-service
+      - reservations
+      - transportations
 
-  reservas-service:
+  reservations:
     build:
       context: .
-      dockerfile: reservas-service/Dockerfile
+      dockerfile: reservation-service/Dockerfile
       target: prod
     ports:
-      - "3001:3001"
+      - "${RESERVATIONS_PORT:-3001}:3001"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://move-platform-api}
+      AUTH0_DB_CONNECTION: ${AUTH0_DB_CONNECTION:-Username-Password-Authentication}
+      AUTH0_MGMT_CLIENT_ID: ${AUTH0_MGMT_CLIENT_ID:-}
+      AUTH0_MGMT_CLIENT_SECRET: ${AUTH0_MGMT_CLIENT_SECRET:-}
+      BOOTSTRAP_ADMIN_AUTH_SUBJECT: ${BOOTSTRAP_ADMIN_AUTH_SUBJECT:-}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-MOVE Admin}
+      CATEGORIZER_SERVICE_URL: ${CATEGORIZER_SERVICE_URL:-http://categorizer-service:3003}
       PORT: "3001"
     depends_on:
       - postgres
+      - categorizer-service
 
-  traslados-service:
+  transportations:
     build:
       context: .
-      dockerfile: traslados-service/Dockerfile
+      dockerfile: transportation-service/Dockerfile
       target: prod
     ports:
-      - "3002:3002"
+      - "${TRANSPORTATIONS_PORT:-3002}:3002"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
       PORT: "3002"
     depends_on:
       - postgres
@@ -61,12 +73,12 @@ services:
       dockerfile: categorizer-service/Dockerfile
       target: prod
     ports:
-      - "3003:3003"
+      - "${CATEGORIZER_SERVICE_PORT:-3003}:3003"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
       PORT: "3003"
-      OLLAMA_URL: http://ollama:11434
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
     depends_on:
       - postgres
       - ollama
@@ -74,7 +86,7 @@ services:
   ollama:
     image: ollama/ollama:latest
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama_data:/root/.ollama
 

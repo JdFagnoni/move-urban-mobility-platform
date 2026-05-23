@@ -7,11 +7,7 @@ const logger = createLogger({
   transports: [new transports.Console()],
 });
 
-export function requestLogger(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+export function requestLogger(req: Request, res: Response, next: NextFunction): void {
   const start = Date.now();
   res.on("finish", () => {
     logger.info({

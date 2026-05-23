@@ -1,5 +1,4 @@
 # CI override: skips ollama (too heavy) and uses in-memory DB for speed
-version: "3.9"
 
 services:
   postgres:
@@ -12,6 +11,12 @@ services:
       - "5432:5432"
     tmpfs:
       - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U move -d move_platform"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 3s
 
   api-gateway:
     build:
@@ -22,30 +27,41 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      RESERVAS_SERVICE_URL: http://reservas-service:3001
-      TRASLADOS_SERVICE_URL: http://traslados-service:3002
+      RESERVATIONS_URL: http://reservations:3001
+      TRANSPORTATIONS_URL: http://transportations:3002
+      AUTH0_DOMAIN: ""
+      AUTH0_AUDIENCE: https://move-platform-api
     depends_on:
-      - reservas-service
-      - traslados-service
+      - reservations
+      - transportations
 
-  reservas-service:
+  reservations:
     build:
       context: .
-      dockerfile: reservas-service/Dockerfile
+      dockerfile: reservation-service/Dockerfile
       target: prod
     ports:
       - "3001:3001"
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      AUTH0_DOMAIN: ""
+      AUTH0_AUDIENCE: https://move-platform-api
+      AUTH0_DB_CONNECTION: Username-Password-Authentication
+      AUTH0_MGMT_CLIENT_ID: ""
+      AUTH0_MGMT_CLIENT_SECRET: ""
+      BOOTSTRAP_ADMIN_AUTH_SUBJECT: ""
+      BOOTSTRAP_ADMIN_EMAIL: ""
+      BOOTSTRAP_ADMIN_NAME: MOVE Admin
       PORT: "3001"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
-  traslados-service:
+  transportations:
     build:
       context: .
-      dockerfile: traslados-service/Dockerfile
+      dockerfile: transportation-service/Dockerfile
       target: prod
     ports:
       - "3002:3002"
@@ -54,7 +70,8 @@ services:
       DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
       PORT: "3002"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   categorizer-service:
     build:
@@ -69,4 +86,5 @@ services:
       PORT: "3003"
       OLLAMA_URL: http://localhost:11434
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy

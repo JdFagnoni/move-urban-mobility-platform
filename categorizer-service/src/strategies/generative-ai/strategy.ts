@@ -9,9 +9,7 @@ export interface GenerativeAiInput {
 }
 
 // Uses local Ollama model to classify a reservation description into a category
-export async function classifyWithGenerativeAi(
-  input: GenerativeAiInput
-): Promise<string | null> {
+export async function classifyWithGenerativeAi(input: GenerativeAiInput): Promise<string | null> {
   const categoryNames = input.availableCategories.map((c) => c.name).join(", ");
   const prompt = `Given the following categories: ${categoryNames}\nClassify this request: "${input.description}"\nRespond with only the category name.`;
 

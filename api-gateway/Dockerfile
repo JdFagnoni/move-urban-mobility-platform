@@ -6,8 +6,8 @@ WORKDIR /app
 COPY package*.json tsconfig.base.json ./
 COPY shared/package.json ./shared/
 COPY api-gateway/package.json ./api-gateway/
-COPY reservas-service/package.json ./reservas-service/
-COPY traslados-service/package.json ./traslados-service/
+COPY reservation-service/package.json ./reservation-service/
+COPY transportation-service/package.json ./transportation-service/
 COPY categorizer-service/package.json ./categorizer-service/
 RUN npm ci --ignore-scripts
 
