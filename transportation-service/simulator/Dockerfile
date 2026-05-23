@@ -2,7 +2,7 @@
 FROM node:20-alpine AS base
 WORKDIR /app
 COPY transportation-service/simulator/package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm install --ignore-scripts
 
 FROM base AS dev
 COPY transportation-service/simulator/ ./
