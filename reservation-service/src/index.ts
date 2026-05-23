@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { initializeDatabase } from "./db/sequelize";
 import { seedBootstrapAdmin } from "./db/seed";
+import { withRetry } from "./db/startup";
 import { authRouter } from "./modules/auth/router";
 import { reservationsRouter } from "./modules/reservations/router";
 import { categoriesRouter } from "./modules/categories/router";
@@ -26,7 +27,7 @@ app.use("/vehicles", vehiclesRouter);
 app.use("/users", usersRouter);
 
 async function start(): Promise<void> {
-  await initializeDatabase();
+  await withRetry(initializeDatabase, { attempts: 10, delayMs: 3000 });
   await seedBootstrapAdmin();
   app.listen(Number(PORT), () => {
     process.stdout.write(`reservations running on port ${PORT}\n`);
