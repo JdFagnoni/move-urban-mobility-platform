@@ -17,7 +17,9 @@ categorizerRouter.post("/", async (req: Request, res: Response): Promise<void> =
   const { description, availableCategories } = req.body as ClassifyRequest;
 
   if (!description || !Array.isArray(availableCategories)) {
-    res.status(400).json({ success: false, error: "description and availableCategories are required" });
+    res
+      .status(400)
+      .json({ success: false, error: "description and availableCategories are required" });
     return;
   }
 

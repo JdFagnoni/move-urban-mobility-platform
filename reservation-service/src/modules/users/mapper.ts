@@ -1,5 +1,5 @@
 import type { UserDTO } from "@move/shared";
-import { UserModel } from "../../db/models";
+import type { UserModel } from "../../db/models";
 
 function toIsoString(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value;

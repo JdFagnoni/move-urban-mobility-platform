@@ -77,7 +77,9 @@ export async function createReservation(
     throw new HttpError(400, "At least one cargo item is required", "cargo_items_required");
   }
 
-  const categoryIds = await Promise.all(dto.cargoItems.map((item) => classifyGood(item.description)));
+  const categoryIds = await Promise.all(
+    dto.cargoItems.map((item) => classifyGood(item.description))
+  );
   const allClassified = categoryIds.every((id) => id !== null);
   const status: ReservationStatus = allClassified ? "pending_quote" : "pending_classification";
   const reservationId = crypto.randomUUID();
@@ -149,11 +151,12 @@ export async function listReservations(
   }
 
   if (filters.scheduledFrom || filters.scheduledTo) {
-    where.scheduledAt = filters.scheduledFrom && filters.scheduledTo
-      ? { [Op.between]: [new Date(filters.scheduledFrom), new Date(filters.scheduledTo)] }
-      : filters.scheduledFrom
-        ? { [Op.gte]: new Date(filters.scheduledFrom) }
-        : { [Op.lte]: new Date(filters.scheduledTo as string) };
+    where.scheduledAt =
+      filters.scheduledFrom && filters.scheduledTo
+        ? { [Op.between]: [new Date(filters.scheduledFrom), new Date(filters.scheduledTo)] }
+        : filters.scheduledFrom
+          ? { [Op.gte]: new Date(filters.scheduledFrom) }
+          : { [Op.lte]: new Date(filters.scheduledTo as string) };
   }
 
   if (filters.status) {

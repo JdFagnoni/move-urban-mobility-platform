@@ -93,11 +93,12 @@ export async function listAuditLogs(
   }
 
   if (filters.from || filters.to) {
-    where.occurredAt = filters.from && filters.to
-      ? { [Op.between]: [new Date(filters.from), new Date(filters.to)] }
-      : filters.from
-        ? { [Op.gte]: new Date(filters.from) }
-        : { [Op.lte]: new Date(filters.to as string) };
+    where.occurredAt =
+      filters.from && filters.to
+        ? { [Op.between]: [new Date(filters.from), new Date(filters.to)] }
+        : filters.from
+          ? { [Op.gte]: new Date(filters.from) }
+          : { [Op.lte]: new Date(filters.to as string) };
   }
 
   const result = await AuthAuditLogModel.findAndCountAll({

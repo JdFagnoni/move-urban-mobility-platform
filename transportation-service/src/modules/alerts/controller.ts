@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import { createAlert, listActiveAlerts, resolveAlert } from "./service";
-import type { AlertDTO } from "@move/shared";
 
 export async function createHandler(req: Request, res: Response): Promise<void> {
   const body = req.body as Parameters<typeof createAlert>[0];

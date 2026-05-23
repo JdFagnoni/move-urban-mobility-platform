@@ -1,8 +1,7 @@
 import type { CategoryDTO } from "@move/shared";
 import { CategoryModel } from "../db/models";
 
-const CATEGORIZER_URL =
-  process.env["CATEGORIZER_SERVICE_URL"] ?? "http://localhost:3003";
+const CATEGORIZER_URL = process.env["CATEGORIZER_SERVICE_URL"] ?? "http://localhost:3003";
 
 interface CategorizeResponse {
   success: boolean;

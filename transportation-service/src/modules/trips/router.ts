@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { createHandler, listHandler, getHandler, startHandler, completeHandler } from "./controller";
+import {
+  createHandler,
+  listHandler,
+  getHandler,
+  startHandler,
+  completeHandler,
+} from "./controller";
 
 export const tripsRouter = Router();
 

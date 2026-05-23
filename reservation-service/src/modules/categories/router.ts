@@ -1,11 +1,5 @@
 import { Router } from "express";
-import {
-  listHandler,
-  getHandler,
-  createHandler,
-  updateHandler,
-  deleteHandler,
-} from "./controller";
+import { listHandler, getHandler, createHandler, updateHandler, deleteHandler } from "./controller";
 
 export const categoriesRouter = Router();
 

@@ -1,9 +1,4 @@
-import type {
-  AuthAuditDecision,
-  AuthAuditEventType,
-  ClientType,
-  UserRole,
-} from "@move/shared";
+import type { AuthAuditDecision, AuthAuditEventType, ClientType, UserRole } from "@move/shared";
 import {
   BelongsTo,
   Column,
@@ -13,7 +8,12 @@ import {
   PrimaryKey,
   Table,
 } from "sequelize-typescript";
-import { AUTH_AUDIT_DECISIONS, AUTH_AUDIT_EVENT_TYPES, CLIENT_TYPES, USER_ROLES } from "../constants";
+import {
+  AUTH_AUDIT_DECISIONS,
+  AUTH_AUDIT_EVENT_TYPES,
+  CLIENT_TYPES,
+  USER_ROLES,
+} from "../constants";
 import { UserModel } from "./user";
 
 @Table({

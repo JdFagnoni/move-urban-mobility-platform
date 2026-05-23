@@ -308,7 +308,8 @@ export async function updateUser(id: string, dto: UpdateUserDTO): Promise<UserDT
   current.role = nextRole;
   current.clientType = nextClientType;
   current.status = nextStatus;
-  current.phone = dto.phone === undefined ? (current.phone ?? null) : normalizeOptionalText(dto.phone);
+  current.phone =
+    dto.phone === undefined ? (current.phone ?? null) : normalizeOptionalText(dto.phone);
   current.documentType =
     dto.documentType === undefined
       ? (current.documentType ?? null)
@@ -321,7 +322,8 @@ export async function updateUser(id: string, dto: UpdateUserDTO): Promise<UserDT
     dto.companyName === undefined
       ? (current.companyName ?? null)
       : normalizeOptionalText(dto.companyName);
-  current.taxId = dto.taxId === undefined ? (current.taxId ?? null) : normalizeOptionalText(dto.taxId);
+  current.taxId =
+    dto.taxId === undefined ? (current.taxId ?? null) : normalizeOptionalText(dto.taxId);
 
   await current.save();
   return mapUser(current);

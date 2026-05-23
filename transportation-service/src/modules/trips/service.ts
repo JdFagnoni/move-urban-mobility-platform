@@ -11,10 +11,7 @@ export async function createTrip(dto: CreateTripDTO): Promise<TripDTO> {
 }
 
 // F17 – listar traslados
-export async function listTrips(
-  page: number,
-  pageSize: number
-): Promise<PaginatedResult<TripDTO>> {
+export async function listTrips(page: number, pageSize: number): Promise<PaginatedResult<TripDTO>> {
   return { data: [], total: 0, page, pageSize };
 }
 
