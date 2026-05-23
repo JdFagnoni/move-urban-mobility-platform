@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { runMigrations } from "./db/migrations";
+import { initializeDatabase } from "./db/sequelize";
 import { seedBootstrapAdmin } from "./db/seed";
 import { authRouter } from "./modules/auth/router";
 import { reservationsRouter } from "./modules/reservations/router";
@@ -26,7 +26,7 @@ app.use("/vehicles", vehiclesRouter);
 app.use("/users", usersRouter);
 
 async function start(): Promise<void> {
-  await runMigrations();
+  await initializeDatabase();
   await seedBootstrapAdmin();
   app.listen(Number(PORT), () => {
     process.stdout.write(`reservas-service running on port ${PORT}\n`);

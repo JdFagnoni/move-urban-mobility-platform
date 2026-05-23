@@ -1,13 +1,8 @@
-import { query } from "@move/shared";
 import type { CategoryDTO } from "@move/shared";
+import { CategoryModel } from "../db/models";
 
 const CATEGORIZER_URL =
   process.env["CATEGORIZER_SERVICE_URL"] ?? "http://localhost:3003";
-
-interface CategoryRow {
-  id: string;
-  name: string;
-}
 
 interface CategorizeResponse {
   success: boolean;
@@ -15,10 +10,16 @@ interface CategorizeResponse {
 }
 
 async function fetchActiveCategories(): Promise<CategoryDTO[]> {
-  const result = await query<CategoryRow>(
-    "SELECT id, name FROM categories WHERE active = true ORDER BY name"
-  );
-  return result.rows.map((row) => ({ id: row.id, name: row.name, rules: [] }));
+  const categories = await CategoryModel.findAll({
+    where: { active: true },
+    order: [["name", "ASC"]],
+  });
+
+  return categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    rules: category.rules,
+  }));
 }
 
 export async function classifyGood(description: string): Promise<string | null> {

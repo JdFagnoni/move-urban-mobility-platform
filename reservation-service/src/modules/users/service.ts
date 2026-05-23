@@ -10,9 +10,11 @@ import type {
   UserRole,
   UserStatus,
 } from "@move/shared";
-import { HttpError, query } from "@move/shared";
+import { HttpError } from "@move/shared";
+import { Op, UniqueConstraintError, type WhereOptions } from "sequelize";
+import { UserModel } from "../../db/models";
 import { recordAuditLog } from "../auth/audit";
-import { mapUserRow, type UserRow } from "./mapper";
+import { mapUser } from "./mapper";
 
 const userRoles: readonly UserRole[] = ["admin", "operator", "client", "driver"];
 const userStatuses: readonly UserStatus[] = ["active", "suspended", "disabled"];
@@ -145,12 +147,7 @@ async function auditAccessDenied(
 }
 
 function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "23505"
-  );
+  return error instanceof UniqueConstraintError;
 }
 
 export async function createUserRecord(input: CreateUserRecordInput): Promise<UserDTO> {
@@ -159,46 +156,23 @@ export async function createUserRecord(input: CreateUserRecordInput): Promise<Us
   const clientType = validateRoleAndClientType(input.role, input.clientType);
 
   try {
-    const result = await query<UserRow>(
-      `
-        INSERT INTO users (
-          id,
-          auth_provider,
-          auth_subject,
-          email,
-          name,
-          role,
-          client_type,
-          status,
-          phone,
-          document_type,
-          document_number,
-          company_name,
-          tax_id
-        )
-        VALUES ($1, 'auth0', $2, $3, $4, $5, $6, 'active', $7, $8, $9, $10, $11)
-        RETURNING *
-      `,
-      [
-        randomUUID(),
-        normalizeText(input.authSubject, "authSubject"),
-        email,
-        name,
-        input.role,
-        clientType,
-        normalizeOptionalText(input.phone),
-        normalizeOptionalText(input.documentType),
-        normalizeOptionalText(input.documentNumber),
-        normalizeOptionalText(input.companyName),
-        normalizeOptionalText(input.taxId),
-      ]
-    );
+    const user = await UserModel.create({
+      id: randomUUID(),
+      authProvider: "auth0",
+      authSubject: normalizeText(input.authSubject, "authSubject"),
+      email,
+      name,
+      role: input.role,
+      clientType,
+      status: "active",
+      phone: normalizeOptionalText(input.phone),
+      documentType: normalizeOptionalText(input.documentType),
+      documentNumber: normalizeOptionalText(input.documentNumber),
+      companyName: normalizeOptionalText(input.companyName),
+      taxId: normalizeOptionalText(input.taxId),
+    });
 
-    const row = result.rows[0];
-    if (!row) {
-      throw new HttpError(500, "User creation failed", "user_create_failed");
-    }
-    return mapUserRow(row);
+    return mapUser(user);
   } catch (error) {
     if (isUniqueViolation(error)) {
       throw new HttpError(409, "User already exists", "user_exists");
@@ -208,26 +182,25 @@ export async function createUserRecord(input: CreateUserRecordInput): Promise<Us
 }
 
 export async function getUser(id: string): Promise<UserDTO | null> {
-  const result = await query<UserRow>("SELECT * FROM users WHERE id = $1", [id]);
-  return result.rows[0] ? mapUserRow(result.rows[0]) : null;
+  const user = await UserModel.findByPk(id);
+  return user ? mapUser(user) : null;
 }
 
 export async function getUserByAuthSubject(
   authSubject: string,
   authProvider: AuthProvider = "auth0"
 ): Promise<UserDTO | null> {
-  const result = await query<UserRow>(
-    "SELECT * FROM users WHERE auth_provider = $1 AND auth_subject = $2",
-    [authProvider, authSubject]
-  );
-  return result.rows[0] ? mapUserRow(result.rows[0]) : null;
+  const user = await UserModel.findOne({
+    where: { authProvider, authSubject },
+  });
+  return user ? mapUser(user) : null;
 }
 
 export async function getUserByEmail(email: string): Promise<UserDTO | null> {
-  const result = await query<UserRow>("SELECT * FROM users WHERE lower(email) = $1", [
-    normalizeEmail(email),
-  ]);
-  return result.rows[0] ? mapUserRow(result.rows[0]) : null;
+  const user = await UserModel.findOne({
+    where: { email: normalizeEmail(email) },
+  });
+  return user ? mapUser(user) : null;
 }
 
 export async function listUsers(
@@ -236,55 +209,37 @@ export async function listUsers(
   const page = Math.max(1, filters.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 20));
   const offset = (page - 1) * pageSize;
-  const clauses: string[] = [];
-  const params: unknown[] = [];
+  const where: WhereOptions<UserModel> = {};
 
   if (filters.role) {
     assertRole(filters.role);
-    params.push(filters.role);
-    clauses.push(`role = $${params.length}`);
+    where.role = filters.role;
   }
 
   if (filters.status) {
     assertStatus(filters.status);
-    params.push(filters.status);
-    clauses.push(`status = $${params.length}`);
+    where.status = filters.status;
   }
 
   if (filters.clientType) {
     assertClientType(filters.clientType);
-    params.push(filters.clientType);
-    clauses.push(`client_type = $${params.length}`);
+    where.clientType = filters.clientType;
   }
 
   if (filters.email) {
-    params.push(`%${normalizeEmail(filters.email)}%`);
-    clauses.push(`lower(email) LIKE $${params.length}`);
+    where.email = { [Op.iLike]: `%${normalizeEmail(filters.email)}%` };
   }
 
-  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  const countResult = await query<{ total: string }>(
-    `SELECT count(*) AS total FROM users ${where}`,
-    params
-  );
-  const total = Number(countResult.rows[0]?.total ?? 0);
-
-  params.push(pageSize, offset);
-  const result = await query<UserRow>(
-    `
-      SELECT *
-      FROM users
-      ${where}
-      ORDER BY created_at DESC
-      LIMIT $${params.length - 1}
-      OFFSET $${params.length}
-    `,
-    params
-  );
+  const result = await UserModel.findAndCountAll({
+    where,
+    order: [["createdAt", "DESC"]],
+    limit: pageSize,
+    offset,
+  });
 
   return {
-    data: result.rows.map(mapUserRow),
-    total,
+    data: result.rows.map(mapUser),
+    total: result.count,
     page,
     pageSize,
   };
@@ -331,7 +286,7 @@ export async function listUsersForHttp(
 }
 
 export async function updateUser(id: string, dto: UpdateUserDTO): Promise<UserDTO | null> {
-  const current = await getUser(id);
+  const current = await UserModel.findByPk(id);
   if (!current) {
     return null;
   }
@@ -349,44 +304,27 @@ export async function updateUser(id: string, dto: UpdateUserDTO): Promise<UserDT
   assertStatus(nextStatus);
 
   const nextClientType = validateRoleAndClientType(nextRole, requestedClientType);
-  const result = await query<UserRow>(
-    `
-      UPDATE users
-      SET
-        name = $2,
-        role = $3,
-        client_type = $4,
-        status = $5,
-        phone = $6,
-        document_type = $7,
-        document_number = $8,
-        company_name = $9,
-        tax_id = $10,
-        updated_at = now()
-      WHERE id = $1
-      RETURNING *
-    `,
-    [
-      id,
-      dto.name === undefined ? current.name : normalizeText(dto.name, "name"),
-      nextRole,
-      nextClientType,
-      nextStatus,
-      dto.phone === undefined ? (current.phone ?? null) : normalizeOptionalText(dto.phone),
-      dto.documentType === undefined
-        ? (current.documentType ?? null)
-        : normalizeOptionalText(dto.documentType),
-      dto.documentNumber === undefined
-        ? (current.documentNumber ?? null)
-        : normalizeOptionalText(dto.documentNumber),
-      dto.companyName === undefined
-        ? (current.companyName ?? null)
-        : normalizeOptionalText(dto.companyName),
-      dto.taxId === undefined ? (current.taxId ?? null) : normalizeOptionalText(dto.taxId),
-    ]
-  );
+  current.name = dto.name === undefined ? current.name : normalizeText(dto.name, "name");
+  current.role = nextRole;
+  current.clientType = nextClientType;
+  current.status = nextStatus;
+  current.phone = dto.phone === undefined ? (current.phone ?? null) : normalizeOptionalText(dto.phone);
+  current.documentType =
+    dto.documentType === undefined
+      ? (current.documentType ?? null)
+      : normalizeOptionalText(dto.documentType);
+  current.documentNumber =
+    dto.documentNumber === undefined
+      ? (current.documentNumber ?? null)
+      : normalizeOptionalText(dto.documentNumber);
+  current.companyName =
+    dto.companyName === undefined
+      ? (current.companyName ?? null)
+      : normalizeOptionalText(dto.companyName);
+  current.taxId = dto.taxId === undefined ? (current.taxId ?? null) : normalizeOptionalText(dto.taxId);
 
-  return result.rows[0] ? mapUserRow(result.rows[0]) : null;
+  await current.save();
+  return mapUser(current);
 }
 
 export async function updateUserStatus(id: string, status: UserStatus): Promise<UserDTO | null> {
@@ -395,7 +333,7 @@ export async function updateUserStatus(id: string, status: UserStatus): Promise<
 }
 
 export async function touchLastLogin(id: string): Promise<void> {
-  await query("UPDATE users SET last_login_at = now(), updated_at = now() WHERE id = $1", [id]);
+  await UserModel.update({ lastLoginAt: new Date() }, { where: { id } });
 }
 
 export async function deleteUser(id: string): Promise<boolean> {

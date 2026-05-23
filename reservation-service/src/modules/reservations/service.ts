@@ -1,66 +1,45 @@
-import { pool, query, HttpError } from "@move/shared";
+import { HttpError } from "@move/shared";
 import type {
   CreateReservationDTO,
-  ReservationDTO,
+  GeoPoint,
   GoodDTO,
   ListReservationsQueryDTO,
   PaginatedResult,
-  UserDTO,
+  ReservationDTO,
   ReservationStatus,
-  GeoPoint,
+  UserDTO,
 } from "@move/shared";
+import { Op, type WhereOptions } from "sequelize";
 import { classifyGood } from "../../clients/categorizer";
+import { GoodModel, ReservationModel } from "../../db/models";
+import { sequelize } from "../../db/sequelize";
 
-interface ReservationRow {
-  id: string;
-  client_id: string;
-  origin: GeoPoint;
-  destination: GeoPoint;
-  scheduled_at: Date;
-  status: ReservationStatus;
-  quoted_price: string | null;
-  vehicle_id: string | null;
-  driver_id: string | null;
-  payment_id: string | null;
-  created_at: Date;
-  updated_at: Date;
-}
-
-interface GoodRow {
-  id: string;
-  reservation_id: string;
-  description: string;
-  estimated_value: string | null;
-  size: string | null;
-  category_id: string | null;
-}
-
-function rowToGoodDTO(row: GoodRow): GoodDTO {
+function modelToGoodDTO(row: GoodModel): GoodDTO {
   return {
     id: row.id,
-    reservationId: row.reservation_id,
+    reservationId: row.reservationId,
     description: row.description,
-    estimatedValue: row.estimated_value !== null ? parseFloat(row.estimated_value) : null,
+    estimatedValue: row.estimatedValue !== null ? parseFloat(row.estimatedValue) : null,
     size: row.size,
-    categoryId: row.category_id,
+    categoryId: row.categoryId,
   };
 }
 
-function rowToReservationDTO(row: ReservationRow, goods: GoodRow[]): ReservationDTO {
+function modelToReservationDTO(row: ReservationModel, goods: GoodModel[]): ReservationDTO {
   return {
     id: row.id,
-    clientId: row.client_id,
-    origin: row.origin,
-    destination: row.destination,
-    scheduledAt: row.scheduled_at.toISOString(),
+    clientId: row.clientId,
+    origin: row.origin as GeoPoint,
+    destination: row.destination as GeoPoint,
+    scheduledAt: row.scheduledAt.toISOString(),
     status: row.status,
-    quotedPrice: row.quoted_price !== null ? parseFloat(row.quoted_price) : null,
-    vehicleId: row.vehicle_id,
-    driverId: row.driver_id,
-    paymentId: row.payment_id,
-    goods: goods.map(rowToGoodDTO),
-    createdAt: row.created_at.toISOString(),
-    updatedAt: row.updated_at.toISOString(),
+    quotedPrice: row.quotedPrice !== null ? parseFloat(row.quotedPrice) : null,
+    vehicleId: row.vehicleId,
+    driverId: row.driverId,
+    paymentId: row.paymentId,
+    goods: goods.map(modelToGoodDTO),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
@@ -76,12 +55,10 @@ const CANCELLABLE_STATUSES: readonly ReservationStatus[] = [
   "confirmed",
 ];
 
-async function fetchGoodsForReservation(reservationId: string): Promise<GoodRow[]> {
-  const result = await query<GoodRow>(
-    "SELECT * FROM goods WHERE reservation_id = $1 ORDER BY created_at",
-    [reservationId]
-  );
-  return result.rows;
+async function loadReservationWithGoods(id: string): Promise<ReservationModel | null> {
+  return ReservationModel.findByPk(id, {
+    include: [{ model: GoodModel, as: "goods" }],
+  });
 }
 
 export async function createReservation(
@@ -98,103 +75,57 @@ export async function createReservation(
   }
 
   const categoryIds = await Promise.all(dto.goods.map((g) => classifyGood(g.description)));
-
   const allClassified = categoryIds.every((id) => id !== null);
   const status: ReservationStatus = allClassified ? "pending_quote" : "pending_classification";
+  const reservationId = crypto.randomUUID();
 
-  const dbClient = await pool.connect();
-  try {
-    await dbClient.query("BEGIN");
-
-    const reservationId = crypto.randomUUID();
-    await dbClient.query(
-      `INSERT INTO reservations (id, client_id, origin, destination, scheduled_at, status)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [
-        reservationId,
-        clientUser.id,
-        JSON.stringify(dto.origin),
-        JSON.stringify(dto.destination),
-        scheduledAt.toISOString(),
+  await sequelize.transaction(async (transaction) => {
+    await ReservationModel.create(
+      {
+        id: reservationId,
+        clientId: clientUser.id,
+        origin: dto.origin,
+        destination: dto.destination,
+        scheduledAt,
         status,
-      ]
+      },
+      { transaction }
     );
 
-    const classifiedGoods = dto.goods.map((good, i) => ({
-      good,
-      categoryId: categoryIds[i] ?? null,
-    }));
-
-    const insertedGoodRows: GoodRow[] = [];
-
-    for (const { good, categoryId } of classifiedGoods) {
-      const goodId = crypto.randomUUID();
-      await dbClient.query(
-        `INSERT INTO goods (id, reservation_id, description, estimated_value, size, category_id)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          goodId,
-          reservationId,
-          good.description,
-          good.estimatedValue ?? null,
-          good.size ?? null,
-          categoryId,
-        ]
-      );
-      insertedGoodRows.push({
-        id: goodId,
-        reservation_id: reservationId,
+    await GoodModel.bulkCreate(
+      dto.goods.map((good, index) => ({
+        id: crypto.randomUUID(),
+        reservationId,
         description: good.description,
-        estimated_value: good.estimatedValue !== undefined ? String(good.estimatedValue) : null,
+        estimatedValue: good.estimatedValue ?? null,
         size: good.size ?? null,
-        category_id: categoryId,
-      });
-    }
+        categoryId: categoryIds[index] ?? null,
+      })),
+      { transaction }
+    );
+  });
 
-    await dbClient.query("COMMIT");
-
-    const now = new Date();
-    const reservationRow: ReservationRow = {
-      id: reservationId,
-      client_id: clientUser.id,
-      origin: dto.origin,
-      destination: dto.destination,
-      scheduled_at: scheduledAt,
-      status,
-      quoted_price: null,
-      vehicle_id: null,
-      driver_id: null,
-      payment_id: null,
-      created_at: now,
-      updated_at: now,
-    };
-
-    return rowToReservationDTO(reservationRow, insertedGoodRows);
-  } catch (error) {
-    await dbClient.query("ROLLBACK");
-    throw error;
-  } finally {
-    dbClient.release();
+  const reservation = await loadReservationWithGoods(reservationId);
+  if (!reservation) {
+    throw new HttpError(500, "Reservation creation failed", "reservation_create_failed");
   }
+
+  const goods = (reservation.goods ?? []).slice().sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return modelToReservationDTO(reservation, goods);
 }
 
 export async function getReservation(id: string, clientUser: UserDTO): Promise<ReservationDTO> {
-  const result = await query<ReservationRow>(
-    "SELECT * FROM reservations WHERE id = $1",
-    [id]
-  );
-
-  const row = result.rows[0];
-  if (!row) {
+  const reservation = await loadReservationWithGoods(id);
+  if (!reservation) {
     throw new HttpError(404, "Reservation not found", "reservation_not_found");
   }
 
-  if (clientUser.role === "client" && row.client_id !== clientUser.id) {
+  if (clientUser.role === "client" && reservation.clientId !== clientUser.id) {
     throw new HttpError(403, "Access denied", "forbidden");
   }
 
-  const goods = await fetchGoodsForReservation(id);
-  return rowToReservationDTO(row, goods);
+  const goods = (reservation.goods ?? []).slice().sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return modelToReservationDTO(reservation, goods);
 }
 
 export async function listReservations(
@@ -204,88 +135,64 @@ export async function listReservations(
   const page = parsePositiveInteger(filters.page, 1);
   const pageSize = parsePositiveInteger(filters.pageSize, 20);
   const offset = (page - 1) * pageSize;
-
-  const conditions: string[] = [];
-  const params: unknown[] = [];
+  const where: WhereOptions<ReservationModel> = {};
 
   if (clientUser.role === "client") {
-    params.push(clientUser.id);
-    conditions.push(`client_id = $${params.length}`);
+    where.clientId = clientUser.id;
   }
 
-  if (filters.scheduledFrom) {
-    params.push(filters.scheduledFrom);
-    conditions.push(`scheduled_at >= $${params.length}`);
-  }
-
-  if (filters.scheduledTo) {
-    params.push(filters.scheduledTo);
-    conditions.push(`scheduled_at <= $${params.length}`);
+  if (filters.scheduledFrom || filters.scheduledTo) {
+    where.scheduledAt = filters.scheduledFrom && filters.scheduledTo
+      ? { [Op.between]: [new Date(filters.scheduledFrom), new Date(filters.scheduledTo)] }
+      : filters.scheduledFrom
+        ? { [Op.gte]: new Date(filters.scheduledFrom) }
+        : { [Op.lte]: new Date(filters.scheduledTo as string) };
   }
 
   if (filters.status) {
-    params.push(filters.status);
-    conditions.push(`status = $${params.length}`);
+    where.status = filters.status;
   }
 
-  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const result = await ReservationModel.findAndCountAll({
+    where,
+    include: [{ model: GoodModel, as: "goods" }],
+    distinct: true,
+    order: [["createdAt", "DESC"]],
+    limit: pageSize,
+    offset,
+  });
 
-  const countResult = await query<{ count: string }>(
-    `SELECT COUNT(*) as count FROM reservations ${where}`,
-    params
-  );
-  const total = parseInt(countResult.rows[0]?.count ?? "0", 10);
+  const data = result.rows.map((reservation) => {
+    const goods = (reservation.goods ?? [])
+      .slice()
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    return modelToReservationDTO(reservation, goods);
+  });
 
-  const listParams = [...params, pageSize, offset];
-  const limitIdx = listParams.length - 1;
-  const offsetIdx = listParams.length;
-
-  const reservationsResult = await query<ReservationRow>(
-    `SELECT * FROM reservations ${where} ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
-    listParams
-  );
-
-  const data = await Promise.all(
-    reservationsResult.rows.map(async (row) => {
-      const goods = await fetchGoodsForReservation(row.id);
-      return rowToReservationDTO(row, goods);
-    })
-  );
-
-  return { data, total, page, pageSize };
+  return { data, total: result.count, page, pageSize };
 }
 
 export async function cancelReservation(id: string, clientUser: UserDTO): Promise<ReservationDTO> {
-  const result = await query<ReservationRow>(
-    "SELECT * FROM reservations WHERE id = $1",
-    [id]
-  );
-
-  const row = result.rows[0];
-  if (!row) {
+  const reservation = await loadReservationWithGoods(id);
+  if (!reservation) {
     throw new HttpError(404, "Reservation not found", "reservation_not_found");
   }
 
-  if (clientUser.role === "client" && row.client_id !== clientUser.id) {
+  if (clientUser.role === "client" && reservation.clientId !== clientUser.id) {
     throw new HttpError(403, "Access denied", "forbidden");
   }
 
-  if (!CANCELLABLE_STATUSES.includes(row.status)) {
+  if (!CANCELLABLE_STATUSES.includes(reservation.status)) {
     throw new HttpError(
       409,
-      `Cannot cancel a reservation with status '${row.status}'`,
+      `Cannot cancel a reservation with status '${reservation.status}'`,
       "invalid_status_transition"
     );
   }
 
-  await query(
-    "UPDATE reservations SET status = 'cancelled', updated_at = now() WHERE id = $1",
-    [id]
-  );
+  reservation.status = "cancelled";
+  await reservation.save();
 
-  const goods = await fetchGoodsForReservation(id);
-  return rowToReservationDTO(
-    { ...row, status: "cancelled", updated_at: new Date() },
-    goods
-  );
+  const goods = (reservation.goods ?? []).slice().sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return modelToReservationDTO(reservation, goods);
 }

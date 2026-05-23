@@ -1,23 +1,5 @@
-import type { AuthProvider, ClientType, UserDTO, UserRole, UserStatus } from "@move/shared";
-
-export interface UserRow {
-  id: string;
-  auth_provider: AuthProvider;
-  auth_subject: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  client_type: ClientType | null;
-  status: UserStatus;
-  phone: string | null;
-  document_type: string | null;
-  document_number: string | null;
-  company_name: string | null;
-  tax_id: string | null;
-  last_login_at: Date | string | null;
-  created_at: Date | string;
-  updated_at: Date | string;
-}
+import type { UserDTO } from "@move/shared";
+import { UserModel } from "../../db/models";
 
 function toIsoString(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value;
@@ -30,23 +12,23 @@ function toNullableIsoString(value: Date | string | null): string | null {
   return toIsoString(value);
 }
 
-export function mapUserRow(row: UserRow): UserDTO {
+export function mapUser(row: UserModel): UserDTO {
   return {
     id: row.id,
-    authProvider: row.auth_provider,
-    authSubject: row.auth_subject,
+    authProvider: row.authProvider,
+    authSubject: row.authSubject,
     email: row.email,
     name: row.name,
     role: row.role,
-    clientType: row.client_type,
+    clientType: row.clientType,
     status: row.status,
     phone: row.phone,
-    documentType: row.document_type,
-    documentNumber: row.document_number,
-    companyName: row.company_name,
-    taxId: row.tax_id,
-    lastLoginAt: toNullableIsoString(row.last_login_at),
-    createdAt: toIsoString(row.created_at),
-    updatedAt: toIsoString(row.updated_at),
+    documentType: row.documentType,
+    documentNumber: row.documentNumber,
+    companyName: row.companyName,
+    taxId: row.taxId,
+    lastLoginAt: toNullableIsoString(row.lastLoginAt),
+    createdAt: toIsoString(row.createdAt),
+    updatedAt: toIsoString(row.updatedAt),
   };
 }
