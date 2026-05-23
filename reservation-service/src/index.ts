@@ -15,7 +15,7 @@ const PORT = process.env["PORT"] ?? "3001";
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", service: "reservas-service" });
+  res.json({ status: "ok", service: "reservations" });
 });
 
 app.use("/auth", authRouter);
@@ -29,11 +29,11 @@ async function start(): Promise<void> {
   await initializeDatabase();
   await seedBootstrapAdmin();
   app.listen(Number(PORT), () => {
-    process.stdout.write(`reservas-service running on port ${PORT}\n`);
+    process.stdout.write(`reservations running on port ${PORT}\n`);
   });
 }
 
 start().catch((error) => {
-  process.stderr.write(`reservas-service failed to start: ${String(error)}\n`);
+  process.stderr.write(`reservations failed to start: ${String(error)}\n`);
   process.exit(1);
 });

@@ -3,8 +3,8 @@ import express from "express";
 import { requestLogger } from "./middleware/logging";
 import { rateLimiter } from "./middleware/rate-limit";
 import { authenticate } from "./middleware/auth";
-import { reservasRouter } from "./routes/reservas";
-import { trasladosRouter } from "./routes/traslados";
+import { reservationsRouter } from "./routes/reservations";
+import { transportationsRouter } from "./routes/transportations";
 
 const app = express();
 const PORT = process.env["PORT"] ?? "3000";
@@ -17,8 +17,8 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "api-gateway" });
 });
 
-app.use("/reservas", reservasRouter);
-app.use("/traslados", authenticate, trasladosRouter);
+app.use("/reservations", reservationsRouter);
+app.use("/transportations", authenticate, transportationsRouter);
 
 app.listen(Number(PORT), () => {
   console.log(`api-gateway running on port ${PORT}`);

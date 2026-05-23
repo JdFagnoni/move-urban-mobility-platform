@@ -11,7 +11,7 @@ const PORT = process.env["PORT"] ?? "3002";
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", service: "traslados-service" });
+  res.json({ status: "ok", service: "transportations" });
 });
 
 app.use("/trips", tripsRouter);
@@ -20,5 +20,5 @@ app.use("/alerts", alertsRouter);
 app.use("/operator", operatorRouter);
 
 app.listen(Number(PORT), () => {
-  console.log(`traslados-service running on port ${PORT}`);
+  console.log(`transportations running on port ${PORT}`);
 });

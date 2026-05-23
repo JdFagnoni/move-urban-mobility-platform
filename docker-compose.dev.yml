@@ -23,21 +23,21 @@ services:
       - ./api-gateway/src:/app/api-gateway/src
     environment:
       NODE_ENV: development
-      RESERVAS_SERVICE_URL: ${RESERVAS_SERVICE_URL:-http://reservation-service:3001}
-      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://transportation-service:3002}
+      RESERVATIONS_URL: ${RESERVATIONS_URL:-http://reservations:3001}
+      TRANSPORTATIONS_URL: ${TRANSPORTATIONS_URL:-http://transportations:3002}
       AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://move-platform-api}
     depends_on:
-      - reservation-service
-      - transportation-service
+      - reservations
+      - transportations
 
-  reservation-service:
+  reservations:
     build:
       context: .
       dockerfile: reservation-service/Dockerfile
       target: dev
     ports:
-      - "${RESERVAS_SERVICE_PORT:-3001}:3001"
+      - "${RESERVATIONS_PORT:-3001}:3001"
     volumes:
       - ./reservation-service/src:/app/reservation-service/src
     environment:
@@ -57,13 +57,13 @@ services:
       - postgres
       - categorizer-service
 
-  transportation-service:
+  transportations:
     build:
       context: .
       dockerfile: transportation-service/Dockerfile
       target: dev
     ports:
-      - "${TRASLADOS_SERVICE_PORT:-3002}:3002"
+      - "${TRANSPORTATIONS_PORT:-3002}:3002"
     volumes:
       - ./transportation-service/src:/app/transportation-service/src
     environment:
@@ -98,10 +98,10 @@ services:
       target: dev
     environment:
       NODE_ENV: development
-      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://transportation-service:3002}
+      TRANSPORTATIONS_URL: ${TRANSPORTATIONS_URL:-http://transportations:3002}
       INTERVAL_MS: ${GPS_SIMULATOR_INTERVAL_MS:-2000}
     depends_on:
-      - transportation-service
+      - transportations
 
   ollama:
     image: ollama/ollama:latest

@@ -21,21 +21,21 @@ services:
       - "${API_GATEWAY_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
-      RESERVAS_SERVICE_URL: ${RESERVAS_SERVICE_URL:-http://reservation-service:3001}
-      TRASLADOS_SERVICE_URL: ${TRASLADOS_SERVICE_URL:-http://transportation-service:3002}
+      RESERVATIONS_URL: ${RESERVATIONS_URL:-http://reservations:3001}
+      TRANSPORTATIONS_URL: ${TRANSPORTATIONS_URL:-http://transportations:3002}
       AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://move-platform-api}
     depends_on:
-      - reservation-service
-      - transportation-service
+      - reservations
+      - transportations
 
-  reservation-service:
+  reservations:
     build:
       context: .
       dockerfile: reservation-service/Dockerfile
       target: prod
     ports:
-      - "${RESERVAS_SERVICE_PORT:-3001}:3001"
+      - "${RESERVATIONS_PORT:-3001}:3001"
     environment:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
@@ -53,13 +53,13 @@ services:
       - postgres
       - categorizer-service
 
-  transportation-service:
+  transportations:
     build:
       context: .
       dockerfile: transportation-service/Dockerfile
       target: prod
     ports:
-      - "${TRASLADOS_SERVICE_PORT:-3002}:3002"
+      - "${TRANSPORTATIONS_PORT:-3002}:3002"
     environment:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}

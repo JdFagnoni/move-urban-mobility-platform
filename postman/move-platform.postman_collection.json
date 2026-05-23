@@ -27,14 +27,14 @@
 					"response": []
 				},
 				{
-					"name": "reservas-service",
+					"name": "reservations",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{reservas_url}}/health",
+							"raw": "{{reservations_url}}/health",
 							"host": [
-								"{{reservas_url}}"
+								"{{reservations_url}}"
 							],
 							"path": [
 								"health"
@@ -44,14 +44,14 @@
 					"response": []
 				},
 				{
-					"name": "traslados-service",
+					"name": "transportations",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{traslados_url}}/health",
+							"raw": "{{transportations_url}}/health",
 							"host": [
-								"{{traslados_url}}"
+								"{{transportations_url}}"
 							],
 							"path": [
 								"health"
@@ -97,12 +97,12 @@
 							"raw": "{\n    \"email\": \"test@move.com\",\n    \"password\": \"Secret123!\",\n    \"name\": \"Test Client\",\n    \"clientType\": \"individual\"\n}"
 						},
 						"url": {
-							"raw": "{{gateway_url}}/reservas/auth/register",
+							"raw": "{{gateway_url}}/reservations/auth/register",
 							"host": [
 								"{{gateway_url}}"
 							],
 							"path": [
-								"reservas",
+								"reservations",
 								"auth",
 								"register"
 							]
@@ -121,12 +121,12 @@
 							}
 						],
 						"url": {
-							"raw": "{{gateway_url}}/reservas/auth/me",
+							"raw": "{{gateway_url}}/reservations/auth/me",
 							"host": [
 								"{{gateway_url}}"
 							],
 							"path": [
-								"reservas",
+								"reservations",
 								"auth",
 								"me"
 							]
@@ -145,12 +145,12 @@
 							}
 						],
 						"url": {
-							"raw": "{{gateway_url}}/reservas/auth/audit-logs",
+							"raw": "{{gateway_url}}/reservations/auth/audit-logs",
 							"host": [
 								"{{gateway_url}}"
 							],
 							"path": [
-								"reservas",
+								"reservations",
 								"auth",
 								"audit-logs"
 							]
@@ -208,12 +208,12 @@
 							}
 						],
 						"url": {
-							"raw": "{{gateway_url}}/reservas/users?page=1&pageSize=20",
+							"raw": "{{gateway_url}}/reservations/users?page=1&pageSize=20",
 							"host": [
 								"{{gateway_url}}"
 							],
 							"path": [
-								"reservas",
+								"reservations",
 								"users"
 							],
 							"query": [
@@ -261,11 +261,11 @@
 			"value": "http://localhost:3000"
 		},
 		{
-			"key": "reservas_url",
+			"key": "reservations_url",
 			"value": "http://localhost:3001"
 		},
 		{
-			"key": "traslados_url",
+			"key": "transportations_url",
 			"value": "http://localhost:3002"
 		},
 		{

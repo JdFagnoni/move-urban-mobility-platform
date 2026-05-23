@@ -1,7 +1,6 @@
 import "dotenv/config";
 
-const TRASLADOS_URL =
-  process.env["TRASLADOS_SERVICE_URL"] ?? "http://localhost:3002";
+const TRANSPORTATIONS_URL = process.env["TRANSPORTATIONS_URL"] ?? "http://localhost:3002";
 const INTERVAL_MS = Number(process.env["INTERVAL_MS"] ?? 2000);
 
 // Montevideo bounding box
@@ -21,10 +20,10 @@ async function sendSignal(vehicleId: string): Promise<void> {
     vehicleId,
     location: {
       type: "Point" as const,
-      coordinates: [
-        randomBetween(LON_MIN, LON_MAX),
-        randomBetween(LAT_MIN, LAT_MAX),
-      ] as [number, number],
+      coordinates: [randomBetween(LON_MIN, LON_MAX), randomBetween(LAT_MIN, LAT_MAX)] as [
+        number,
+        number,
+      ],
     },
     speed: randomBetween(0, 80),
     heading: randomBetween(0, 359),
@@ -32,7 +31,7 @@ async function sendSignal(vehicleId: string): Promise<void> {
   };
 
   try {
-    const res = await fetch(`${TRASLADOS_URL}/gps/signal`, {
+    const res = await fetch(`${TRANSPORTATIONS_URL}/gps/signal`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(signal),
@@ -50,7 +49,7 @@ async function tick(): Promise<void> {
 }
 
 console.log(
-  `[simulator] starting — sending signals every ${INTERVAL_MS}ms to ${TRASLADOS_URL}`
+  `[simulator] starting - sending signals every ${INTERVAL_MS}ms to ${TRANSPORTATIONS_URL}`
 );
 
 setInterval(() => void tick(), INTERVAL_MS);

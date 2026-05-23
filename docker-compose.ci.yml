@@ -22,18 +22,18 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      RESERVAS_SERVICE_URL: http://reservas-service:3001
-      TRASLADOS_SERVICE_URL: http://traslados-service:3002
+      RESERVATIONS_URL: http://reservations:3001
+      TRANSPORTATIONS_URL: http://transportations:3002
       AUTH0_DOMAIN: ""
       AUTH0_AUDIENCE: https://move-platform-api
     depends_on:
-      - reservas-service
-      - traslados-service
+      - reservations
+      - transportations
 
-  reservas-service:
+  reservations:
     build:
       context: .
-      dockerfile: reservas-service/Dockerfile
+      dockerfile: reservation-service/Dockerfile
       target: prod
     ports:
       - "3001:3001"
@@ -52,10 +52,10 @@ services:
     depends_on:
       - postgres
 
-  traslados-service:
+  transportations:
     build:
       context: .
-      dockerfile: traslados-service/Dockerfile
+      dockerfile: transportation-service/Dockerfile
       target: prod
     ports:
       - "3002:3002"

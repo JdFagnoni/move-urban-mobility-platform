@@ -3,11 +3,10 @@ import { Router, type Request } from "express";
 import proxy from "express-http-proxy";
 import { authenticate } from "../middleware/auth";
 
-const RESERVAS_URL =
-  process.env["RESERVAS_SERVICE_URL"] ?? "http://localhost:3001";
+const RESERVATIONS_URL = process.env["RESERVATIONS_URL"] ?? "http://localhost:3001";
 
-export const reservasRouter = Router();
-const RESERVAS_PREFIX = "/reservas";
+export const reservationsRouter = Router();
+const RESERVATIONS_PREFIX = "/reservations";
 
 const forwardIdentityHeaders = (proxyReqOpts: ClientRequestArgs, srcReq: Request) => {
   const claims = srcReq.user;
@@ -24,23 +23,24 @@ const forwardIdentityHeaders = (proxyReqOpts: ClientRequestArgs, srcReq: Request
   return proxyReqOpts;
 };
 
-function reservasProxy(options?: { forwardIdentity?: boolean }) {
-  return proxy(RESERVAS_URL, {
+function reservationsProxy(options?: { forwardIdentity?: boolean }) {
+  return proxy(RESERVATIONS_URL, {
     proxyReqOptDecorator: options?.forwardIdentity ? forwardIdentityHeaders : undefined,
-    proxyReqPathResolver: (req) => req.originalUrl.replace(new RegExp(`^${RESERVAS_PREFIX}`), ""),
+    proxyReqPathResolver: (req) =>
+      req.originalUrl.replace(new RegExp(`^${RESERVATIONS_PREFIX}`), ""),
   });
 }
 
 function mountProtectedRoute(path: string): void {
-  reservasRouter.use(path, authenticate, reservasProxy({ forwardIdentity: true }));
+  reservationsRouter.use(path, authenticate, reservationsProxy({ forwardIdentity: true }));
 }
 
-reservasRouter.get("/health", reservasProxy());
-reservasRouter.post("/auth/register", reservasProxy());
+reservationsRouter.get("/health", reservationsProxy());
+reservationsRouter.post("/auth/register", reservationsProxy());
 mountProtectedRoute("/reservations");
-reservasRouter.use("/categories", reservasProxy());
-reservasRouter.use("/vehicles", reservasProxy());
-reservasRouter.use("/zones", reservasProxy());
+reservationsRouter.use("/categories", reservationsProxy());
+reservationsRouter.use("/vehicles", reservationsProxy());
+reservationsRouter.use("/zones", reservationsProxy());
 mountProtectedRoute("/auth/me");
 mountProtectedRoute("/auth/audit-logs");
 mountProtectedRoute("/users");
