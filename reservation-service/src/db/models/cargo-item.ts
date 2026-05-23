@@ -17,7 +17,7 @@ import { ReservationModel } from "./reservation";
   createdAt: "created_at",
   updatedAt: false,
 })
-export class GoodModel extends Model {
+export class CargoItemModel extends Model {
   @PrimaryKey
   @Column({ type: DataType.UUID, allowNull: false })
   declare id: string;

@@ -1,8 +1,8 @@
 import { HttpError } from "@move/shared";
 import type {
+  CargoItemDTO,
   CreateReservationDTO,
   GeoPoint,
-  GoodDTO,
   ListReservationsQueryDTO,
   PaginatedResult,
   ReservationDTO,
@@ -11,10 +11,10 @@ import type {
 } from "@move/shared";
 import { Op, type WhereOptions } from "sequelize";
 import { classifyGood } from "../../clients/categorizer";
-import { GoodModel, ReservationModel } from "../../db/models";
+import { CargoItemModel, ReservationModel } from "../../db/models";
 import { sequelize } from "../../db/sequelize";
 
-function modelToGoodDTO(row: GoodModel): GoodDTO {
+function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
   return {
     id: row.id,
     reservationId: row.reservationId,
@@ -25,7 +25,10 @@ function modelToGoodDTO(row: GoodModel): GoodDTO {
   };
 }
 
-function modelToReservationDTO(row: ReservationModel, goods: GoodModel[]): ReservationDTO {
+function modelToReservationDTO(
+  row: ReservationModel,
+  cargoItems: CargoItemModel[]
+): ReservationDTO {
   return {
     id: row.id,
     clientId: row.clientId,
@@ -37,7 +40,7 @@ function modelToReservationDTO(row: ReservationModel, goods: GoodModel[]): Reser
     vehicleId: row.vehicleId,
     driverId: row.driverId,
     paymentId: row.paymentId,
-    goods: goods.map(modelToGoodDTO),
+    cargoItems: cargoItems.map(modelToCargoItemDTO),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -55,9 +58,9 @@ const CANCELLABLE_STATUSES: readonly ReservationStatus[] = [
   "confirmed",
 ];
 
-async function loadReservationWithGoods(id: string): Promise<ReservationModel | null> {
+async function loadReservationWithCargoItems(id: string): Promise<ReservationModel | null> {
   return ReservationModel.findByPk(id, {
-    include: [{ model: GoodModel, as: "goods" }],
+    include: [{ model: CargoItemModel, as: "cargoItems" }],
   });
 }
 
@@ -70,11 +73,11 @@ export async function createReservation(
     throw new HttpError(400, "scheduledAt must be a future date", "invalid_scheduled_at");
   }
 
-  if (dto.goods.length === 0) {
-    throw new HttpError(400, "At least one good is required", "goods_required");
+  if (dto.cargoItems.length === 0) {
+    throw new HttpError(400, "At least one cargo item is required", "cargo_items_required");
   }
 
-  const categoryIds = await Promise.all(dto.goods.map((g) => classifyGood(g.description)));
+  const categoryIds = await Promise.all(dto.cargoItems.map((item) => classifyGood(item.description)));
   const allClassified = categoryIds.every((id) => id !== null);
   const status: ReservationStatus = allClassified ? "pending_quote" : "pending_classification";
   const reservationId = crypto.randomUUID();
@@ -92,30 +95,32 @@ export async function createReservation(
       { transaction }
     );
 
-    await GoodModel.bulkCreate(
-      dto.goods.map((good, index) => ({
+    await CargoItemModel.bulkCreate(
+      dto.cargoItems.map((cargoItem, index) => ({
         id: crypto.randomUUID(),
         reservationId,
-        description: good.description,
-        estimatedValue: good.estimatedValue ?? null,
-        size: good.size ?? null,
+        description: cargoItem.description,
+        estimatedValue: cargoItem.estimatedValue ?? null,
+        size: cargoItem.size ?? null,
         categoryId: categoryIds[index] ?? null,
       })),
       { transaction }
     );
   });
 
-  const reservation = await loadReservationWithGoods(reservationId);
+  const reservation = await loadReservationWithCargoItems(reservationId);
   if (!reservation) {
     throw new HttpError(500, "Reservation creation failed", "reservation_create_failed");
   }
 
-  const goods = (reservation.goods ?? []).slice().sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  return modelToReservationDTO(reservation, goods);
+  const cargoItems = (reservation.cargoItems ?? [])
+    .slice()
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return modelToReservationDTO(reservation, cargoItems);
 }
 
 export async function getReservation(id: string, clientUser: UserDTO): Promise<ReservationDTO> {
-  const reservation = await loadReservationWithGoods(id);
+  const reservation = await loadReservationWithCargoItems(id);
   if (!reservation) {
     throw new HttpError(404, "Reservation not found", "reservation_not_found");
   }
@@ -124,8 +129,10 @@ export async function getReservation(id: string, clientUser: UserDTO): Promise<R
     throw new HttpError(403, "Access denied", "forbidden");
   }
 
-  const goods = (reservation.goods ?? []).slice().sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  return modelToReservationDTO(reservation, goods);
+  const cargoItems = (reservation.cargoItems ?? [])
+    .slice()
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return modelToReservationDTO(reservation, cargoItems);
 }
 
 export async function listReservations(
@@ -155,7 +162,7 @@ export async function listReservations(
 
   const result = await ReservationModel.findAndCountAll({
     where,
-    include: [{ model: GoodModel, as: "goods" }],
+    include: [{ model: CargoItemModel, as: "cargoItems" }],
     distinct: true,
     order: [["createdAt", "DESC"]],
     limit: pageSize,
@@ -163,17 +170,17 @@ export async function listReservations(
   });
 
   const data = result.rows.map((reservation) => {
-    const goods = (reservation.goods ?? [])
+    const cargoItems = (reservation.cargoItems ?? [])
       .slice()
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-    return modelToReservationDTO(reservation, goods);
+    return modelToReservationDTO(reservation, cargoItems);
   });
 
   return { data, total: result.count, page, pageSize };
 }
 
 export async function cancelReservation(id: string, clientUser: UserDTO): Promise<ReservationDTO> {
-  const reservation = await loadReservationWithGoods(id);
+  const reservation = await loadReservationWithCargoItems(id);
   if (!reservation) {
     throw new HttpError(404, "Reservation not found", "reservation_not_found");
   }
@@ -193,6 +200,8 @@ export async function cancelReservation(id: string, clientUser: UserDTO): Promis
   reservation.status = "cancelled";
   await reservation.save();
 
-  const goods = (reservation.goods ?? []).slice().sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  return modelToReservationDTO(reservation, goods);
+  const cargoItems = (reservation.cargoItems ?? [])
+    .slice()
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return modelToReservationDTO(reservation, cargoItems);
 }

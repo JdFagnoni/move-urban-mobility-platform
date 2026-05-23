@@ -11,7 +11,7 @@ import {
   UpdatedAt,
 } from "sequelize-typescript";
 import { RESERVATION_STATUSES } from "../constants";
-import { GoodModel } from "./good";
+import { CargoItemModel } from "./cargo-item";
 import { UserModel } from "./user";
 
 @Table({
@@ -66,6 +66,6 @@ export class ReservationModel extends Model {
   @BelongsTo(() => UserModel, { foreignKey: "clientId", as: "client" })
   declare client?: UserModel;
 
-  @HasMany(() => GoodModel, { foreignKey: "reservationId", as: "goods" })
-  declare goods?: GoodModel[];
+  @HasMany(() => CargoItemModel, { foreignKey: "reservationId", as: "cargoItems" })
+  declare cargoItems?: CargoItemModel[];
 }

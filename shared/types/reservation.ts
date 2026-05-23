@@ -21,7 +21,7 @@ export const RESERVATION_STATUSES: readonly ReservationStatus[] = [
   "cancelled",
 ];
 
-export interface GoodDTO {
+export interface CargoItemDTO {
   id: string;
   reservationId: string;
   description: string;
@@ -30,7 +30,7 @@ export interface GoodDTO {
   categoryId?: string | null;
 }
 
-export interface CreateGoodDTO {
+export interface CreateCargoItemDTO {
   description: string;
   estimatedValue?: number;
   size?: string;
@@ -44,7 +44,7 @@ export interface ReservationDTO {
   destination: GeoPoint;
   scheduledAt: string;
   status: ReservationStatus;
-  goods: GoodDTO[];
+  cargoItems: CargoItemDTO[];
   quotedPrice?: number | null;
   vehicleId?: string | null;
   driverId?: string | null;
@@ -57,7 +57,7 @@ export interface CreateReservationDTO {
   scheduledAt: string;
   origin: GeoPoint;
   destination: GeoPoint;
-  goods: CreateGoodDTO[];
+  cargoItems: CreateCargoItemDTO[];
 }
 
 export interface ListReservationsQueryDTO {
