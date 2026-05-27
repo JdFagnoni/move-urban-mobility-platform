@@ -19,6 +19,7 @@ const forwardIdentityHeaders = (proxyReqOpts: ClientRequestArgs, srcReq: Request
     Object.assign(headers, proxyReqOpts.headers);
   }
   headers["x-auth-subject"] = claims.sub;
+  headers["x-internal-gateway-secret"] = getRequiredInternalGatewaySecret();
   proxyReqOpts.headers = headers;
   return proxyReqOpts;
 };
@@ -44,3 +45,11 @@ reservationsRouter.use("/zones", reservationsProxy());
 mountProtectedRoute("/auth/me");
 mountProtectedRoute("/auth/audit-logs");
 mountProtectedRoute("/users");
+
+function getRequiredInternalGatewaySecret(): string {
+  const value = process.env["INTERNAL_GATEWAY_SECRET"];
+  if (!value) {
+    throw new Error("INTERNAL_GATEWAY_SECRET is not configured");
+  }
+  return value;
+}

@@ -2,3 +2,6 @@ node_modules/
 dist/
 *.lock
 postman/
+.agents/
+.claude/
+CLAUDE.md

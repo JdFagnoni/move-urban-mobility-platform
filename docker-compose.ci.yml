@@ -31,6 +31,7 @@ services:
       TRANSPORTATIONS_URL: http://transportations:3002
       AUTH0_DOMAIN: ""
       AUTH0_AUDIENCE: https://move-platform-api
+      INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
     depends_on:
       - reservations
       - transportations
@@ -50,6 +51,7 @@ services:
       AUTH0_DB_CONNECTION: Username-Password-Authentication
       AUTH0_MGMT_CLIENT_ID: ""
       AUTH0_MGMT_CLIENT_SECRET: ""
+      INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
       BOOTSTRAP_ADMIN_AUTH_SUBJECT: ""
       BOOTSTRAP_ADMIN_EMAIL: ""
       BOOTSTRAP_ADMIN_NAME: MOVE Admin
