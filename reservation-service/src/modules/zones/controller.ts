@@ -1,10 +1,11 @@
 import type { Request, Response } from "express";
 import { handleServiceError } from "../../http/handler";
+import { parseCreateZoneDTO, parseUpdateZoneDTO } from "./parser";
 import { createZone, deleteZone, getZoneForHttp, listZones, updateZone } from "./service";
-import type { ZoneDTO } from "@move/shared";
 
-export async function listHandler(_req: Request, res: Response): Promise<void> {
-  const result = await handleServiceError(res, () => listZones());
+export async function listHandler(req: Request, res: Response): Promise<void> {
+  const type = typeof req.query["type"] === "string" ? req.query["type"] : undefined;
+  const result = await handleServiceError(res, () => listZones(type));
   if (!result.ok) {
     return;
   }
@@ -23,7 +24,9 @@ export async function getHandler(req: Request, res: Response): Promise<void> {
 }
 
 export async function createHandler(req: Request, res: Response): Promise<void> {
-  const result = await handleServiceError(res, () => createZone(req.body as Omit<ZoneDTO, "id">));
+  const result = await handleServiceError(res, () =>
+    createZone(parseCreateZoneDTO(req.body))
+  );
   if (!result.ok) {
     return;
   }
@@ -34,7 +37,7 @@ export async function createHandler(req: Request, res: Response): Promise<void> 
 export async function updateHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
   const result = await handleServiceError(res, () =>
-    updateZone(id, req.body as Partial<Omit<ZoneDTO, "id">>)
+    updateZone(id, parseUpdateZoneDTO(req.body))
   );
   if (!result.ok) {
     return;
