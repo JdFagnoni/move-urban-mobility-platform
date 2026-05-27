@@ -14,7 +14,14 @@ const connectionString =
 
 export const sequelize = new Sequelize(connectionString, {
   dialect: "postgres",
-  models: [UserModel, AuthAuditLogModel, CategoryModel, ReservationModel, CargoItemModel, VehicleModel],
+  models: [
+    UserModel,
+    AuthAuditLogModel,
+    CategoryModel,
+    ReservationModel,
+    CargoItemModel,
+    VehicleModel,
+  ],
   logging: false,
 });
 
