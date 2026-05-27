@@ -229,7 +229,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n    \"username\": \"admin@move.local\",\n    \"password\": \"Admin123\",\n    \"audience\": \"https://move-platform-api\",\n    \"scope\": \"openid profile email\",\n    \"client_id\": \"GDBLzzXNN1C0CdiiPIGQ4WKyO0Ajpynh\",\n    \"client_secret\": \"eUWuMRwP21QTjYRSP6fMKSNGRwYYrbvVgaUTVNrsxqr6qNLOMvQYlzZhMbchpVUx\",\n    \"realm\": \"Username-Password-Authentication\"\n}",
+							"raw": "{\n    \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n    \"username\": \"{{auth0_username}}\",\n    \"password\": \"{{auth0_password}}\",\n    \"audience\": \"{{auth0_audience}}\",\n    \"scope\": \"openid profile email\",\n    \"client_id\": \"{{auth0_client_id}}\",\n    \"client_secret\": \"{{auth0_client_secret}}\",\n    \"realm\": \"{{auth0_realm}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -237,13 +237,10 @@
 							}
 						},
 						"url": {
-							"raw": "https://dev-v18wbrah03r8lc5v.us.auth0.com/oauth/token",
+							"raw": "https://{{auth0_domain}}/oauth/token",
 							"protocol": "https",
 							"host": [
-								"dev-v18wbrah03r8lc5v",
-								"us",
-								"auth0",
-								"com"
+								"{{auth0_domain}}"
 							],
 							"path": [
 								"oauth",
@@ -320,6 +317,34 @@
 		{
 			"key": "gateway_url",
 			"value": "http://localhost:3000"
+		},
+		{
+			"key": "auth0_domain",
+			"value": ""
+		},
+		{
+			"key": "auth0_audience",
+			"value": "https://move-platform-api"
+		},
+		{
+			"key": "auth0_client_id",
+			"value": ""
+		},
+		{
+			"key": "auth0_client_secret",
+			"value": ""
+		},
+		{
+			"key": "auth0_username",
+			"value": ""
+		},
+		{
+			"key": "auth0_password",
+			"value": ""
+		},
+		{
+			"key": "auth0_realm",
+			"value": "Username-Password-Authentication"
 		},
 		{
 			"key": "auth_token",
