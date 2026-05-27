@@ -9,9 +9,9 @@ import type {
   UserDTO,
 } from "@move/shared";
 import { HttpError } from "@move/shared";
-import { parseRegisterClientDTO } from "./parser";
-import { createAuth0User } from "./auth0-provider";
 import { listAuditLogs, recordAuditLog } from "./audit";
+import { parseRegisterClientDTO } from "./parser";
+import type { AuthIdentityProvisioningPort } from "./ports/AuthIdentityProvisioningPort";
 import { createUserRecord, getUserByEmail } from "../users/service";
 
 export interface ListAuditLogsInput {
@@ -24,88 +24,98 @@ export interface ListAuditLogsInput {
   pageSize?: unknown;
 }
 
-export async function registerClientForHttp(
-  input: unknown,
-  context: RequestContext
-): Promise<UserDTO> {
-  try {
-    const dto = parseRegisterClientDTO(input);
-    return await registerClient(dto, context);
-  } catch (error) {
-    if (isRegistrationParserError(error)) {
-      const auditFields = getRegistrationAuditFields(input);
+export interface AuthService {
+  registerClientForHttp(input: unknown, context: RequestContext): Promise<UserDTO>;
+  getAuthenticatedProfile(user: UserDTO | undefined): Promise<{ user: UserDTO }>;
+  listAuthAuditLogsForHttp(input: ListAuditLogsInput): Promise<PaginatedResult<AuthAuditLogDTO>>;
+}
+
+export interface AuthServiceDependencies {
+  identityProvider: AuthIdentityProvisioningPort;
+}
+
+export function createAuthService(dependencies: AuthServiceDependencies): AuthService {
+  return {
+    registerClientForHttp,
+    getAuthenticatedProfile,
+    listAuthAuditLogsForHttp,
+  };
+
+  async function registerClientForHttp(input: unknown, context: RequestContext): Promise<UserDTO> {
+    try {
+      const dto = parseRegisterClientDTO(input);
+      return await registerClient(dto, context);
+    } catch (error) {
+      if (isRegistrationParserError(error)) {
+        const auditFields = getRegistrationAuditFields(input);
+        await recordAuditLog({
+          ...context,
+          eventType: "registration_failure",
+          decision: "failed",
+          statusCode: error.statusCode,
+          email: auditFields.email,
+          clientType: auditFields.clientType,
+          reason: error.message,
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  async function registerClient(dto: RegisterClientDTO, context: RequestContext): Promise<UserDTO> {
+    const email = dto.email;
+    const clientType = dto.clientType ?? "individual";
+
+    try {
+      const existing = await getUserByEmail(email);
+      if (existing) {
+        throw new HttpError(409, "User already exists", "user_exists");
+      }
+
+      const identity = await dependencies.identityProvider.createClientIdentity(dto);
+      const user = await createUserRecord({
+        authSubject: identity.authSubject,
+        email,
+        name: dto.name,
+        role: "client",
+        clientType,
+        phone: dto.phone,
+        documentType: dto.documentType,
+        documentNumber: dto.documentNumber,
+        companyName: dto.companyName,
+        taxId: dto.taxId,
+      });
+
+      await recordAuditLog({
+        ...context,
+        eventType: "registration_success",
+        decision: "success",
+        statusCode: 201,
+        userId: user.id,
+        authSubject: user.authSubject,
+        email: user.email,
+        role: user.role,
+        clientType: user.clientType,
+      });
+
+      return user;
+    } catch (error) {
       await recordAuditLog({
         ...context,
         eventType: "registration_failure",
         decision: "failed",
-        statusCode: error.statusCode,
-        email: auditFields.email,
-        clientType: auditFields.clientType,
-        reason: error.message,
+        statusCode: error instanceof HttpError ? error.statusCode : 500,
+        email,
+        clientType,
+        reason: error instanceof Error ? error.message : "Registration failed",
       });
+      throw error;
     }
-
-    throw error;
   }
 }
 
-export async function registerClient(
-  dto: RegisterClientDTO,
-  context: RequestContext
-): Promise<UserDTO> {
-  const email = dto.email;
-  const clientType = dto.clientType ?? "individual";
-
-  try {
-    const existing = await getUserByEmail(email);
-    if (existing) {
-      throw new HttpError(409, "User already exists", "user_exists");
-    }
-
-    const authSubject = await createAuth0User(dto);
-    const user = await createUserRecord({
-      authSubject,
-      email,
-      name: dto.name,
-      role: "client",
-      clientType,
-      phone: dto.phone,
-      documentType: dto.documentType,
-      documentNumber: dto.documentNumber,
-      companyName: dto.companyName,
-      taxId: dto.taxId,
-    });
-
-    await recordAuditLog({
-      ...context,
-      eventType: "registration_success",
-      decision: "success",
-      statusCode: 201,
-      userId: user.id,
-      authSubject: user.authSubject,
-      email: user.email,
-      role: user.role,
-      clientType: user.clientType,
-    });
-
-    return user;
-  } catch (error) {
-    await recordAuditLog({
-      ...context,
-      eventType: "registration_failure",
-      decision: "failed",
-      statusCode: error instanceof HttpError ? error.statusCode : 500,
-      email,
-      clientType,
-      reason: error instanceof Error ? error.message : "Registration failed",
-    });
-    throw error;
-  }
-}
-
-export async function getAuthenticatedProfile(
-  user: UserDTO | undefined
-): Promise<{ user: UserDTO }> {
+async function getAuthenticatedProfile(user: UserDTO | undefined): Promise<{ user: UserDTO }> {
   if (!user) {
     throw new HttpError(401, "Authentication required", "authentication_required");
   }
@@ -113,7 +123,7 @@ export async function getAuthenticatedProfile(
   return { user };
 }
 
-export async function listAuthAuditLogsForHttp(
+async function listAuthAuditLogsForHttp(
   input: ListAuditLogsInput
 ): Promise<PaginatedResult<AuthAuditLogDTO>> {
   const filters: ListAuthAuditLogsQueryDTO = {};
@@ -159,15 +169,14 @@ function isRegistrationParserError(error: unknown): error is HttpError {
   );
 }
 
-function getRegistrationAuditFields(
-  input: unknown
-): { email?: string; clientType?: ClientType } {
+function getRegistrationAuditFields(input: unknown): { email?: string; clientType?: ClientType } {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return {};
   }
 
   const payload = input as Record<string, unknown>;
-  const email = typeof payload["email"] === "string" ? payload["email"].trim().toLowerCase() : undefined;
+  const rawEmail = payload["email"];
+  const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : undefined;
   const clientType = payload["clientType"];
   const auditFields: { email?: string; clientType?: ClientType } = {};
 

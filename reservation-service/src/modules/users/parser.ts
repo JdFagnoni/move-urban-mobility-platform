@@ -21,10 +21,7 @@ function parseOptionalString(value: unknown, field: string): string | undefined 
   return value;
 }
 
-function parseNullableOptionalString(
-  value: unknown,
-  field: string
-): string | null | undefined {
+function parseNullableOptionalString(value: unknown, field: string): string | null | undefined {
   if (value === undefined || value === null) {
     return value;
   }

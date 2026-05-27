@@ -4,6 +4,7 @@ import proxy from "express-http-proxy";
 import { authenticate } from "../middleware/auth";
 
 const RESERVATIONS_URL = process.env["RESERVATIONS_URL"] ?? "http://localhost:3001";
+const INTERNAL_GATEWAY_SECRET = getRequiredInternalGatewaySecret();
 
 export const reservationsRouter = Router();
 const RESERVATIONS_PREFIX = "/reservations";
@@ -19,6 +20,7 @@ const forwardIdentityHeaders = (proxyReqOpts: ClientRequestArgs, srcReq: Request
     Object.assign(headers, proxyReqOpts.headers);
   }
   headers["x-auth-subject"] = claims.sub;
+  headers["x-internal-gateway-secret"] = INTERNAL_GATEWAY_SECRET;
   proxyReqOpts.headers = headers;
   return proxyReqOpts;
 };
@@ -44,3 +46,11 @@ reservationsRouter.use("/zones", reservationsProxy());
 mountProtectedRoute("/auth/me");
 mountProtectedRoute("/auth/audit-logs");
 mountProtectedRoute("/users");
+
+function getRequiredInternalGatewaySecret(): string {
+  const value = process.env["INTERNAL_GATEWAY_SECRET"];
+  if (!value) {
+    throw new Error("INTERNAL_GATEWAY_SECRET is not configured");
+  }
+  return value;
+}

@@ -27,6 +27,7 @@ services:
       TRANSPORTATIONS_URL: ${TRANSPORTATIONS_URL:-http://transportations:3002}
       AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://move-platform-api}
+      INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
     depends_on:
       - reservations
       - transportations
@@ -36,8 +37,6 @@ services:
       context: .
       dockerfile: reservation-service/Dockerfile
       target: dev
-    ports:
-      - "${RESERVATIONS_PORT:-3001}:3001"
     volumes:
       - ./reservation-service/src:/app/reservation-service/src
     environment:
@@ -48,6 +47,7 @@ services:
       AUTH0_DB_CONNECTION: ${AUTH0_DB_CONNECTION:-Username-Password-Authentication}
       AUTH0_MGMT_CLIENT_ID: ${AUTH0_MGMT_CLIENT_ID:-}
       AUTH0_MGMT_CLIENT_SECRET: ${AUTH0_MGMT_CLIENT_SECRET:-}
+      INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
       BOOTSTRAP_ADMIN_AUTH_SUBJECT: ${BOOTSTRAP_ADMIN_AUTH_SUBJECT:-}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
       BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-MOVE Admin}
