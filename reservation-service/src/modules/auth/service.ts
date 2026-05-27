@@ -1,6 +1,7 @@
 import type {
   AuthAuditEventType,
   AuthAuditLogDTO,
+  ClientType,
   ListAuthAuditLogsQueryDTO,
   PaginatedResult,
   RegisterClientDTO,
@@ -12,31 +13,19 @@ import { createAuth0User } from "./auth0-provider";
 import { listAuditLogs, recordAuditLog } from "./audit";
 import { createUserRecord, getUserByEmail } from "../users/service";
 
-function normalizeEmail(email: string): string {
-  const normalized = email.trim().toLowerCase();
-  if (!normalized || !normalized.includes("@")) {
-    throw new HttpError(400, "A valid email is required", "invalid_registration");
-  }
-  return normalized;
-}
+const clientTypes: readonly ClientType[] = ["individual", "company"];
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function normalizeName(name: string): string {
-  const normalized = name.trim();
-  if (!normalized) {
-    throw new HttpError(400, "Name is required", "invalid_registration");
-  }
-  return normalized;
-}
-
-function validatePassword(password: string): void {
-  if (password.length < 8) {
-    throw new HttpError(400, "Password must have at least 8 characters", "invalid_registration");
-  }
-}
-
-function parsePage(value: unknown): number | undefined {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+interface NormalizedRegisterClientInput extends RegisterClientDTO {
+  email: string;
+  password: string;
+  name: string;
+  clientType: ClientType;
+  phone: string | null;
+  documentType: string | null;
+  documentNumber: string | null;
+  companyName: string | null;
+  taxId: string | null;
 }
 
 export interface ListAuditLogsInput {
@@ -50,25 +39,27 @@ export interface ListAuditLogsInput {
 }
 
 export async function registerClient(
-  dto: RegisterClientDTO,
+  input: unknown,
   context: RequestContext
 ): Promise<UserDTO> {
-  const email = normalizeEmail(dto.email);
-  const name = normalizeName(dto.name);
-  validatePassword(dto.password);
-  const clientType = dto.clientType ?? "individual";
+  let email: string | undefined;
+  let clientType: ClientType | undefined;
 
   try {
+    const dto = normalizeRegisterClientInput(input);
+    email = dto.email;
+    clientType = dto.clientType;
+
     const existing = await getUserByEmail(email);
     if (existing) {
       throw new HttpError(409, "User already exists", "user_exists");
     }
 
-    const authSubject = await createAuth0User({ ...dto, email, name, clientType });
+    const authSubject = await createAuth0User(dto);
     const user = await createUserRecord({
       authSubject,
       email,
-      name,
+      name: dto.name,
       role: "client",
       clientType,
       phone: dto.phone,
@@ -148,3 +139,100 @@ export async function listAuthAuditLogsForHttp(
 
   return listAuditLogs(filters);
 }
+
+function getPayload(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new HttpError(400, "A valid registration payload is required", "invalid_registration");
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function normalizeRequiredString(value: unknown, field: string): string {
+  if (typeof value !== "string") {
+    throw new HttpError(400, `${field} is required`, "invalid_registration");
+  }
+
+  const normalized = value.trim();
+  if (!normalized) {
+    throw new HttpError(400, `${field} is required`, "invalid_registration");
+  }
+
+  return normalized;
+}
+
+function normalizeEmail(email: unknown): string {
+  const normalized = normalizeRequiredString(email, "Email").toLowerCase();
+  if (!emailPattern.test(normalized)) {
+    throw new HttpError(400, "A valid email is required", "invalid_registration");
+  }
+  return normalized;
+}
+
+function normalizeName(name: unknown): string {
+  return normalizeRequiredString(name, "Name");
+}
+
+function normalizeOptionalText(value: unknown, field: string): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    throw new HttpError(400, `${field} must be a string`, "invalid_registration");
+  }
+
+  const normalized = value.trim();
+  return normalized || null;
+}
+
+function normalizeClientType(clientType: unknown): ClientType {
+  if (clientType === undefined) {
+    return "individual";
+  }
+
+  if (typeof clientType !== "string" || !clientTypes.includes(clientType as ClientType)) {
+    throw new HttpError(400, "Invalid client type", "invalid_client_type");
+  }
+
+  return clientType as ClientType;
+}
+
+function normalizePassword(password: unknown): string {
+  if (typeof password !== "string") {
+    throw new HttpError(400, "Password is required", "invalid_registration");
+  }
+
+  if (!password.trim()) {
+    throw new HttpError(400, "Password is required", "invalid_registration");
+  }
+
+  if (password.length < 8) {
+    throw new HttpError(400, "Password must have at least 8 characters", "invalid_registration");
+  }
+
+  return password;
+}
+
+function normalizeRegisterClientInput(input: unknown): NormalizedRegisterClientInput {
+  const payload = getPayload(input);
+
+  return {
+    email: normalizeEmail(payload["email"]),
+    password: normalizePassword(payload["password"]),
+    name: normalizeName(payload["name"]),
+    clientType: normalizeClientType(payload["clientType"]),
+    phone: normalizeOptionalText(payload["phone"], "phone"),
+    documentType: normalizeOptionalText(payload["documentType"], "documentType"),
+    documentNumber: normalizeOptionalText(payload["documentNumber"], "documentNumber"),
+    companyName: normalizeOptionalText(payload["companyName"], "companyName"),
+    taxId: normalizeOptionalText(payload["taxId"], "taxId"),
+  };
+}
+
+function parsePage(value: unknown): number | undefined {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+

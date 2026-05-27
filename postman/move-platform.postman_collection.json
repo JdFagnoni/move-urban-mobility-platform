@@ -83,7 +83,7 @@
 			"name": "Auth",
 			"item": [
 				{
-					"name": "Register Client",
+					"name": "Register Client - Individual",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -94,7 +94,119 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"email\": \"test@move.com\",\n    \"password\": \"Secret123!\",\n    \"name\": \"Test Client\",\n    \"clientType\": \"individual\"\n}"
+							"raw": "{\n    \"email\": \"test-individual@move.com\",\n    \"password\": \"Secret123!\",\n    \"name\": \"Test Client Individual\",\n    \"clientType\": \"individual\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations/auth/register",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Client - Company",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test-company@move.com\",\n    \"password\": \"Secret123!\",\n    \"name\": \"Test Client Company\",\n    \"clientType\": \"company\",\n    \"companyName\": \"MOVE Logistics SA\",\n    \"taxId\": \"RUT-123456789\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations/auth/register",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Client - Default Client Type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test-default@move.com\",\n    \"password\": \"Secret123!\",\n    \"name\": \"Test Client Default\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations/auth/register",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Client - Invalid Client Type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test-invalid-type@move.com\",\n    \"password\": \"Secret123!\",\n    \"name\": \"Test Client Invalid Type\",\n    \"clientType\": \"vip\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations/auth/register",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Client - Duplicate User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test-individual@move.com\",\n    \"password\": \"Secret123!\",\n    \"name\": \"Test Client Individual\",\n    \"clientType\": \"individual\"\n}"
 						},
 						"url": {
 							"raw": "{{gateway_url}}/reservations/auth/register",
