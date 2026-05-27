@@ -27,16 +27,11 @@ const MANAGEMENT_TOKEN_EXPIRY_BUFFER_MS = 30_000;
 let cachedManagementToken: { token: string; expiresAt: number } | null = null;
 
 export class Auth0IdentityProvisioningAdapter implements AuthIdentityProvisioningPort {
-  private readonly config: Auth0Config;
-
-  public constructor() {
-    this.config = loadAuth0Config();
-  }
-
   public async createClientIdentity(dto: RegisterClientDTO): Promise<ProvisionedClientIdentity> {
-    const token = await this.getManagementToken();
+    const config = loadAuth0Config();
+    const token = await this.getManagementToken(config);
     const response = await fetchWithTimeout(
-      `https://${this.config.domain}/api/v2/users`,
+      `https://${config.domain}/api/v2/users`,
       {
         method: "POST",
         headers: {
@@ -44,7 +39,7 @@ export class Auth0IdentityProvisioningAdapter implements AuthIdentityProvisionin
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          connection: this.config.databaseConnection,
+          connection: config.databaseConnection,
           email: dto.email.trim().toLowerCase(),
           password: dto.password,
           name: dto.name.trim(),
@@ -72,7 +67,7 @@ export class Auth0IdentityProvisioningAdapter implements AuthIdentityProvisionin
     return { authSubject: body.user_id };
   }
 
-  private async getManagementToken(): Promise<string> {
+  private async getManagementToken(config: Auth0Config): Promise<string> {
     const now = Date.now();
     if (
       cachedManagementToken &&
@@ -82,15 +77,15 @@ export class Auth0IdentityProvisioningAdapter implements AuthIdentityProvisionin
     }
 
     const response = await fetchWithTimeout(
-      `https://${this.config.domain}/oauth/token`,
+      `https://${config.domain}/oauth/token`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           grant_type: "client_credentials",
-          client_id: this.config.managementClientId,
-          client_secret: this.config.managementClientSecret,
-          audience: `https://${this.config.domain}/api/v2/`,
+          client_id: config.managementClientId,
+          client_secret: config.managementClientSecret,
+          audience: `https://${config.domain}/api/v2/`,
         }),
       },
       "obtain an Auth0 Management API token"

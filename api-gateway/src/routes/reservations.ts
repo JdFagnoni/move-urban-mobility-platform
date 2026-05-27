@@ -4,7 +4,6 @@ import proxy from "express-http-proxy";
 import { authenticate } from "../middleware/auth";
 
 const RESERVATIONS_URL = process.env["RESERVATIONS_URL"] ?? "http://localhost:3001";
-const INTERNAL_GATEWAY_SECRET = getRequiredInternalGatewaySecret();
 
 export const reservationsRouter = Router();
 const RESERVATIONS_PREFIX = "/reservations";
@@ -20,7 +19,7 @@ const forwardIdentityHeaders = (proxyReqOpts: ClientRequestArgs, srcReq: Request
     Object.assign(headers, proxyReqOpts.headers);
   }
   headers["x-auth-subject"] = claims.sub;
-  headers["x-internal-gateway-secret"] = INTERNAL_GATEWAY_SECRET;
+  headers["x-internal-gateway-secret"] = getRequiredInternalGatewaySecret();
   proxyReqOpts.headers = headers;
   return proxyReqOpts;
 };

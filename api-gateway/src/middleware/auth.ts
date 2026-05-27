@@ -25,10 +25,6 @@ class GatewayAuthError extends Error {
   }
 }
 
-const AUTH0_DOMAIN = getRequiredEnv("AUTH0_DOMAIN")
-  .replace(/^https?:\/\//, "")
-  .replace(/\/$/, "");
-const AUTH0_AUDIENCE = getRequiredEnv("AUTH0_AUDIENCE");
 const JWKS_CACHE_MS = 10 * 60 * 1000;
 const JWKS_TIMEOUT_MS = 5_000;
 const signingKeyCache = new Map<string, { key: KeyObject; expiresAt: number }>();
@@ -41,8 +37,18 @@ function getRequiredEnv(name: string): string {
   return value;
 }
 
+function getAuth0Domain(): string {
+  return getRequiredEnv("AUTH0_DOMAIN")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "");
+}
+
+function getAuth0Audience(): string {
+  return getRequiredEnv("AUTH0_AUDIENCE");
+}
+
 function getIssuer(): string {
-  return `https://${AUTH0_DOMAIN}/`;
+  return `https://${getAuth0Domain()}/`;
 }
 
 function getBearerToken(req: Request): string | null {
@@ -60,7 +66,7 @@ async function fetchSigningKey(kid: string): Promise<KeyObject> {
   }
 
   const response = await fetchWithTimeout(
-    `https://${AUTH0_DOMAIN}/.well-known/jwks.json`,
+    `https://${getAuth0Domain()}/.well-known/jwks.json`,
     "fetch Auth0 JWKS"
   );
   if (!response.ok) {
@@ -90,7 +96,7 @@ async function verifyAccessToken(token: string): Promise<OidcClaims> {
   try {
     payload = jwt.verify(token, key, {
       algorithms: ["RS256"],
-      audience: AUTH0_AUDIENCE,
+      audience: getAuth0Audience(),
       issuer: getIssuer(),
     });
   } catch {
