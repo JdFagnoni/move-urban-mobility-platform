@@ -41,6 +41,8 @@ services:
       context: .
       dockerfile: reservation-service/Dockerfile
       target: prod
+    ports:
+      - "3001:3001"
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
