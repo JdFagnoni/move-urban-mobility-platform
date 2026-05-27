@@ -33,126 +33,12 @@ export interface CreateUserRecordInput {
   taxId?: string | null | undefined;
 }
 
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
-function normalizeText(value: string, field: string): string {
-  const normalized = value.trim();
-  if (!normalized) {
-    throw new HttpError(400, `${field} is required`, "invalid_user");
-  }
-  return normalized;
-}
-
-function normalizeOptionalText(value: string | null | undefined): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-  const normalized = value.trim();
-  return normalized || null;
-}
-
-function parsePage(value: unknown): number | undefined {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
-}
-
-function assertRole(value: string): asserts value is UserRole {
-  if (!userRoles.includes(value as UserRole)) {
-    throw new HttpError(400, "Invalid user role", "invalid_user_role");
-  }
-}
-
-function assertStatus(value: string): asserts value is UserStatus {
-  if (!userStatuses.includes(value as UserStatus)) {
-    throw new HttpError(400, "Invalid user status", "invalid_user_status");
-  }
-}
-
-function assertClientType(value: string): asserts value is ClientType {
-  if (!clientTypes.includes(value as ClientType)) {
-    throw new HttpError(400, "Invalid client type", "invalid_client_type");
-  }
-}
-
-function validateRoleAndClientType(
-  role: UserRole,
-  clientType: ClientType | null
-): ClientType | null {
-  if (role === "client") {
-    if (!clientType) {
-      throw new HttpError(400, "Client type is required for client users", "invalid_client_type");
-    }
-    return clientType;
-  }
-
-  return null;
-}
-
-function requireCurrentUser(currentUser: UserDTO | undefined): UserDTO {
-  if (!currentUser) {
-    throw new HttpError(401, "Authentication required", "authentication_required");
-  }
-
-  return currentUser;
-}
-
-function isAdmin(user: UserDTO): boolean {
-  return user.role === "admin";
-}
-
-function buildSelfUpdateDTO(body: Partial<UpdateUserDTO>): UpdateUserDTO {
-  const dto: UpdateUserDTO = {};
-  if (body.name !== undefined) {
-    dto.name = body.name;
-  }
-  if (body.phone !== undefined) {
-    dto.phone = body.phone;
-  }
-  if (body.documentType !== undefined) {
-    dto.documentType = body.documentType;
-  }
-  if (body.documentNumber !== undefined) {
-    dto.documentNumber = body.documentNumber;
-  }
-  if (body.companyName !== undefined) {
-    dto.companyName = body.companyName;
-  }
-  if (body.taxId !== undefined) {
-    dto.taxId = body.taxId;
-  }
-  return dto;
-}
-
-async function auditAccessDenied(
-  context: RequestContext,
-  currentUser: UserDTO | undefined,
-  reason: string
-): Promise<never> {
-  await recordAuditLog({
-    ...context,
-    eventType: "access_denied",
-    decision: "denied",
-    statusCode: 403,
-    userId: currentUser?.id,
-    authSubject: currentUser?.authSubject,
-    email: currentUser?.email,
-    role: currentUser?.role,
-    clientType: currentUser?.clientType,
-    reason,
-  });
-
-  throw new HttpError(403, "Forbidden", "forbidden");
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return error instanceof UniqueConstraintError;
-}
-
 export async function createUserRecord(input: CreateUserRecordInput): Promise<UserDTO> {
   const email = normalizeEmail(input.email);
   const name = normalizeText(input.name, "name");
+  if (input.clientType) {
+    assertClientType(input.clientType);
+  }
   const clientType = validateRoleAndClientType(input.role, input.clientType);
 
   try {
@@ -343,15 +229,6 @@ export async function deleteUser(id: string): Promise<boolean> {
   return Boolean(result);
 }
 
-async function requireUser(id: string): Promise<UserDTO> {
-  const user = await getUser(id);
-  if (!user) {
-    throw new HttpError(404, "User not found", "user_not_found");
-  }
-
-  return user;
-}
-
 export interface GetUserProfileInput {
   id: string;
   currentUser: UserDTO | undefined;
@@ -448,4 +325,130 @@ export async function deleteUserForHttp(id: string, context: RequestContext): Pr
     userId: id,
     metadata: { status: "disabled" },
   });
+}
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function normalizeText(value: string, field: string): string {
+  const normalized = value.trim();
+  if (!normalized) {
+    throw new HttpError(400, `${field} is required`, "invalid_user");
+  }
+  return normalized;
+}
+
+function normalizeOptionalText(value: string | null | undefined): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const normalized = value.trim();
+  return normalized || null;
+}
+
+function parsePage(value: unknown): number | undefined {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function assertRole(value: string): asserts value is UserRole {
+  if (!userRoles.includes(value as UserRole)) {
+    throw new HttpError(400, "Invalid user role", "invalid_user_role");
+  }
+}
+
+function assertStatus(value: string): asserts value is UserStatus {
+  if (!userStatuses.includes(value as UserStatus)) {
+    throw new HttpError(400, "Invalid user status", "invalid_user_status");
+  }
+}
+
+function assertClientType(value: string): asserts value is ClientType {
+  if (!clientTypes.includes(value as ClientType)) {
+    throw new HttpError(400, "Invalid client type", "invalid_client_type");
+  }
+}
+
+function validateRoleAndClientType(
+  role: UserRole,
+  clientType: ClientType | null
+): ClientType | null {
+  if (role === "client") {
+    if (!clientType) {
+      throw new HttpError(400, "Client type is required for client users", "invalid_client_type");
+    }
+    return clientType;
+  }
+
+  return null;
+}
+
+function requireCurrentUser(currentUser: UserDTO | undefined): UserDTO {
+  if (!currentUser) {
+    throw new HttpError(401, "Authentication required", "authentication_required");
+  }
+
+  return currentUser;
+}
+
+async function requireUser(id: string): Promise<UserDTO> {
+  const user = await getUser(id);
+  if (!user) {
+    throw new HttpError(404, "User not found", "user_not_found");
+  }
+
+  return user;
+}
+
+function isAdmin(user: UserDTO): boolean {
+  return user.role === "admin";
+}
+
+function buildSelfUpdateDTO(body: Partial<UpdateUserDTO>): UpdateUserDTO {
+  const dto: UpdateUserDTO = {};
+  if (body.name !== undefined) {
+    dto.name = body.name;
+  }
+  if (body.phone !== undefined) {
+    dto.phone = body.phone;
+  }
+  if (body.documentType !== undefined) {
+    dto.documentType = body.documentType;
+  }
+  if (body.documentNumber !== undefined) {
+    dto.documentNumber = body.documentNumber;
+  }
+  if (body.companyName !== undefined) {
+    dto.companyName = body.companyName;
+  }
+  if (body.taxId !== undefined) {
+    dto.taxId = body.taxId;
+  }
+  return dto;
+}
+
+async function auditAccessDenied(
+  context: RequestContext,
+  currentUser: UserDTO | undefined,
+  reason: string
+): Promise<never> {
+  await recordAuditLog({
+    ...context,
+    eventType: "access_denied",
+    decision: "denied",
+    statusCode: 403,
+    userId: currentUser?.id,
+    authSubject: currentUser?.authSubject,
+    email: currentUser?.email,
+    role: currentUser?.role,
+    clientType: currentUser?.clientType,
+    reason,
+  });
+
+  throw new HttpError(403, "Forbidden", "forbidden");
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return error instanceof UniqueConstraintError;
 }

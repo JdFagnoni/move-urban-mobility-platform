@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
-import type { UpdateUserDTO } from "@move/shared";
 import { getRequestContext } from "@move/shared";
 import { handleServiceError } from "../../http/handler";
+import { parseUpdateUserDTO } from "./parser";
 import {
   deleteUserForHttp,
   getUserProfile,
@@ -49,7 +49,7 @@ export async function updateHandler(req: Request, res: Response): Promise<void> 
   const result = await handleServiceError(res, () =>
     updateUserProfile({
       id,
-      dto: req.body as Partial<UpdateUserDTO>,
+      dto: parseUpdateUserDTO(req.body),
       currentUser: req.authenticatedUser?.profile,
       context: getRequestContext(req),
     })

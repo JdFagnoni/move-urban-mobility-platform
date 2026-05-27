@@ -23,9 +23,45 @@ function getAuthSubjectHeader(req: Request): string | null {
   return authSubject || null;
 }
 
+function getGatewaySecretHeader(req: Request): string | null {
+  const header = req.headers["x-internal-gateway-secret"];
+  if (typeof header !== "string") {
+    return null;
+  }
+
+  const secret = header.trim();
+  return secret || null;
+}
+
 export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   const context = getRequestContext(req);
+  const internalGatewaySecret = getInternalGatewaySecret();
+  const gatewaySecret = getGatewaySecretHeader(req);
   const authSubject = getAuthSubjectHeader(req);
+
+  if (!internalGatewaySecret) {
+    await recordAuditLog({
+      ...context,
+      eventType: "access_denied",
+      decision: "denied",
+      statusCode: 503,
+      reason: "Internal gateway secret is not configured",
+    });
+    res.status(503).json({ success: false, error: "Authentication service unavailable" });
+    return;
+  }
+
+  if (gatewaySecret !== internalGatewaySecret) {
+    await recordAuditLog({
+      ...context,
+      eventType: "access_denied",
+      decision: "denied",
+      statusCode: 401,
+      reason: "Invalid gateway authentication context",
+    });
+    res.status(401).json({ success: false, error: "Authentication required" });
+    return;
+  }
 
   if (!authSubject) {
     await recordAuditLog({
@@ -116,4 +152,9 @@ export function requireRole(...roles: UserRole[]) {
 
     next();
   };
+}
+
+function getInternalGatewaySecret(): string | null {
+  const value = process.env["INTERNAL_GATEWAY_SECRET"]?.trim();
+  return value || null;
 }
