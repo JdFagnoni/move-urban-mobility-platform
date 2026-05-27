@@ -1,12 +1,11 @@
 import type { Request, Response } from "express";
-import type { RegisterClientDTO } from "@move/shared";
 import { getRequestContext } from "@move/shared";
 import { handleServiceError } from "../../http/handler";
-import { getAuthenticatedProfile, listAuthAuditLogsForHttp, registerClient } from "./service";
+import { getAuthenticatedProfile, listAuthAuditLogsForHttp, registerClientForHttp } from "./service";
 
 export async function registerHandler(req: Request, res: Response): Promise<void> {
   const result = await handleServiceError(res, () =>
-    registerClient(req.body as RegisterClientDTO, getRequestContext(req))
+    registerClientForHttp(req.body, getRequestContext(req))
   );
   if (!result.ok) {
     return;
