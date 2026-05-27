@@ -7,6 +7,7 @@
   "variable": [
     { "key": "gateway_url", "value": "http://localhost:3000" },
     { "key": "adminToken", "value": "" },
+    { "key": "userToken", "value": "" },
     { "key": "zoneId", "value": "" }
   ],
   "item": [
@@ -16,6 +17,7 @@
         {
           "name": "Gateway Health Check",
           "request": {
+            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
@@ -128,6 +130,7 @@
             }
           ],
           "request": {
+            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
@@ -154,6 +157,7 @@
             }
           ],
           "request": {
+            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
@@ -181,6 +185,7 @@
             }
           ],
           "request": {
+            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
@@ -267,7 +272,299 @@
             }
           ],
           "request": {
+            "auth": { "type": "noauth" },
             "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/zones/{{zoneId}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "zones", "{{zoneId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth & RBAC",
+      "description": "Verifica que POST/PATCH/DELETE requieran autenticacion y rol admin. Ejecutar 'Zones CRUD' primero para tener zoneId disponible.",
+      "item": [
+        {
+          "name": "POST - Sin token - Expect 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sin Auth\",\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1645, -34.9050],\n        [-56.1600, -34.9050],\n        [-56.1600, -34.9015],\n        [-56.1645, -34.9015],\n        [-56.1645, -34.9050]\n      ]\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/zones",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "zones"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Usuario no admin - Expect 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 403', () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sin Rol\",\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1645, -34.9050],\n        [-56.1600, -34.9050],\n        [-56.1600, -34.9015],\n        [-56.1645, -34.9015],\n        [-56.1645, -34.9050]\n      ]\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/zones",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "zones"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Admin - Expect 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('type is red', () => pm.expect(body.data.type).to.eql('red'));",
+                  "pm.collectionVariables.set('zoneId', body.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Zona Auth Test\",\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1645, -34.9050],\n        [-56.1600, -34.9050],\n        [-56.1600, -34.9015],\n        [-56.1645, -34.9015],\n        [-56.1645, -34.9050]\n      ]\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/zones",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "zones"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - Sin token - Expect 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Sin Auth\" }"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/zones/00000000-0000-0000-0000-000000000001",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "zones", "00000000-0000-0000-0000-000000000001"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - Usuario no admin - Expect 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 403', () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Sin Rol\" }"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/zones/00000000-0000-0000-0000-000000000001",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "zones", "00000000-0000-0000-0000-000000000001"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - Admin - Expect 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Zona Auth Test Editada\" }"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/zones/{{zoneId}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "zones", "{{zoneId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Sin token - Expect 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/zones/00000000-0000-0000-0000-000000000001",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "zones", "00000000-0000-0000-0000-000000000001"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Usuario no admin - Expect 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 403', () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/zones/00000000-0000-0000-0000-000000000001",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "zones", "00000000-0000-0000-0000-000000000001"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Admin - Expect 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 204', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "DELETE",
             "header": [],
             "url": {
               "raw": "{{gateway_url}}/reservations/zones/{{zoneId}}",
@@ -426,40 +723,13 @@
             }
           ],
           "request": {
+            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{gateway_url}}/reservations/zones/00000000-0000-0000-0000-000000000000",
               "host": ["{{gateway_url}}"],
               "path": ["reservations", "zones", "00000000-0000-0000-0000-000000000000"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Unauthenticated POST - Expect 401",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Sin Auth\",\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1645, -34.9050],\n        [-56.1600, -34.9050],\n        [-56.1600, -34.9015],\n        [-56.1645, -34.9015],\n        [-56.1645, -34.9050]\n      ]\n    ]\n  }\n}"
-            },
-            "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
-              "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
             }
           },
           "response": []
