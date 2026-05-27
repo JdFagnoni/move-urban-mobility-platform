@@ -6,6 +6,7 @@ import {
   CategoryModel,
   ReservationModel,
   UserModel,
+  ZoneModel,
 } from "./models";
 
 const connectionString =
@@ -13,7 +14,14 @@ const connectionString =
 
 export const sequelize = new Sequelize(connectionString, {
   dialect: "postgres",
-  models: [UserModel, AuthAuditLogModel, CategoryModel, ReservationModel, CargoItemModel],
+  models: [
+    UserModel,
+    AuthAuditLogModel,
+    CategoryModel,
+    ReservationModel,
+    CargoItemModel,
+    ZoneModel,
+  ],
   logging: false,
 });
 
