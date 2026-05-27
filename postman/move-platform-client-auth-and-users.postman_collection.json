@@ -1,16 +1,16 @@
 {
 	"info": {
 		"_postman_id": "4ebaa85a-9066-479c-a6c1-9f6e066c2800",
-		"name": "move-platform",
+		"name": "move-platform-client-auth-and-users",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "37423762"
 	},
 	"item": [
 		{
-			"name": "Health Checks",
+			"name": "Gateway Health",
 			"item": [
 				{
-					"name": "api-gateway",
+					"name": "Gateway Health Check",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -18,57 +18,6 @@
 							"raw": "{{gateway_url}}/health",
 							"host": [
 								"{{gateway_url}}"
-							],
-							"path": [
-								"health"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "reservations",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{reservations_url}}/health",
-							"host": [
-								"{{reservations_url}}"
-							],
-							"path": [
-								"health"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "transportations",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{transportations_url}}/health",
-							"host": [
-								"{{transportations_url}}"
-							],
-							"path": [
-								"health"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "categorizer-service",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{categorizer_url}}/health",
-							"host": [
-								"{{categorizer_url}}"
 							],
 							"path": [
 								"health"
@@ -223,7 +172,7 @@
 					"response": []
 				},
 				{
-					"name": "Current User",
+					"name": "Get Current User",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -247,7 +196,7 @@
 					"response": []
 				},
 				{
-					"name": "Auth Audit Logs",
+					"name": "Get Auth Audit Logs",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -271,7 +220,7 @@
 					"response": []
 				},
 				{
-					"name": "User Access Token",
+					"name": "Get Auth0 Access Token",
 					"request": {
 						"auth": {
 							"type": "noauth"
@@ -371,18 +320,6 @@
 		{
 			"key": "gateway_url",
 			"value": "http://localhost:3000"
-		},
-		{
-			"key": "reservations_url",
-			"value": "http://localhost:3001"
-		},
-		{
-			"key": "transportations_url",
-			"value": "http://localhost:3002"
-		},
-		{
-			"key": "categorizer_url",
-			"value": "http://localhost:3003"
 		},
 		{
 			"key": "auth_token",
