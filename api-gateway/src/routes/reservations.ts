@@ -47,6 +47,8 @@ reservationsRouter.get("/zones/:id", reservationsProxy());
 reservationsRouter.post("/zones", authenticate, reservationsProxy({ forwardIdentity: true }));
 reservationsRouter.patch("/zones/:id", authenticate, reservationsProxy({ forwardIdentity: true }));
 reservationsRouter.delete("/zones/:id", authenticate, reservationsProxy({ forwardIdentity: true }));
+mountProtectedRoute("/vehicles");
+reservationsRouter.use("/zones", reservationsProxy());
 mountProtectedRoute("/auth/me");
 mountProtectedRoute("/auth/audit-logs");
 mountProtectedRoute("/users");
