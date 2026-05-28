@@ -9,6 +9,7 @@ import {
   Table,
   UpdatedAt,
 } from "sequelize-typescript";
+import { CompanyProductModel } from "./company-product";
 import { CargoItemModel } from "./cargo-item";
 
 @Table({
@@ -40,4 +41,7 @@ export class CategoryModel extends Model {
 
   @HasMany(() => CargoItemModel, { foreignKey: "categoryId", as: "cargoItems" })
   declare cargoItems?: CargoItemModel[];
+
+  @HasMany(() => CompanyProductModel, { foreignKey: "categoryId", as: "companyProducts" })
+  declare companyProducts?: CompanyProductModel[];
 }

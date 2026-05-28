@@ -11,6 +11,8 @@ import {
 } from "sequelize-typescript";
 import { AUTH_PROVIDERS, CLIENT_TYPES, USER_ROLES, USER_STATUSES } from "../constants";
 import { AuthAuditLogModel } from "./auth-audit-log";
+import { CompanyLocationModel } from "./company-location";
+import { CompanyProductModel } from "./company-product";
 import { ReservationModel } from "./reservation";
 
 @Table({
@@ -72,6 +74,12 @@ export class UserModel extends Model {
 
   @HasMany(() => ReservationModel, { foreignKey: "clientId", as: "reservations" })
   declare reservations?: ReservationModel[];
+
+  @HasMany(() => CompanyProductModel, { foreignKey: "clientId", as: "companyProducts" })
+  declare companyProducts?: CompanyProductModel[];
+
+  @HasMany(() => CompanyLocationModel, { foreignKey: "clientId", as: "companyLocations" })
+  declare companyLocations?: CompanyLocationModel[];
 
   @HasMany(() => AuthAuditLogModel, { foreignKey: "userId", as: "auditLogs" })
   declare auditLogs?: AuthAuditLogModel[];
