@@ -1,7 +1,10 @@
+export type ZoneType = "red" | "preferred";
+
 export interface ZoneDTO {
   id: string;
   name: string;
-  description: string;
+  type: ZoneType;
+  description?: string | null;
   polygon: GeoPolygon;
   active: boolean;
 }

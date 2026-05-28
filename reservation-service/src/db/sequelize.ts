@@ -6,6 +6,7 @@ import {
   CategoryModel,
   ReservationModel,
   UserModel,
+  ZoneModel,
   VehicleModel,
 } from "./models";
 
@@ -20,6 +21,7 @@ export const sequelize = new Sequelize(connectionString, {
     CategoryModel,
     ReservationModel,
     CargoItemModel,
+    ZoneModel,
     VehicleModel,
   ],
   logging: false,
