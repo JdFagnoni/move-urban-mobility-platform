@@ -11,11 +11,7 @@ import type {
 } from "@move/shared";
 import { HttpError } from "@move/shared";
 import { Op, UniqueConstraintError } from "sequelize";
-import {
-  CategoryModel,
-  CompanyLocationModel,
-  CompanyProductModel,
-} from "../../db/models";
+import { CategoryModel, CompanyLocationModel, CompanyProductModel } from "../../db/models";
 import { recordAuditLog } from "../auth/audit";
 import { mapCompanyLocation, mapCompanyProduct } from "./mapper";
 
@@ -66,7 +62,11 @@ export async function createCompanyProductForHttp(
   input: CreateCompanyProductInput
 ): Promise<CompanyProductDTO> {
   const currentUser = await requireCompanyClient(input.currentUser, input.context);
-  const productName = normalizeRequiredText(input.dto.productName, "productName", "invalid_company_product");
+  const productName = normalizeRequiredText(
+    input.dto.productName,
+    "productName",
+    "invalid_company_product"
+  );
   await ensureActiveCategory(input.dto.categoryId);
   await ensureUniqueProductName(currentUser.id, productName);
 
@@ -124,9 +124,7 @@ export async function updateCompanyProductForHttp(
   }
 }
 
-export async function deleteCompanyProductForHttp(
-  input: CompanyProductTargetInput
-): Promise<void> {
+export async function deleteCompanyProductForHttp(input: CompanyProductTargetInput): Promise<void> {
   const currentUser = await requireCompanyClient(input.currentUser, input.context);
   const row = await requireCompanyProduct(input.id, currentUser.id);
   await row.destroy();
@@ -284,10 +282,7 @@ async function requireCompanyProduct(id: string, clientId: string): Promise<Comp
   return row;
 }
 
-async function requireCompanyLocation(
-  id: string,
-  clientId: string
-): Promise<CompanyLocationModel> {
+async function requireCompanyLocation(id: string, clientId: string): Promise<CompanyLocationModel> {
   const row = await CompanyLocationModel.findOne({
     where: { id, clientId },
   });
@@ -345,7 +340,5 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    value
-  );
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }

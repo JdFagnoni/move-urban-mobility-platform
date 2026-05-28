@@ -50,9 +50,7 @@ function reservationsProxy(options?: { forwardIdentity?: boolean }) {
         error: proxyError.message,
         details: serializeError(error),
       });
-      res
-        .status(proxyError.statusCode)
-        .json({ success: false, error: proxyError.message });
+      res.status(proxyError.statusCode).json({ success: false, error: proxyError.message });
     },
     proxyReqOptDecorator: options?.forwardIdentity ? forwardIdentityHeaders : undefined,
     proxyReqPathResolver: (req) =>

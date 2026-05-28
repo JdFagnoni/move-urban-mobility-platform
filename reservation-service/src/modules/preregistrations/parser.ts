@@ -46,10 +46,7 @@ function parseLocationKind(
     return undefined;
   }
 
-  if (
-    typeof value !== "string" ||
-    !COMPANY_LOCATION_KINDS.includes(value as CompanyLocationKind)
-  ) {
+  if (typeof value !== "string" || !COMPANY_LOCATION_KINDS.includes(value as CompanyLocationKind)) {
     throw new HttpError(400, `${field} must be a valid location kind`, code);
   }
 
@@ -95,7 +92,11 @@ function parseGeoPoint(value: unknown, field: string, code: string): GeoPoint | 
 export function parseCreateCompanyProductDTO(input: unknown): CreateCompanyProductDTO {
   const payload = getPayload(input, "invalid_company_product");
   return {
-    productName: parseRequiredString(payload["productName"], "productName", "invalid_company_product"),
+    productName: parseRequiredString(
+      payload["productName"],
+      "productName",
+      "invalid_company_product"
+    ),
     categoryId: parseRequiredString(payload["categoryId"], "categoryId", "invalid_company_product"),
   };
 }
