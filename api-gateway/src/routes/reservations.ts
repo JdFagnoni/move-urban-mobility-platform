@@ -40,6 +40,7 @@ reservationsRouter.get("/health", reservationsProxy());
 reservationsRouter.post("/auth/register", reservationsProxy());
 mountProtectedRoute("/reservations");
 reservationsRouter.use("/categories", reservationsProxy());
+mountProtectedRoute("/preregistrations");
 reservationsRouter.use("/vehicles", reservationsProxy());
 reservationsRouter.use("/zones", reservationsProxy());
 mountProtectedRoute("/auth/me");
