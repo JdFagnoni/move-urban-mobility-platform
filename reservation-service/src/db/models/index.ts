@@ -5,3 +5,5 @@ export { CompanyLocationModel } from "./company-location";
 export { CompanyProductModel } from "./company-product";
 export { ReservationModel } from "./reservation";
 export { UserModel } from "./user";
+export { ZoneModel } from "./zone";
+export { VehicleModel } from "./vehicle";
