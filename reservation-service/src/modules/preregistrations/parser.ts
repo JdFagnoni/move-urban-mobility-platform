@@ -46,7 +46,10 @@ function parseLocationKind(
     return undefined;
   }
 
-  if (typeof value !== "string" || !COMPANY_LOCATION_KINDS.includes(value as CompanyLocationKind)) {
+  if (
+    typeof value !== "string" ||
+    !COMPANY_LOCATION_KINDS.includes(value as CompanyLocationKind)
+  ) {
     throw new HttpError(400, `${field} must be a valid location kind`, code);
   }
 

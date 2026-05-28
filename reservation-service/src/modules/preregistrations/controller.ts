@@ -19,11 +19,15 @@ import {
 } from "./service";
 
 export async function listProductsHandler(req: Request, res: Response): Promise<void> {
-  const result = await handleServiceError(res, () =>
-    listCompanyProductsForHttp({
-      currentUser: req.authenticatedUser?.profile,
-      context: getRequestContext(req),
-    })
+  const context = getRequestContext(req);
+  const result = await handleServiceError(
+    res,
+    () =>
+      listCompanyProductsForHttp({
+        currentUser: req.authenticatedUser?.profile,
+        context,
+      }),
+    context
   );
   if (!result.ok) {
     return;
@@ -33,12 +37,16 @@ export async function listProductsHandler(req: Request, res: Response): Promise<
 }
 
 export async function createProductHandler(req: Request, res: Response): Promise<void> {
-  const result = await handleServiceError(res, () =>
-    createCompanyProductForHttp({
-      dto: parseCreateCompanyProductDTO(req.body),
-      currentUser: req.authenticatedUser?.profile,
-      context: getRequestContext(req),
-    })
+  const context = getRequestContext(req);
+  const result = await handleServiceError(
+    res,
+    () =>
+      createCompanyProductForHttp({
+        dto: parseCreateCompanyProductDTO(req.body),
+        currentUser: req.authenticatedUser?.profile,
+        context,
+      }),
+    context
   );
   if (!result.ok) {
     return;
@@ -49,13 +57,17 @@ export async function createProductHandler(req: Request, res: Response): Promise
 
 export async function updateProductHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
-  const result = await handleServiceError(res, () =>
-    updateCompanyProductForHttp({
-      id,
-      dto: parseUpdateCompanyProductDTO(req.body),
-      currentUser: req.authenticatedUser?.profile,
-      context: getRequestContext(req),
-    })
+  const context = getRequestContext(req);
+  const result = await handleServiceError(
+    res,
+    () =>
+      updateCompanyProductForHttp({
+        id,
+        dto: parseUpdateCompanyProductDTO(req.body),
+        currentUser: req.authenticatedUser?.profile,
+        context,
+      }),
+    context
   );
   if (!result.ok) {
     return;
@@ -66,12 +78,16 @@ export async function updateProductHandler(req: Request, res: Response): Promise
 
 export async function deleteProductHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
-  const result = await handleServiceError(res, () =>
-    deleteCompanyProductForHttp({
-      id,
-      currentUser: req.authenticatedUser?.profile,
-      context: getRequestContext(req),
-    })
+  const context = getRequestContext(req);
+  const result = await handleServiceError(
+    res,
+    () =>
+      deleteCompanyProductForHttp({
+        id,
+        currentUser: req.authenticatedUser?.profile,
+        context,
+      }),
+    context
   );
   if (!result.ok) {
     return;
@@ -81,11 +97,15 @@ export async function deleteProductHandler(req: Request, res: Response): Promise
 }
 
 export async function listLocationsHandler(req: Request, res: Response): Promise<void> {
-  const result = await handleServiceError(res, () =>
-    listCompanyLocationsForHttp({
-      currentUser: req.authenticatedUser?.profile,
-      context: getRequestContext(req),
-    })
+  const context = getRequestContext(req);
+  const result = await handleServiceError(
+    res,
+    () =>
+      listCompanyLocationsForHttp({
+        currentUser: req.authenticatedUser?.profile,
+        context,
+      }),
+    context
   );
   if (!result.ok) {
     return;
@@ -95,12 +115,16 @@ export async function listLocationsHandler(req: Request, res: Response): Promise
 }
 
 export async function createLocationHandler(req: Request, res: Response): Promise<void> {
-  const result = await handleServiceError(res, () =>
-    createCompanyLocationForHttp({
-      dto: parseCreateCompanyLocationDTO(req.body),
-      currentUser: req.authenticatedUser?.profile,
-      context: getRequestContext(req),
-    })
+  const context = getRequestContext(req);
+  const result = await handleServiceError(
+    res,
+    () =>
+      createCompanyLocationForHttp({
+        dto: parseCreateCompanyLocationDTO(req.body),
+        currentUser: req.authenticatedUser?.profile,
+        context,
+      }),
+    context
   );
   if (!result.ok) {
     return;
@@ -111,13 +135,17 @@ export async function createLocationHandler(req: Request, res: Response): Promis
 
 export async function updateLocationHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
-  const result = await handleServiceError(res, () =>
-    updateCompanyLocationForHttp({
-      id,
-      dto: parseUpdateCompanyLocationDTO(req.body),
-      currentUser: req.authenticatedUser?.profile,
-      context: getRequestContext(req),
-    })
+  const context = getRequestContext(req);
+  const result = await handleServiceError(
+    res,
+    () =>
+      updateCompanyLocationForHttp({
+        id,
+        dto: parseUpdateCompanyLocationDTO(req.body),
+        currentUser: req.authenticatedUser?.profile,
+        context,
+      }),
+    context
   );
   if (!result.ok) {
     return;
@@ -128,12 +156,16 @@ export async function updateLocationHandler(req: Request, res: Response): Promis
 
 export async function deleteLocationHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
-  const result = await handleServiceError(res, () =>
-    deleteCompanyLocationForHttp({
-      id,
-      currentUser: req.authenticatedUser?.profile,
-      context: getRequestContext(req),
-    })
+  const context = getRequestContext(req);
+  const result = await handleServiceError(
+    res,
+    () =>
+      deleteCompanyLocationForHttp({
+        id,
+        currentUser: req.authenticatedUser?.profile,
+        context,
+      }),
+    context
   );
   if (!result.ok) {
     return;

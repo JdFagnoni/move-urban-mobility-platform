@@ -3,7 +3,7 @@ import express from "express";
 import { requestLogger } from "./middleware/logging";
 import { rateLimiter } from "./middleware/rate-limit";
 import { authenticate } from "./middleware/auth";
-import { reservationsRouter } from "./routes/reservations";
+import { reservationsRouter, validateReservationsProxyConfiguration } from "./routes/reservations";
 import { transportationsRouter } from "./routes/transportations";
 
 const app = express();
@@ -19,6 +19,8 @@ app.get("/health", (_req, res) => {
 
 app.use("/reservations", reservationsRouter);
 app.use("/transportations", authenticate, transportationsRouter);
+
+validateReservationsProxyConfiguration();
 
 app.listen(Number(PORT), () => {
   console.log(`api-gateway running on port ${PORT}`);
