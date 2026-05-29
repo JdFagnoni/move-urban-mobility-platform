@@ -1,5 +1,9 @@
 import type { CategoryDTO } from "@move/shared";
 import { CategoryModel } from "../db/models";
+import {
+  normalizeCategoryBehaviorConfig,
+  normalizeCategoryPricingConfig,
+} from "../modules/categories/config";
 
 const CATEGORIZER_URL = process.env["CATEGORIZER_SERVICE_URL"] ?? "http://localhost:3003";
 
@@ -18,6 +22,8 @@ async function fetchActiveCategories(): Promise<CategoryDTO[]> {
     id: category.id,
     name: category.name,
     rules: category.rules,
+    pricing: normalizeCategoryPricingConfig(category.pricing),
+    behavior: normalizeCategoryBehaviorConfig(category.behavior),
   }));
 }
 

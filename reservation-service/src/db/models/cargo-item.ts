@@ -38,7 +38,7 @@ export class CargoItemModel extends Model {
   declare categoryId: string | null;
 
   @CreatedAt
-  declare createdAt: Date;
+  declare created_at: Date;
 
   @BelongsTo(() => ReservationModel, { foreignKey: "reservationId", as: "reservation" })
   declare reservation?: ReservationModel;

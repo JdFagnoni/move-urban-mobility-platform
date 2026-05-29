@@ -1,4 +1,5 @@
-import type { CategoryRule } from "@move/shared";
+import type { CategoryBehaviorConfig, CategoryPricingConfig, CategoryRule } from "@move/shared";
+import { DEFAULT_CATEGORY_BEHAVIOR, DEFAULT_CATEGORY_PRICING } from "@move/shared";
 import {
   Column,
   CreatedAt,
@@ -33,11 +34,17 @@ export class CategoryModel extends Model {
   @Column({ type: DataType.JSONB, allowNull: false, defaultValue: [] })
   declare rules: CategoryRule[];
 
+  @Column({ type: DataType.JSONB, allowNull: false, defaultValue: DEFAULT_CATEGORY_PRICING })
+  declare pricing: CategoryPricingConfig;
+
+  @Column({ type: DataType.JSONB, allowNull: false, defaultValue: DEFAULT_CATEGORY_BEHAVIOR })
+  declare behavior: CategoryBehaviorConfig;
+
   @CreatedAt
-  declare createdAt: Date;
+  declare created_at: Date;
 
   @UpdatedAt
-  declare updatedAt: Date;
+  declare updated_at: Date;
 
   @HasMany(() => CargoItemModel, { foreignKey: "categoryId", as: "cargoItems" })
   declare cargoItems?: CargoItemModel[];

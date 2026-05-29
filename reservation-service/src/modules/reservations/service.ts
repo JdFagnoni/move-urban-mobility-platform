@@ -15,6 +15,7 @@ import { sequelize } from "../../db/sequelize";
 import { createCompanyReservation } from "./helpers/create-company-reservation";
 import { createIndividualReservation } from "./helpers/create-individual-reservation";
 import { normalizeCargoItems, validateScheduledAt } from "./helpers/validate-common-input";
+import { quotePreparedReservation } from "./quote-service";
 
 function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
   return {
@@ -25,6 +26,10 @@ function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
     size: row.size,
     categoryId: row.categoryId,
   };
+}
+
+function sortCargoItemsByCreatedAt(cargoItems: CargoItemModel[]): CargoItemModel[] {
+  return cargoItems.slice().sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
 }
 
 function modelToReservationDTO(
@@ -43,8 +48,8 @@ function modelToReservationDTO(
     driverId: row.driverId,
     paymentId: row.paymentId,
     cargoItems: cargoItems.map(modelToCargoItemDTO),
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
   };
 }
 
@@ -89,6 +94,16 @@ export async function createReservation(
               "invalid_reservation"
             );
           })();
+  const quote =
+    preparedReservation.status === "pending_quote"
+      ? await quotePreparedReservation({
+          origin: preparedReservation.origin,
+          destination: preparedReservation.destination,
+          cargoItems: preparedReservation.cargoItems,
+        })
+      : null;
+  const finalStatus: ReservationStatus =
+    quote !== null ? "pending_confirmation" : preparedReservation.status;
 
   await sequelize.transaction(async (transaction) => {
     await ReservationModel.create(
@@ -98,7 +113,8 @@ export async function createReservation(
         origin: preparedReservation.origin,
         destination: preparedReservation.destination,
         scheduledAt,
-        status: preparedReservation.status,
+        status: finalStatus,
+        quotedPrice: quote?.quotedPrice ?? null,
       },
       { transaction }
     );
@@ -121,9 +137,7 @@ export async function createReservation(
     throw new HttpError(500, "Reservation creation failed", "reservation_create_failed");
   }
 
-  const sortedCargoItems = (reservation.cargoItems ?? [])
-    .slice()
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const sortedCargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
   return modelToReservationDTO(reservation, sortedCargoItems);
 }
 
@@ -137,9 +151,7 @@ export async function getReservation(id: string, clientUser: UserDTO): Promise<R
     throw new HttpError(403, "Access denied", "forbidden");
   }
 
-  const cargoItems = (reservation.cargoItems ?? [])
-    .slice()
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
   return modelToReservationDTO(reservation, cargoItems);
 }
 
@@ -173,15 +185,13 @@ export async function listReservations(
     where,
     include: [{ model: CargoItemModel, as: "cargoItems" }],
     distinct: true,
-    order: [["createdAt", "DESC"]],
+    order: [["created_at", "DESC"]],
     limit: pageSize,
     offset,
   });
 
   const data = result.rows.map((reservation) => {
-    const cargoItems = (reservation.cargoItems ?? [])
-      .slice()
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
     return modelToReservationDTO(reservation, cargoItems);
   });
 
@@ -209,8 +219,6 @@ export async function cancelReservation(id: string, clientUser: UserDTO): Promis
   reservation.status = "cancelled";
   await reservation.save();
 
-  const cargoItems = (reservation.cargoItems ?? [])
-    .slice()
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
   return modelToReservationDTO(reservation, cargoItems);
 }

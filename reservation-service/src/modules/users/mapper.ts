@@ -28,7 +28,7 @@ export function mapUser(row: UserModel): UserDTO {
     companyName: row.companyName,
     taxId: row.taxId,
     lastLoginAt: toNullableIsoString(row.lastLoginAt),
-    createdAt: toIsoString(row.createdAt),
-    updatedAt: toIsoString(row.updatedAt),
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
   };
 }

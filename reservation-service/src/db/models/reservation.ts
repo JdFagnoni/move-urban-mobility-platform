@@ -58,10 +58,10 @@ export class ReservationModel extends Model {
   declare paymentId: string | null;
 
   @CreatedAt
-  declare createdAt: Date;
+  declare created_at: Date;
 
   @UpdatedAt
-  declare updatedAt: Date;
+  declare updated_at: Date;
 
   @BelongsTo(() => UserModel, { foreignKey: "clientId", as: "client" })
   declare client?: UserModel;
