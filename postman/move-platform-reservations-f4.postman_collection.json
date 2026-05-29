@@ -1,0 +1,1597 @@
+{
+  "info": {
+    "_postman_id": "6f0bcae3-4f64-4f55-9d0f-4edc57b4c401",
+    "name": "move-platform-reservations-f4",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "37423762"
+  },
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Initialize Run Variables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('health endpoint responded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const runId = String(Date.now());",
+                  "const futureDate = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();",
+                  "const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();",
+                  "pm.collectionVariables.set('run_id', runId);",
+                  "pm.collectionVariables.set('future_date', futureDate);",
+                  "pm.collectionVariables.set('past_date', pastDate);",
+                  "pm.collectionVariables.set('company_email', `qa-company-f4-${runId}@move.com`);",
+                  "pm.collectionVariables.set('individual_email', `qa-individual-f4-${runId}@move.com`);",
+                  "pm.collectionVariables.set('category_keyword', `f4tag${runId}`);",
+                  "pm.collectionVariables.set('invalid_company_product_id', '11111111-1111-4111-8111-111111111111');",
+                  "pm.collectionVariables.set('invalid_company_location_id', '22222222-2222-4222-8222-222222222222');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Company Client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company client registered', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{company_email}}\",\n  \"password\": \"{{company_password}}\",\n  \"name\": \"QA Company F4 {{run_id}}\",\n  \"clientType\": \"company\",\n  \"companyName\": \"MOVE Logistics F4 {{run_id}}\",\n  \"taxId\": \"RUT-F4-{{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/auth/register",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Individual Client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual client registered', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{individual_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA Individual F4 {{run_id}}\",\n  \"clientType\": \"individual\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/auth/register",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Company Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "pm.collectionVariables.set('company_auth_token', body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{company_email}}\",\n  \"password\": \"{{company_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": [
+                "{{auth0_domain}}"
+              ],
+              "path": [
+                "oauth",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Individual Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "pm.collectionVariables.set('individual_auth_token', body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{individual_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": [
+                "{{auth0_domain}}"
+              ],
+              "path": [
+                "oauth",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User - Company",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company profile loaded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.collectionVariables.set('company_client_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/auth/me",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User - Individual",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual profile loaded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.collectionVariables.set('individual_client_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/auth/me",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Category for F4 Classification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('category created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.collectionVariables.set('category_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{category_keyword}}\",\n  \"rules\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/categories",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "categories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Company Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company product created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.collectionVariables.set('company_product_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productName\": \"QA Product F4 {{run_id}}\",\n  \"categoryId\": \"{{category_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/preregistrations/products",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "preregistrations",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Company Origin Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('origin location created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('company_origin_location_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Origin F4 {{run_id}}\",\n  \"kind\": \"origin\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/preregistrations/locations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "preregistrations",
+                "locations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Company Destination Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('destination location created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('company_destination_location_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Destination F4 {{run_id}}\",\n  \"kind\": \"destination\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/preregistrations/locations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "preregistrations",
+                "locations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Company Both Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('both location created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('company_both_location_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Both F4 {{run_id}}\",\n  \"kind\": \"both\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1700, -34.9050]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/preregistrations/locations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "preregistrations",
+                "locations"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Individual Client",
+      "item": [
+        {
+          "name": "Create Reservation - Classified",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('classified reservation created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.expect(body.data.status).to.eql('pending_quote');",
+                  "pm.expect(body.data.cargoItems).to.have.length(1);",
+                  "pm.expect(body.data.cargoItems[0].categoryId).to.be.a('string').and.not.empty;",
+                  "pm.collectionVariables.set('individual_classified_reservation_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"Box with {{category_keyword}} components\",\n      \"estimatedValue\": 1500,\n      \"size\": \"medium\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reservation - Classified",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('classified reservation retrieved', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.id).to.eql(pm.collectionVariables.get('individual_classified_reservation_id'));",
+                  "pm.expect(body.data.status).to.eql('pending_quote');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{individual_classified_reservation_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations",
+                "{{individual_classified_reservation_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Unrecognized Cargo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('unrecognized reservation created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('pending_classification');",
+                  "pm.expect(body.data.cargoItems[0].categoryId).to.eql(null);",
+                  "pm.collectionVariables.set('individual_pending_reservation_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1600, -34.9000]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1500, -34.8900]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"unmapped-item-{{run_id}}\",\n      \"estimatedValue\": 200,\n      \"size\": \"small\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Reservations - Pending Classification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('pending classification reservations listed', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "const expectedId = pm.collectionVariables.get('individual_pending_reservation_id');",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.expect(Array.isArray(body.data.data)).to.eql(true);",
+                  "pm.expect(body.data.data.some((reservation) => reservation.id === expectedId)).to.eql(true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations?status=pending_classification",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending_classification"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Reject Company Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual company product rejected', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(false);",
+                  "pm.expect(body.error).to.eql('companyProductId is not allowed for individual clients');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"Invalid company product usage\",\n      \"companyProductId\": \"{{company_product_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Reject Company Location Id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual company location rejected', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.error).to.eql('originLocationId is not allowed for individual clients');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"originLocationId\": \"{{company_origin_location_id}}\",\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"Invalid location id for individual\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Reject Past Date",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('past date rejected', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.error).to.eql('scheduledAt must be a future date');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{past_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"Past date test\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Reject Empty Cargo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('empty cargo rejected', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.error).to.eql('At least one cargo item is required');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Company Client",
+      "item": [
+        {
+          "name": "Create Reservation - Preregistered Locations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company reservation with preregistered locations created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('pending_quote');",
+                  "pm.expect(body.data.cargoItems[0].categoryId).to.eql(pm.collectionVariables.get('category_id'));",
+                  "pm.collectionVariables.set('company_preregistered_reservation_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"originLocationId\": \"{{company_origin_location_id}}\",\n  \"destinationLocationId\": \"{{company_destination_location_id}}\",\n  \"cargoItems\": [\n    {\n      \"description\": \"ERP shipment {{run_id}}\",\n      \"companyProductId\": \"{{company_product_id}}\",\n      \"estimatedValue\": 4500,\n      \"size\": \"large\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reservation - Preregistered Locations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company reservation retrieved', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.id).to.eql(pm.collectionVariables.get('company_preregistered_reservation_id'));",
+                  "pm.expect(body.data.status).to.eql('pending_quote');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{company_preregistered_reservation_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations",
+                "{{company_preregistered_reservation_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Manual Locations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company reservation with manual locations created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('pending_quote');",
+                  "pm.collectionVariables.set('company_manual_reservation_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1200, -34.8800]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1100, -34.8700]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"Manual location shipment {{run_id}}\",\n      \"companyProductId\": \"{{company_product_id}}\",\n      \"estimatedValue\": 900,\n      \"size\": \"small\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Both Location Id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company reservation with both-kind location created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('pending_quote');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"originLocationId\": \"{{company_both_location_id}}\",\n  \"destinationLocationId\": \"{{company_both_location_id}}\",\n  \"cargoItems\": [\n    {\n      \"description\": \"Both location shipment {{run_id}}\",\n      \"companyProductId\": \"{{company_product_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Reject Missing Company Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('missing company product rejected', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.error).to.eql('companyProductId is required for company clients');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"originLocationId\": \"{{company_origin_location_id}}\",\n  \"destinationLocationId\": \"{{company_destination_location_id}}\",\n  \"cargoItems\": [\n    {\n      \"description\": \"Missing company product {{run_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Reject Unknown Company Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('unknown company product rejected', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.error).to.eql('Company product not found');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"originLocationId\": \"{{company_origin_location_id}}\",\n  \"destinationLocationId\": \"{{company_destination_location_id}}\",\n  \"cargoItems\": [\n    {\n      \"description\": \"Unknown company product {{run_id}}\",\n      \"companyProductId\": \"{{invalid_company_product_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Reject Ambiguous Origin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('ambiguous origin rejected', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.error).to.eql('origin and originLocationId cannot be combined');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"originLocationId\": \"{{company_origin_location_id}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destinationLocationId\": \"{{company_destination_location_id}}\",\n  \"cargoItems\": [\n    {\n      \"description\": \"Ambiguous origin {{run_id}}\",\n      \"companyProductId\": \"{{company_product_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Reject Wrong Location Kind",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('wrong location kind rejected', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.error).to.eql('originLocationId is not valid for origin');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"originLocationId\": \"{{company_destination_location_id}}\",\n  \"destinationLocationId\": \"{{company_origin_location_id}}\",\n  \"cargoItems\": [\n    {\n      \"description\": \"Wrong kind location {{run_id}}\",\n      \"companyProductId\": \"{{company_product_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation - Reject Unknown Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('unknown location rejected', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.error).to.eql('Company location not found');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"originLocationId\": \"{{invalid_company_location_id}}\",\n  \"destinationLocationId\": \"{{company_destination_location_id}}\",\n  \"cargoItems\": [\n    {\n      \"description\": \"Unknown location {{run_id}}\",\n      \"companyProductId\": \"{{company_product_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "auth0_domain",
+      "value": ""
+    },
+    {
+      "key": "auth0_audience",
+      "value": ""
+    },
+    {
+      "key": "auth0_client_id",
+      "value": ""
+    },
+    {
+      "key": "auth0_client_secret",
+      "value": ""
+    },
+    {
+      "key": "auth0_realm",
+      "value": ""
+    },
+    {
+      "key": "company_password",
+      "value": "Secret123!"
+    },
+    {
+      "key": "individual_password",
+      "value": "Secret123!"
+    },
+    {
+      "key": "run_id",
+      "value": ""
+    },
+    {
+      "key": "future_date",
+      "value": ""
+    },
+    {
+      "key": "past_date",
+      "value": ""
+    },
+    {
+      "key": "company_email",
+      "value": ""
+    },
+    {
+      "key": "individual_email",
+      "value": ""
+    },
+    {
+      "key": "category_keyword",
+      "value": ""
+    },
+    {
+      "key": "company_auth_token",
+      "value": ""
+    },
+    {
+      "key": "individual_auth_token",
+      "value": ""
+    },
+    {
+      "key": "company_client_id",
+      "value": ""
+    },
+    {
+      "key": "individual_client_id",
+      "value": ""
+    },
+    {
+      "key": "category_id",
+      "value": ""
+    },
+    {
+      "key": "company_product_id",
+      "value": ""
+    },
+    {
+      "key": "company_origin_location_id",
+      "value": ""
+    },
+    {
+      "key": "company_destination_location_id",
+      "value": ""
+    },
+    {
+      "key": "company_both_location_id",
+      "value": ""
+    },
+    {
+      "key": "invalid_company_product_id",
+      "value": ""
+    },
+    {
+      "key": "invalid_company_location_id",
+      "value": ""
+    },
+    {
+      "key": "individual_classified_reservation_id",
+      "value": ""
+    },
+    {
+      "key": "individual_pending_reservation_id",
+      "value": ""
+    },
+    {
+      "key": "company_preregistered_reservation_id",
+      "value": ""
+    },
+    {
+      "key": "company_manual_reservation_id",
+      "value": ""
+    }
+  ]
+}

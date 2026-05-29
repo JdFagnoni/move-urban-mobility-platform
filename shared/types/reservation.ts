@@ -35,6 +35,7 @@ export interface CreateCargoItemDTO {
   estimatedValue?: number;
   size?: string;
   productName?: string;
+  companyProductId?: string;
 }
 
 export interface ReservationDTO {
@@ -55,8 +56,10 @@ export interface ReservationDTO {
 
 export interface CreateReservationDTO {
   scheduledAt: string;
-  origin: GeoPoint;
-  destination: GeoPoint;
+  origin?: GeoPoint;
+  destination?: GeoPoint;
+  originLocationId?: string;
+  destinationLocationId?: string;
   cargoItems: CreateCargoItemDTO[];
 }
 

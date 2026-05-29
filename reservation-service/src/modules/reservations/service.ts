@@ -10,9 +10,11 @@ import type {
   UserDTO,
 } from "@move/shared";
 import { Op, type WhereOptions } from "sequelize";
-import { classifyGood } from "../../clients/categorizer";
 import { CargoItemModel, ReservationModel } from "../../db/models";
 import { sequelize } from "../../db/sequelize";
+import { createCompanyReservation } from "./helpers/create-company-reservation";
+import { createIndividualReservation } from "./helpers/create-individual-reservation";
+import { normalizeCargoItems, validateScheduledAt } from "./helpers/validate-common-input";
 
 function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
   return {
@@ -68,43 +70,47 @@ export async function createReservation(
   dto: CreateReservationDTO,
   clientUser: UserDTO
 ): Promise<ReservationDTO> {
-  const scheduledAt = new Date(dto.scheduledAt);
-  if (isNaN(scheduledAt.getTime()) || scheduledAt <= new Date()) {
-    throw new HttpError(400, "scheduledAt must be a future date", "invalid_scheduled_at");
+  if (clientUser.role !== "client") {
+    throw new HttpError(403, "Only clients can create reservations", "forbidden");
   }
 
-  if (dto.cargoItems.length === 0) {
-    throw new HttpError(400, "At least one cargo item is required", "cargo_items_required");
-  }
-
-  const categoryIds = await Promise.all(
-    dto.cargoItems.map((item) => classifyGood(item.description))
-  );
-  const allClassified = categoryIds.every((id) => id !== null);
-  const status: ReservationStatus = allClassified ? "pending_quote" : "pending_classification";
+  const scheduledAt = validateScheduledAt(dto.scheduledAt);
+  const normalizedCargoItems = normalizeCargoItems(dto.cargoItems);
   const reservationId = crypto.randomUUID();
+  const preparedReservation =
+    clientUser.clientType === "company"
+      ? await createCompanyReservation({ dto, clientUser, cargoItems: normalizedCargoItems })
+      : clientUser.clientType === "individual"
+        ? await createIndividualReservation({ dto, cargoItems: normalizedCargoItems })
+        : (() => {
+            throw new HttpError(
+              400,
+              "Client type is required to create reservations",
+              "invalid_reservation"
+            );
+          })();
 
   await sequelize.transaction(async (transaction) => {
     await ReservationModel.create(
       {
         id: reservationId,
         clientId: clientUser.id,
-        origin: dto.origin,
-        destination: dto.destination,
+        origin: preparedReservation.origin,
+        destination: preparedReservation.destination,
         scheduledAt,
-        status,
+        status: preparedReservation.status,
       },
       { transaction }
     );
 
     await CargoItemModel.bulkCreate(
-      dto.cargoItems.map((cargoItem, index) => ({
+      preparedReservation.cargoItems.map((cargoItem) => ({
         id: crypto.randomUUID(),
         reservationId,
         description: cargoItem.description,
-        estimatedValue: cargoItem.estimatedValue ?? null,
-        size: cargoItem.size ?? null,
-        categoryId: categoryIds[index] ?? null,
+        estimatedValue: cargoItem.estimatedValue,
+        size: cargoItem.size,
+        categoryId: cargoItem.categoryId,
       })),
       { transaction }
     );
@@ -115,10 +121,10 @@ export async function createReservation(
     throw new HttpError(500, "Reservation creation failed", "reservation_create_failed");
   }
 
-  const cargoItems = (reservation.cargoItems ?? [])
+  const sortedCargoItems = (reservation.cargoItems ?? [])
     .slice()
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  return modelToReservationDTO(reservation, cargoItems);
+  return modelToReservationDTO(reservation, sortedCargoItems);
 }
 
 export async function getReservation(id: string, clientUser: UserDTO): Promise<ReservationDTO> {
