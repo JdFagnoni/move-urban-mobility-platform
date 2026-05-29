@@ -1,18 +1,50 @@
+import type { CategoryBehaviorConfig, CategoryPricingConfig } from "@move/shared";
 import { recordAuditLog } from "../modules/auth/audit";
+import {
+  normalizeCategoryBehaviorConfig,
+  normalizeCategoryPricingConfig,
+} from "../modules/categories/config";
 import { createUserRecord, getUserByAuthSubject, getUserByEmail } from "../modules/users/service";
 import { CategoryModel } from "./models";
 
 type SeedCategory = {
   name: string;
   rules: [];
+  pricing: Partial<CategoryPricingConfig>;
+  behavior: Partial<CategoryBehaviorConfig>;
 };
 
 const DEFAULT_CATEGORIES: readonly SeedCategory[] = [
-  { name: "Electronics", rules: [] },
-  { name: "Furniture", rules: [] },
-  { name: "Fragile Items", rules: [] },
-  { name: "Perishable Goods", rules: [] },
-  { name: "Clothing", rules: [] },
+  {
+    name: "Electronics",
+    rules: [],
+    pricing: { surchargeType: "percentage", surchargeValue: 20 },
+    behavior: { requiresMonitoring: true, generatesAlerts: true },
+  },
+  {
+    name: "Furniture",
+    rules: [],
+    pricing: { surchargeType: "fixed", surchargeValue: 30 },
+    behavior: {},
+  },
+  {
+    name: "Fragile Items",
+    rules: [],
+    pricing: { surchargeType: "percentage", surchargeValue: 15 },
+    behavior: { requiresMonitoring: true },
+  },
+  {
+    name: "Perishable Goods",
+    rules: [],
+    pricing: { surchargeType: "percentage", surchargeValue: 10 },
+    behavior: { requiresMonitoring: true, generatesAlerts: true },
+  },
+  {
+    name: "Clothing",
+    rules: [],
+    pricing: {},
+    behavior: {},
+  },
 ] as const;
 
 export async function seedDefaultCategories(): Promise<void> {
@@ -22,8 +54,22 @@ export async function seedDefaultCategories(): Promise<void> {
     });
 
     if (existingCategory) {
+      let changed = false;
+
       if (!existingCategory.active) {
         existingCategory.active = true;
+        changed = true;
+      }
+
+      existingCategory.pricing = normalizeCategoryPricingConfig(
+        existingCategory.pricing ?? category.pricing
+      );
+      existingCategory.behavior = normalizeCategoryBehaviorConfig(
+        existingCategory.behavior ?? category.behavior
+      );
+      changed = true;
+
+      if (changed) {
         await existingCategory.save();
       }
       continue;
@@ -34,6 +80,8 @@ export async function seedDefaultCategories(): Promise<void> {
       name: category.name,
       active: true,
       rules: category.rules,
+      pricing: normalizeCategoryPricingConfig(category.pricing),
+      behavior: normalizeCategoryBehaviorConfig(category.behavior),
     });
   }
 }

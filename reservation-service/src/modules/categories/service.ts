@@ -1,12 +1,15 @@
 import type { CategoryDTO } from "@move/shared";
 import { HttpError } from "@move/shared";
 import { CategoryModel } from "../../db/models";
+import { normalizeCategoryBehaviorConfig, normalizeCategoryPricingConfig } from "./config";
 
 function mapCategory(category: CategoryModel): CategoryDTO {
   return {
     id: category.id,
     name: category.name,
     rules: category.rules,
+    pricing: normalizeCategoryPricingConfig(category.pricing),
+    behavior: normalizeCategoryBehaviorConfig(category.behavior),
   };
 }
 
@@ -42,6 +45,8 @@ export async function createCategory(dto: Omit<CategoryDTO, "id">): Promise<Cate
     name,
     active: true,
     rules: dto.rules ?? [],
+    pricing: normalizeCategoryPricingConfig(dto.pricing),
+    behavior: normalizeCategoryBehaviorConfig(dto.behavior),
   });
   return mapCategory(category);
 }
@@ -65,6 +70,14 @@ export async function updateCategory(
 
   if (dto.rules !== undefined) {
     category.rules = dto.rules;
+  }
+
+  if (dto.pricing !== undefined) {
+    category.pricing = normalizeCategoryPricingConfig(dto.pricing);
+  }
+
+  if (dto.behavior !== undefined) {
+    category.behavior = normalizeCategoryBehaviorConfig(dto.behavior);
   }
 
   await category.save();

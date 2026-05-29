@@ -15,6 +15,7 @@ import { sequelize } from "../../db/sequelize";
 import { createCompanyReservation } from "./helpers/create-company-reservation";
 import { createIndividualReservation } from "./helpers/create-individual-reservation";
 import { normalizeCargoItems, validateScheduledAt } from "./helpers/validate-common-input";
+import { quotePreparedReservation } from "./quote-service";
 
 function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
   return {
@@ -89,6 +90,16 @@ export async function createReservation(
               "invalid_reservation"
             );
           })();
+  const quote =
+    preparedReservation.status === "pending_quote"
+      ? await quotePreparedReservation({
+          origin: preparedReservation.origin,
+          destination: preparedReservation.destination,
+          cargoItems: preparedReservation.cargoItems,
+        })
+      : null;
+  const finalStatus: ReservationStatus =
+    quote !== null ? "pending_confirmation" : preparedReservation.status;
 
   await sequelize.transaction(async (transaction) => {
     await ReservationModel.create(
@@ -98,7 +109,8 @@ export async function createReservation(
         origin: preparedReservation.origin,
         destination: preparedReservation.destination,
         scheduledAt,
-        status: preparedReservation.status,
+        status: finalStatus,
+        quotedPrice: quote?.quotedPrice ?? null,
       },
       { transaction }
     );
