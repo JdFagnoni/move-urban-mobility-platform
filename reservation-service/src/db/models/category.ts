@@ -41,10 +41,10 @@ export class CategoryModel extends Model {
   declare behavior: CategoryBehaviorConfig;
 
   @CreatedAt
-  declare createdAt: Date;
+  declare created_at: Date;
 
   @UpdatedAt
-  declare updatedAt: Date;
+  declare updated_at: Date;
 
   @HasMany(() => CargoItemModel, { foreignKey: "categoryId", as: "cargoItems" })
   declare cargoItems?: CargoItemModel[];

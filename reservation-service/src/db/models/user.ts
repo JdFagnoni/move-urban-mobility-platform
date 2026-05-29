@@ -67,10 +67,10 @@ export class UserModel extends Model {
   declare lastLoginAt: Date | null;
 
   @CreatedAt
-  declare createdAt: Date;
+  declare created_at: Date;
 
   @UpdatedAt
-  declare updatedAt: Date;
+  declare updated_at: Date;
 
   @HasMany(() => ReservationModel, { foreignKey: "clientId", as: "reservations" })
   declare reservations?: ReservationModel[];

@@ -11,8 +11,8 @@ export function mapCompanyProduct(row: CompanyProductModel): CompanyProductDTO {
     clientId: row.clientId,
     productName: row.productName,
     categoryId: row.categoryId,
-    createdAt: toIsoString(row.createdAt),
-    updatedAt: toIsoString(row.updatedAt),
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
   };
 }
 
@@ -23,7 +23,7 @@ export function mapCompanyLocation(row: CompanyLocationModel): CompanyLocationDT
     label: row.label,
     kind: row.kind,
     location: row.location,
-    createdAt: toIsoString(row.createdAt),
-    updatedAt: toIsoString(row.updatedAt),
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
   };
 }

@@ -39,10 +39,10 @@ export class CompanyProductModel extends Model {
   declare categoryId: string;
 
   @CreatedAt
-  declare createdAt: Date;
+  declare created_at: Date;
 
   @UpdatedAt
-  declare updatedAt: Date;
+  declare updated_at: Date;
 
   @BelongsTo(() => UserModel, { foreignKey: "clientId", as: "client" })
   declare client?: UserModel;

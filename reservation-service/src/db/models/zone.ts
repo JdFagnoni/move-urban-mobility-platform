@@ -38,8 +38,8 @@ export class ZoneModel extends Model {
   declare active: boolean;
 
   @CreatedAt
-  declare createdAt: Date;
+  declare created_at: Date;
 
   @UpdatedAt
-  declare updatedAt: Date;
+  declare updated_at: Date;
 }

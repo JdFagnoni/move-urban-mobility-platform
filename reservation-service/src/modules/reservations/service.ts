@@ -28,6 +28,10 @@ function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
   };
 }
 
+function sortCargoItemsByCreatedAt(cargoItems: CargoItemModel[]): CargoItemModel[] {
+  return cargoItems.slice().sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
+}
+
 function modelToReservationDTO(
   row: ReservationModel,
   cargoItems: CargoItemModel[]
@@ -44,8 +48,8 @@ function modelToReservationDTO(
     driverId: row.driverId,
     paymentId: row.paymentId,
     cargoItems: cargoItems.map(modelToCargoItemDTO),
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
   };
 }
 
@@ -133,9 +137,7 @@ export async function createReservation(
     throw new HttpError(500, "Reservation creation failed", "reservation_create_failed");
   }
 
-  const sortedCargoItems = (reservation.cargoItems ?? [])
-    .slice()
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const sortedCargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
   return modelToReservationDTO(reservation, sortedCargoItems);
 }
 
@@ -149,9 +151,7 @@ export async function getReservation(id: string, clientUser: UserDTO): Promise<R
     throw new HttpError(403, "Access denied", "forbidden");
   }
 
-  const cargoItems = (reservation.cargoItems ?? [])
-    .slice()
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
   return modelToReservationDTO(reservation, cargoItems);
 }
 
@@ -185,15 +185,13 @@ export async function listReservations(
     where,
     include: [{ model: CargoItemModel, as: "cargoItems" }],
     distinct: true,
-    order: [["createdAt", "DESC"]],
+    order: [["created_at", "DESC"]],
     limit: pageSize,
     offset,
   });
 
   const data = result.rows.map((reservation) => {
-    const cargoItems = (reservation.cargoItems ?? [])
-      .slice()
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
     return modelToReservationDTO(reservation, cargoItems);
   });
 
@@ -221,8 +219,6 @@ export async function cancelReservation(id: string, clientUser: UserDTO): Promis
   reservation.status = "cancelled";
   await reservation.save();
 
-  const cargoItems = (reservation.cargoItems ?? [])
-    .slice()
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
   return modelToReservationDTO(reservation, cargoItems);
 }
