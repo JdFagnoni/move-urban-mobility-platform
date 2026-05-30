@@ -1,0 +1,174 @@
+{
+  "info": {
+    "_postman_id": "8f74bafb-ffcf-4e0e-8b78-beb9b88dbd87",
+    "name": "move-platform-payments-f6",
+    "description": "Covers F6 payment initiation for reservations already in pending_confirmation. For accepted/rejected final states, forward Stripe webhooks to {{gateway_url}}/reservations/payments/webhooks/stripe using Stripe CLI.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "37423762"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{gateway_url}}/health",
+          "host": ["{{gateway_url}}"],
+          "path": ["health"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Confirm Payment - Start Pending Payment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('payment initiation accepted', function () {",
+              "  pm.response.to.have.status(202);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.expect(body.success).to.eql(true);",
+              "pm.expect(body.data.reservationId).to.eql(pm.collectionVariables.get('reservation_id'));",
+              "pm.expect(body.data.payment.status).to.eql('pending');",
+              "pm.collectionVariables.set('payment_id', body.data.payment.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{client_auth_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paymentMethodId\": \"pm_card_visa\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations/reservations/{{reservation_id}}/confirm-payment",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "reservations", "{{reservation_id}}", "confirm-payment"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "List Reservation Payments",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('reservation returned with latest payment', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.expect(body.success).to.eql(true);",
+              "pm.expect(body.data[0].id).to.eql(pm.collectionVariables.get('payment_id'));",
+              "pm.expect(body.data[0].status).to.eql('pending');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{client_auth_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{gateway_url}}/reservations/reservations/{{reservation_id}}/payments",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "reservations", "{{reservation_id}}", "payments"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Confirm Payment - Provider Unavailable",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('provider unavailable returns 503', function () {",
+              "  pm.response.to.have.status(503);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.expect(body.success).to.eql(false);",
+              "pm.expect(body.error).to.eql('Payment provider unavailable');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{client_auth_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paymentMethodId\": \"pm_card_visa\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations/reservations/{{reservation_id}}/confirm-payment",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "reservations", "{{reservation_id}}", "confirm-payment"]
+        },
+        "description": "Run this request only after setting PAYMENT_SIMULATION_MODE=unavailable in the reservations service environment."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "client_auth_token",
+      "value": ""
+    },
+    {
+      "key": "reservation_id",
+      "value": ""
+    },
+    {
+      "key": "payment_id",
+      "value": ""
+    }
+  ]
+}
