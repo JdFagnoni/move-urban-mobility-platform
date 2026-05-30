@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import type { Request } from "express";
 import { initializeDatabase } from "./db/sequelize";
 import { seedBootstrapAdmin, seedDefaultCategories } from "./db/seed";
 import { withRetry } from "./db/startup";
@@ -10,17 +11,27 @@ import { preregistrationsRouter } from "./modules/preregistrations/router";
 import { zonesRouter } from "./modules/zones/router";
 import { vehiclesRouter } from "./modules/vehicles/router";
 import { usersRouter } from "./modules/users/router";
+import { paymentsRouter } from "./modules/payments/router";
 
 const app = express();
 const PORT = process.env["PORT"] ?? "3001";
 
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, _res, buffer) => {
+      if (buffer.length > 0) {
+        (req as Request).rawBody = buffer.toString("utf8");
+      }
+    },
+  })
+);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "reservations" });
 });
 
 app.use("/auth", authRouter);
+app.use("/payments", paymentsRouter);
 app.use("/reservations", reservationsRouter);
 app.use("/categories", categoriesRouter);
 app.use("/preregistrations", preregistrationsRouter);
