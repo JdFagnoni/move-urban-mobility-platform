@@ -4,13 +4,14 @@ import type {
   CreateReservationDTO,
   GeoPoint,
   ListReservationsQueryDTO,
+  PaymentDTO,
   PaginatedResult,
   ReservationDTO,
   ReservationStatus,
   UserDTO,
 } from "@move/shared";
 import { Op, type WhereOptions } from "sequelize";
-import { CargoItemModel, ReservationModel } from "../../db/models";
+import { CargoItemModel, PaymentModel, ReservationModel } from "../../db/models";
 import { sequelize } from "../../db/sequelize";
 import { createCompanyReservation } from "./helpers/create-company-reservation";
 import { createIndividualReservation } from "./helpers/create-individual-reservation";
@@ -28,11 +29,30 @@ function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
   };
 }
 
-function sortCargoItemsByCreatedAt(cargoItems: CargoItemModel[]): CargoItemModel[] {
+export function sortCargoItemsByCreatedAt(cargoItems: CargoItemModel[]): CargoItemModel[] {
   return cargoItems.slice().sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
 }
 
-function modelToReservationDTO(
+export function mapPaymentModelToDTO(row: PaymentModel): PaymentDTO {
+  return {
+    id: row.id,
+    reservationId: row.reservationId,
+    provider: row.provider,
+    providerPaymentIntentId: row.providerPaymentIntentId,
+    amount: parseFloat(row.amount),
+    currency: row.currency,
+    status: row.status,
+    failureReason: row.failureReason,
+    providerResponseCode: row.providerResponseCode,
+    providerEventId: row.providerEventId,
+    requestedByUserId: row.requestedByUserId,
+    paymentMethodType: row.paymentMethodType,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
+  };
+}
+
+export function mapReservationModelToDTO(
   row: ReservationModel,
   cargoItems: CargoItemModel[]
 ): ReservationDTO {
@@ -46,7 +66,6 @@ function modelToReservationDTO(
     quotedPrice: row.quotedPrice !== null ? parseFloat(row.quotedPrice) : null,
     vehicleId: row.vehicleId,
     driverId: row.driverId,
-    paymentId: row.paymentId,
     cargoItems: cargoItems.map(modelToCargoItemDTO),
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
@@ -65,7 +84,7 @@ const CANCELLABLE_STATUSES: readonly ReservationStatus[] = [
   "confirmed",
 ];
 
-async function loadReservationWithCargoItems(id: string): Promise<ReservationModel | null> {
+export async function loadReservationWithRelations(id: string): Promise<ReservationModel | null> {
   return ReservationModel.findByPk(id, {
     include: [{ model: CargoItemModel, as: "cargoItems" }],
   });
@@ -132,17 +151,17 @@ export async function createReservation(
     );
   });
 
-  const reservation = await loadReservationWithCargoItems(reservationId);
+  const reservation = await loadReservationWithRelations(reservationId);
   if (!reservation) {
     throw new HttpError(500, "Reservation creation failed", "reservation_create_failed");
   }
 
   const sortedCargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
-  return modelToReservationDTO(reservation, sortedCargoItems);
+  return mapReservationModelToDTO(reservation, sortedCargoItems);
 }
 
 export async function getReservation(id: string, clientUser: UserDTO): Promise<ReservationDTO> {
-  const reservation = await loadReservationWithCargoItems(id);
+  const reservation = await loadReservationWithRelations(id);
   if (!reservation) {
     throw new HttpError(404, "Reservation not found", "reservation_not_found");
   }
@@ -152,7 +171,7 @@ export async function getReservation(id: string, clientUser: UserDTO): Promise<R
   }
 
   const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
-  return modelToReservationDTO(reservation, cargoItems);
+  return mapReservationModelToDTO(reservation, cargoItems);
 }
 
 export async function listReservations(
@@ -192,14 +211,14 @@ export async function listReservations(
 
   const data = result.rows.map((reservation) => {
     const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
-    return modelToReservationDTO(reservation, cargoItems);
+    return mapReservationModelToDTO(reservation, cargoItems);
   });
 
   return { data, total: result.count, page, pageSize };
 }
 
 export async function cancelReservation(id: string, clientUser: UserDTO): Promise<ReservationDTO> {
-  const reservation = await loadReservationWithCargoItems(id);
+  const reservation = await loadReservationWithRelations(id);
   if (!reservation) {
     throw new HttpError(404, "Reservation not found", "reservation_not_found");
   }
@@ -220,5 +239,5 @@ export async function cancelReservation(id: string, clientUser: UserDTO): Promis
   await reservation.save();
 
   const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
-  return modelToReservationDTO(reservation, cargoItems);
+  return mapReservationModelToDTO(reservation, cargoItems);
 }
