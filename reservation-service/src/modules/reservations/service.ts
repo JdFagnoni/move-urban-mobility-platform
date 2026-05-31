@@ -38,7 +38,7 @@ export function mapPaymentModelToDTO(row: PaymentModel): PaymentDTO {
     id: row.id,
     reservationId: row.reservationId,
     provider: row.provider,
-    providerPaymentIntentId: row.providerPaymentIntentId,
+    providerPaymentId: row.providerPaymentId,
     amount: parseFloat(row.amount),
     currency: row.currency,
     status: row.status,

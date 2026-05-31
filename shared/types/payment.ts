@@ -10,7 +10,7 @@ export interface PaymentDTO {
   id: string;
   reservationId: string;
   provider: PaymentProvider;
-  providerPaymentIntentId: string;
+  providerPaymentId: string;
   amount: number;
   currency: string;
   status: PaymentStatus;

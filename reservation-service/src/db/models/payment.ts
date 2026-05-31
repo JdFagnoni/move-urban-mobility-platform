@@ -32,7 +32,7 @@ export class PaymentModel extends Model {
   declare provider: PaymentProvider;
 
   @Column({ type: DataType.STRING, allowNull: false, unique: true })
-  declare providerPaymentIntentId: string;
+  declare providerPaymentId: string;
 
   @Column({ type: DataType.DECIMAL(12, 2), allowNull: false })
   declare amount: string;

@@ -132,7 +132,7 @@ export class StripePaymentProviderAdapter implements PaymentProviderPort {
 function mapInitiatedPayment(paymentIntent: StripePaymentIntent): InitiatedPayment {
   return {
     provider: "stripe",
-    providerPaymentIntentId: paymentIntent.id,
+    providerPaymentId: paymentIntent.id,
     providerResponseCode: paymentIntent.last_payment_error?.code ?? paymentIntent.status,
     paymentMethodType: paymentIntent.payment_method_types?.[0] ?? null,
     rawStatus: paymentIntent.status,
@@ -147,7 +147,7 @@ function mapWebhookEvent(
   return {
     eventId,
     provider: "stripe",
-    providerPaymentIntentId: paymentIntent.id,
+    providerPaymentId: paymentIntent.id,
     providerResponseCode: paymentIntent.last_payment_error?.code ?? paymentIntent.status,
     paymentMethodType: paymentIntent.payment_method_types?.[0] ?? null,
     status,

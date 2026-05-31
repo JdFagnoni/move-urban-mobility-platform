@@ -78,7 +78,7 @@ export async function confirmReservationPayment(
         id: paymentId,
         reservationId: reservation.id,
         provider: initiatedPayment.provider,
-        providerPaymentIntentId: initiatedPayment.providerPaymentIntentId,
+        providerPaymentId: initiatedPayment.providerPaymentId,
         amount: reservation.quotedPrice,
         currency: "UYU",
         status: "pending",
@@ -144,7 +144,7 @@ export async function handleStripeWebhook(
   const payment = await PaymentModel.findOne({
     where: {
       provider: event.provider,
-      providerPaymentIntentId: event.providerPaymentIntentId,
+      providerPaymentId: event.providerPaymentId,
     },
   });
 

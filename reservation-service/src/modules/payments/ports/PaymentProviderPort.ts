@@ -10,7 +10,7 @@ export interface InitiatePaymentInput {
 
 export interface InitiatedPayment {
   provider: PaymentProvider;
-  providerPaymentIntentId: string;
+  providerPaymentId: string;
   providerResponseCode: string | null;
   paymentMethodType: string | null;
   rawStatus: string;
@@ -19,7 +19,7 @@ export interface InitiatedPayment {
 export interface PaymentWebhookEvent {
   eventId: string;
   provider: PaymentProvider;
-  providerPaymentIntentId: string;
+  providerPaymentId: string;
   providerResponseCode: string | null;
   paymentMethodType: string | null;
   status: "pending" | "accepted" | "rejected";
