@@ -10,6 +10,7 @@ const RESERVATIONS_GATEWAY_CONFIG_ERROR = "Reservations gateway is not configure
 const RESERVATIONS_SERVICE_UNAVAILABLE_ERROR = "Reservations service unavailable";
 
 export const reservationsRouter = Router();
+export const webhooksRouter = Router();
 const RESERVATIONS_PREFIX = "/reservations";
 
 class ReservationsProxyError extends Error {
@@ -70,7 +71,6 @@ function mountProtectedRoute(path: string): void {
 reservationsRouter.get("/health", reservationsProxy());
 reservationsRouter.post("/auth/register", reservationsProxy());
 mountProtectedRoute("/reservations");
-reservationsRouter.post("/payments/webhooks/stripe", reservationsProxy());
 reservationsRouter.use("/categories", reservationsProxy());
 mountProtectedRoute("/preregistrations");
 reservationsRouter.use("/vehicles", reservationsProxy());
@@ -85,6 +85,8 @@ reservationsRouter.use("/zones", reservationsProxy());
 mountProtectedRoute("/auth/me");
 mountProtectedRoute("/auth/audit-logs");
 mountProtectedRoute("/users");
+
+webhooksRouter.post("/stripe", reservationsProxy());
 
 export function validateReservationsProxyConfiguration(): void {
   if (getInternalGatewaySecret()) {

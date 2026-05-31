@@ -31,7 +31,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/auth", authRouter);
-app.use("/payments", paymentsRouter);
+app.use("/webhooks", paymentsRouter);
 app.use("/reservations", reservationsRouter);
 app.use("/categories", categoriesRouter);
 app.use("/preregistrations", preregistrationsRouter);

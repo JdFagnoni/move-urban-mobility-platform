@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "8f74bafb-ffcf-4e0e-8b78-beb9b88dbd87",
     "name": "move-platform-payments-f6",
-    "description": "Covers F6 payment initiation for reservations already in pending_confirmation. For accepted/rejected final states, forward Stripe webhooks to {{gateway_url}}/reservations/payments/webhooks/stripe using Stripe CLI.",
+    "description": "Covers F6 payment initiation for reservations already in pending_confirmation. For accepted/rejected final states, forward Stripe webhooks to {{gateway_url}}/webhooks/stripe using Stripe CLI.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "37423762"
   },
