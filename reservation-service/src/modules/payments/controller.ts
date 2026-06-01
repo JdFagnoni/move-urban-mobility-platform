@@ -1,11 +1,7 @@
 import type { Request, Response } from "express";
 import type { ConfirmReservationPaymentDTO } from "@move/shared";
 import { handleServiceError } from "../../http/handler";
-import {
-  confirmReservationPayment,
-  handleStripeWebhook,
-  listReservationPayments,
-} from "./service";
+import { confirmReservationPayment, handleStripeWebhook, listReservationPayments } from "./service";
 
 export async function confirmPaymentHandler(req: Request, res: Response): Promise<void> {
   const clientUser = req.authenticatedUser!.profile;

@@ -6,14 +6,11 @@ import type {
   UserDTO,
 } from "@move/shared";
 import { HttpError } from "@move/shared";
-import { Transaction } from "sequelize";
+import type { Transaction } from "sequelize";
 import { sequelize } from "../../db/sequelize";
 import { PaymentModel, ReservationModel } from "../../db/models";
 import { paymentProvider } from "./runtime";
-import {
-  loadReservationWithRelations,
-  mapPaymentModelToDTO,
-} from "../reservations/service";
+import { loadReservationWithRelations, mapPaymentModelToDTO } from "../reservations/service";
 
 export async function confirmReservationPayment(
   reservationId: string,

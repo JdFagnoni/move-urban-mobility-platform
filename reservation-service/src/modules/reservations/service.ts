@@ -11,7 +11,8 @@ import type {
   UserDTO,
 } from "@move/shared";
 import { Op, type WhereOptions } from "sequelize";
-import { CargoItemModel, PaymentModel, ReservationModel } from "../../db/models";
+import type { PaymentModel } from "../../db/models";
+import { CargoItemModel, ReservationModel } from "../../db/models";
 import { sequelize } from "../../db/sequelize";
 import { createCompanyReservation } from "./helpers/create-company-reservation";
 import { createIndividualReservation } from "./helpers/create-individual-reservation";
