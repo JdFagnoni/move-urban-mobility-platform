@@ -13,7 +13,6 @@ import { transportationsRouter } from "./routes/transportations";
 const app = express();
 const PORT = process.env["PORT"] ?? "3000";
 
-app.use(express.json());
 app.use(requestLogger);
 app.use(rateLimiter);
 
@@ -21,7 +20,10 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "api-gateway" });
 });
 
+// Stripe signatures require the original request body, so webhooks must be proxied
+// before the JSON parser touches the payload.
 app.use("/webhooks", webhooksRouter);
+app.use(express.json());
 app.use("/reservations", reservationsRouter);
 app.use("/transportations", authenticate, transportationsRouter);
 
