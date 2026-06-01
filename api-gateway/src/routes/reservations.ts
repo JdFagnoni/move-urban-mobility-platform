@@ -38,8 +38,9 @@ const forwardIdentityHeaders = (proxyReqOpts: ClientRequestArgs, srcReq: Request
   return proxyReqOpts;
 };
 
-function reservationsProxy(options?: { forwardIdentity?: boolean }) {
+function reservationsProxy(options?: { forwardIdentity?: boolean; parseRequestBody?: boolean }) {
   return proxy(RESERVATIONS_URL, {
+    parseReqBody: options?.parseRequestBody ?? true,
     proxyErrorHandler: (error, res) => {
       const request = res.req;
       const proxyError = getProxyError(error);
@@ -86,7 +87,7 @@ mountProtectedRoute("/auth/me");
 mountProtectedRoute("/auth/audit-logs");
 mountProtectedRoute("/users");
 
-webhooksRouter.post("/stripe", reservationsProxy());
+webhooksRouter.post("/stripe", reservationsProxy({ parseRequestBody: false }));
 
 export function validateReservationsProxyConfiguration(): void {
   if (getInternalGatewaySecret()) {

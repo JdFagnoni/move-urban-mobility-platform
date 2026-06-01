@@ -51,6 +51,7 @@ export class StripePaymentProviderAdapter implements PaymentProviderPort {
       payment_method: input.paymentMethodId,
       confirmation_method: "automatic",
     });
+    payload.append("payment_method_types[]", "card");
 
     for (const [key, value] of Object.entries(input.metadata ?? {})) {
       payload.append(`metadata[${key}]`, value);
