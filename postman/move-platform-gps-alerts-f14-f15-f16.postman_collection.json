@@ -1,0 +1,970 @@
+{
+  "info": {
+    "_postman_id": "gps-alerts-f14-f15-f16",
+    "name": "MOVE - GPS & Alerts (F14, F15, F16)",
+    "description": "Pruebas de ingesta GPS (F14), detección de situaciones (F15) y generación de alertas (F16).\n\nFlujo recomendado:\n1. Ejecutar 'Setup' para crear vehículo y zona roja\n2. Ejecutar 'F14 - GPS Ingestion'\n3. Ejecutar 'F15-F16 - Alerts'\n4. Ejecutar 'Alert Management'\n\nNota: Los requests de GPS van directo al transportation-service (port 3002, sin auth).\nLos requests de alerts van por el gateway (port 3000, requieren token).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gateway_url", "value": "http://localhost:3000" },
+    { "key": "transport_url", "value": "http://localhost:3002" },
+    { "key": "adminToken", "value": "" },
+    { "key": "vehicleId", "value": "" },
+    { "key": "zoneId", "value": "" },
+    { "key": "alertId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "description": "Crear vehículo y zona roja. Ejecutar en orden. Requiere adminToken cargado.",
+      "item": [
+        {
+          "name": "1. Crear Vehículo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('vehicle has id', () => pm.expect(body.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('vehicleId', body.data.id);",
+                  "console.log('vehicleId saved:', body.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plate\": \"GPS-TEST-01\",\n  \"type\": \"VAN\",\n  \"capacity\": 1000,\n  \"gpsDeviceId\": \"gps-device-test-01\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/vehicles",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "vehicles"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Crear Zona Roja (cubre Plaza Independencia)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('type is red', () => pm.expect(body.data.type).to.eql('red'));",
+                  "pm.collectionVariables.set('zoneId', body.data.id);",
+                  "console.log('zoneId saved:', body.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Zona Roja Test - Plaza Independencia\",\n  \"type\": \"red\",\n  \"description\": \"Zona para pruebas de geofencing\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [[\n      [-56.1900, -34.9080],\n      [-56.1860, -34.9080],\n      [-56.1860, -34.9050],\n      [-56.1900, -34.9050],\n      [-56.1900, -34.9080]\n    ]]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/zones",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "zones"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Verificar Vehículo Creado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('id matches', () => pm.expect(body.data.id).to.eql(pm.collectionVariables.get('vehicleId')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/vehicles/{{vehicleId}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "vehicles", "{{vehicleId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "F14 - GPS Ingestion",
+      "description": "Pruebas de ingesta y validación de señales GPS.\nLos requests van directo al transportation-service (sin auth).",
+      "item": [
+        {
+          "name": "Enviar Señal Válida (fuera de zona roja)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('ts_now', new Date().toISOString());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 202', () => pm.response.to.have.status(202));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1712, -34.8941]\n  },\n  \"speed\": 45.5,\n  \"heading\": 90.0,\n  \"timestamp\": \"{{ts_now}}\"\n}"
+            },
+            "url": {
+              "raw": "{{transport_url}}/gps/signal",
+              "host": ["{{transport_url}}"],
+              "path": ["gps", "signal"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Última Señal del Vehículo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('vehicleId matches', () => pm.expect(body.data.vehicleId).to.eql(pm.collectionVariables.get('vehicleId')));",
+                  "pm.test('has location', () => pm.expect(body.data.location.type).to.eql('Point'));",
+                  "pm.test('has speed', () => pm.expect(body.data.speed).to.be.a('number'));",
+                  "pm.test('has timestamp', () => pm.expect(body.data.timestamp).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{transport_url}}/gps/vehicle/{{vehicleId}}/latest",
+              "host": ["{{transport_url}}"],
+              "path": ["gps", "vehicle", "{{vehicleId}}", "latest"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Señal con VehicleId Inválido - Expect 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('ts_now', new Date().toISOString());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "pm.test('error mentions unknown vehicle', () => pm.expect(body.error).to.include('Unknown vehicle'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"00000000-0000-0000-0000-000000000000\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1712, -34.8941]\n  },\n  \"speed\": 30.0,\n  \"heading\": 45.0,\n  \"timestamp\": \"{{ts_now}}\"\n}"
+            },
+            "url": {
+              "raw": "{{transport_url}}/gps/signal",
+              "host": ["{{transport_url}}"],
+              "path": ["gps", "signal"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Señal con Coordenadas Inválidas (lat > 90) - Expect 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('ts_now', new Date().toISOString());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1712, 999.0]\n  },\n  \"speed\": 30.0,\n  \"heading\": 0.0,\n  \"timestamp\": \"{{ts_now}}\"\n}"
+            },
+            "url": {
+              "raw": "{{transport_url}}/gps/signal",
+              "host": ["{{transport_url}}"],
+              "path": ["gps", "signal"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Señal con Velocidad Negativa - Expect 400",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('ts_now', new Date().toISOString());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1712, -34.8941]\n  },\n  \"speed\": -10.0,\n  \"heading\": 0.0,\n  \"timestamp\": \"{{ts_now}}\"\n}"
+            },
+            "url": {
+              "raw": "{{transport_url}}/gps/signal",
+              "host": ["{{transport_url}}"],
+              "path": ["gps", "signal"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Última Señal de Vehículo Inexistente - Expect 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{transport_url}}/gps/vehicle/00000000-0000-0000-0000-000000000000/latest",
+              "host": ["{{transport_url}}"],
+              "path": ["gps", "vehicle", "00000000-0000-0000-0000-000000000000", "latest"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "F15-F16 - Alerts",
+      "description": "Pruebas de detección de situaciones y generación de alertas.\nRequiere que el Setup haya creado el vehículo (vehicleId) y la zona roja (zoneId).",
+      "item": [
+        {
+          "name": "Geofence",
+          "description": "Enviar señal DENTRO de la zona roja para disparar alerta de geofence.",
+          "item": [
+            {
+              "name": "Señal DENTRO de Zona Roja → dispara alerta geofence",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.collectionVariables.set('ts_now', new Date().toISOString());"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 202', () => pm.response.to.have.status(202));",
+                      "const body = pm.response.json();",
+                      "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                      "console.log('Signal inside red zone sent. Check GET /alerts in ~1s.');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9065]\n  },\n  \"speed\": 20.0,\n  \"heading\": 180.0,\n  \"timestamp\": \"{{ts_now}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{transport_url}}/gps/signal",
+                  "host": ["{{transport_url}}"],
+                  "path": ["gps", "signal"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verificar Alerta Geofence Generada",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                      "pm.test('has alerts', () => pm.expect(body.data.length).to.be.greaterThan(0));",
+                      "const geofenceAlert = body.data.find(a => a.type === 'geofence_exit');",
+                      "pm.test('geofence_exit alert exists', () => pm.expect(geofenceAlert).to.not.be.undefined);",
+                      "pm.test('severity is critical', () => pm.expect(geofenceAlert.severity).to.eql('critical'));",
+                      "pm.test('not resolved', () => pm.expect(geofenceAlert.resolvedAt).to.be.undefined);",
+                      "if (geofenceAlert) {",
+                      "  pm.collectionVariables.set('alertId', geofenceAlert.id);",
+                      "  console.log('alertId saved:', geofenceAlert.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{gateway_url}}/transportations/alerts?vehicleId={{vehicleId}}&resolved=false",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["transportations", "alerts"],
+                  "query": [
+                    { "key": "vehicleId", "value": "{{vehicleId}}" },
+                    { "key": "resolved", "value": "false" }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Segunda Señal en Zona Roja → NO duplica alerta",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.collectionVariables.set('ts_now', new Date().toISOString());"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 202', () => pm.response.to.have.status(202));",
+                      "console.log('Second signal sent. Alert should NOT be duplicated.');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1880, -34.9060]\n  },\n  \"speed\": 15.0,\n  \"heading\": 180.0,\n  \"timestamp\": \"{{ts_now}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{transport_url}}/gps/signal",
+                  "host": ["{{transport_url}}"],
+                  "path": ["gps", "signal"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verificar Sin Duplicados (sigue siendo 1 alerta geofence)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "const geofenceAlerts = body.data.filter(a => a.type === 'geofence_exit');",
+                      "pm.test('only 1 geofence alert (no duplicates)', () => pm.expect(geofenceAlerts.length).to.eql(1));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{gateway_url}}/transportations/alerts?vehicleId={{vehicleId}}&resolved=false",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["transportations", "alerts"],
+                  "query": [
+                    { "key": "vehicleId", "value": "{{vehicleId}}" },
+                    { "key": "resolved", "value": "false" }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Parada Prolongada",
+          "description": "Enviar señales con speed=0 separadas >60s para disparar alerta de delay.\nLos timestamps están backdated 90s y 5s para simular la condición sin esperar.",
+          "item": [
+            {
+              "name": "Señal Stop 1 (speed=0, backdated 90s)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "const t1 = new Date(Date.now() - 90000);",
+                      "pm.collectionVariables.set('ts_stop1', t1.toISOString());"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 202', () => pm.response.to.have.status(202));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1553, -34.8821]\n  },\n  \"speed\": 0,\n  \"heading\": 0.0,\n  \"timestamp\": \"{{ts_stop1}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{transport_url}}/gps/signal",
+                  "host": ["{{transport_url}}"],
+                  "path": ["gps", "signal"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Señal Stop 2 (speed=0, backdated 5s) → dispara alerta delay",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "const t2 = new Date(Date.now() - 5000);",
+                      "pm.collectionVariables.set('ts_stop2', t2.toISOString());"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 202', () => pm.response.to.have.status(202));",
+                      "console.log('Stop signal 2 sent (~85s gap from signal 1). Delay alert should be generated.');"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1553, -34.8821]\n  },\n  \"speed\": 0,\n  \"heading\": 0.0,\n  \"timestamp\": \"{{ts_stop2}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{transport_url}}/gps/signal",
+                  "host": ["{{transport_url}}"],
+                  "path": ["gps", "signal"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verificar Alerta Delay Generada",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "const delayAlert = body.data.find(a => a.type === 'delay');",
+                      "pm.test('delay alert exists', () => pm.expect(delayAlert).to.not.be.undefined);",
+                      "pm.test('severity is warning', () => pm.expect(delayAlert.severity).to.eql('warning'));",
+                      "pm.test('not resolved', () => pm.expect(delayAlert.resolvedAt).to.be.undefined);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{gateway_url}}/transportations/alerts?vehicleId={{vehicleId}}&resolved=false",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["transportations", "alerts"],
+                  "query": [
+                    { "key": "vehicleId", "value": "{{vehicleId}}" },
+                    { "key": "resolved", "value": "false" }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Alert Management",
+      "description": "Gestión de alertas: listar, filtrar y resolver.",
+      "item": [
+        {
+          "name": "Listar Todas las Alertas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('data is array', () => pm.expect(body.data).to.be.an('array'));",
+                  "if (body.data.length > 0) {",
+                  "  const a = body.data[0];",
+                  "  pm.test('alert has id', () => pm.expect(a.id).to.be.a('string'));",
+                  "  pm.test('alert has type', () => pm.expect(a.type).to.be.a('string'));",
+                  "  pm.test('alert has severity', () => pm.expect(a.severity).to.be.a('string'));",
+                  "  pm.test('alert has createdAt', () => pm.expect(a.createdAt).to.be.a('string'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/transportations/alerts",
+              "host": ["{{gateway_url}}"],
+              "path": ["transportations", "alerts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Alertas No Resueltas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('all unresolved', () => body.data.forEach(a => pm.expect(a.resolvedAt).to.be.undefined));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/transportations/alerts?resolved=false",
+              "host": ["{{gateway_url}}"],
+              "path": ["transportations", "alerts"],
+              "query": [{ "key": "resolved", "value": "false" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Alertas por VehicleId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('all belong to vehicle', () => body.data.forEach(a => pm.expect(a.vehicleId).to.eql(pm.collectionVariables.get('vehicleId'))));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/transportations/alerts?vehicleId={{vehicleId}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["transportations", "alerts"],
+              "query": [{ "key": "vehicleId", "value": "{{vehicleId}}" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resolver Alerta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('resolvedAt is set', () => pm.expect(body.data.resolvedAt).to.be.a('string'));",
+                  "pm.test('id matches', () => pm.expect(body.data.id).to.eql(pm.collectionVariables.get('alertId')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/transportations/alerts/{{alertId}}/resolve",
+              "host": ["{{gateway_url}}"],
+              "path": ["transportations", "alerts", "{{alertId}}", "resolve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resolver Alerta Ya Resuelta - Expect 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/transportations/alerts/{{alertId}}/resolve",
+              "host": ["{{gateway_url}}"],
+              "path": ["transportations", "alerts", "{{alertId}}", "resolve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resolver Alerta Inexistente - Expect 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/transportations/alerts/00000000-0000-0000-0000-000000000000/resolve",
+              "host": ["{{gateway_url}}"],
+              "path": ["transportations", "alerts", "00000000-0000-0000-0000-000000000000", "resolve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar Alerta Resuelta Aparece en Resueltas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('all resolved', () => body.data.forEach(a => pm.expect(a.resolvedAt).to.be.a('string')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/transportations/alerts?resolved=true",
+              "host": ["{{gateway_url}}"],
+              "path": ["transportations", "alerts"],
+              "query": [{ "key": "resolved", "value": "true" }]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Seguridad - Autorización",
+      "description": "Verifica que las rutas de transportation requieren autenticación.\nTodos estos requests van por el gateway (port 3000) sin Authorization header → deben retornar 401.",
+      "item": [
+        {
+          "name": "Listar Alertas sin Token - Expect 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "console.log('Sin token el gateway bloquea el acceso a las alertas.');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/transportations/alerts",
+              "host": ["{{gateway_url}}"],
+              "path": ["transportations", "alerts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resolver Alerta sin Token - Expect 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "console.log('Sin token el gateway bloquea la resolución de alertas.');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/transportations/alerts/{{alertId}}/resolve",
+              "host": ["{{gateway_url}}"],
+              "path": ["transportations", "alerts", "{{alertId}}", "resolve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enviar Señal GPS por Gateway sin Token - Expect 401",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('ts_now', new Date().toISOString());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "console.log('El gateway protege la ingesta GPS cuando se accede externamente sin token.');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1712, -34.8941]\n  },\n  \"speed\": 30.0,\n  \"heading\": 90.0,\n  \"timestamp\": \"{{ts_now}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/transportations/gps/signal",
+              "host": ["{{gateway_url}}"],
+              "path": ["transportations", "gps", "signal"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
