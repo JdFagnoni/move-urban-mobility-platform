@@ -70,3 +70,8 @@ export interface ListReservationsQueryDTO {
   page?: number;
   pageSize?: number;
 }
+
+export interface AssignReservationDTO {
+  vehicleId: string;
+  driverId: string;
+}
