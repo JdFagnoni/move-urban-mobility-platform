@@ -13,12 +13,7 @@ interface GpsRow {
 export function validateSignalRange(signal: GpsSignalDTO): boolean {
   const [lon, lat] = signal.location.coordinates;
   return (
-    lat >= -90 &&
-    lat <= 90 &&
-    lon >= -180 &&
-    lon <= 180 &&
-    signal.speed >= 0 &&
-    signal.speed <= 300
+    lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 && signal.speed >= 0 && signal.speed <= 300
   );
 }
 
@@ -71,7 +66,8 @@ export async function getLatestSignal(vehicleId: string): Promise<GpsSignalDTO |
     location: row.location,
     speed: row.speed,
     heading: row.heading,
-    timestamp: typeof row.timestamp === "string" ? row.timestamp : new Date(row.timestamp).toISOString(),
+    timestamp:
+      typeof row.timestamp === "string" ? row.timestamp : new Date(row.timestamp).toISOString(),
   };
 }
 
@@ -89,6 +85,7 @@ export async function getRecentSignals(vehicleId: string, limit = 5): Promise<Gp
     location: row.location,
     speed: row.speed,
     heading: row.heading,
-    timestamp: typeof row.timestamp === "string" ? row.timestamp : new Date(row.timestamp).toISOString(),
+    timestamp:
+      typeof row.timestamp === "string" ? row.timestamp : new Date(row.timestamp).toISOString(),
   }));
 }

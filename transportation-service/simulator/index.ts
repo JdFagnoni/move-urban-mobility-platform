@@ -7,7 +7,9 @@ const INTERVAL_MS = Number(process.env["GPS_SIMULATOR_INTERVAL_MS"] ?? 10_000);
 // Override via env: SIMULATED_VEHICLE_IDS=uuid1,uuid2,...
 const RAW_IDS = process.env["SIMULATED_VEHICLE_IDS"] ?? "";
 const VEHICLE_IDS: string[] = RAW_IDS
-  ? RAW_IDS.split(",").map((s) => s.trim()).filter(Boolean)
+  ? RAW_IDS.split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
   : [];
 
 // ─── Route definitions (Montevideo waypoints) ─────────────────────────────────
@@ -28,7 +30,7 @@ const ROUTES: Route[] = [
       [-56.1882, -34.9065], // Plaza Independencia
       [-56.1712, -34.8941], // Bulevar Artigas
       [-56.1553, -34.8821], // Tres Cruces
-      [-56.1308, -34.863],  // Instrucciones
+      [-56.1308, -34.863], // Instrucciones
       [-56.0133, -34.8354], // Aeropuerto
     ],
     triggerGeofence: true,
@@ -46,7 +48,7 @@ const ROUTES: Route[] = [
     name: "Ciudad Vieja → Punta Carretas",
     waypoints: [
       [-56.2143, -34.9077], // Ciudad Vieja
-      [-56.1980, -34.9065], // Centro
+      [-56.198, -34.9065], // Centro
       [-56.1852, -34.9121], // Palermo
       [-56.1712, -34.9154], // Punta Carretas
     ],
@@ -66,11 +68,7 @@ interface VehicleState {
 }
 
 // Interpolate between two geo-points
-function interpolate(
-  from: [number, number],
-  to: [number, number],
-  t: number
-): [number, number] {
+function interpolate(from: [number, number], to: [number, number], t: number): [number, number] {
   return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
 }
 
@@ -144,7 +142,10 @@ async function sendSignal(state: VehicleState): Promise<void> {
   const [lon, lat] = nextPosition(state);
   const signal = {
     vehicleId: state.vehicleId,
-    location: { type: "Point" as const, coordinates: [jitter(lon, 0.0002), jitter(lat, 0.0002)] as [number, number] },
+    location: {
+      type: "Point" as const,
+      coordinates: [jitter(lon, 0.0002), jitter(lat, 0.0002)] as [number, number],
+    },
     speed: Math.round(state.speed * 10) / 10,
     heading: Math.round(state.heading * 10) / 10,
     timestamp: new Date().toISOString(),
@@ -172,13 +173,17 @@ async function sendSignal(state: VehicleState): Promise<void> {
 
 if (VEHICLE_IDS.length === 0) {
   console.warn("[simulator] No vehicle IDs configured. Set SIMULATED_VEHICLE_IDS=uuid1,uuid2,...");
-  console.warn("[simulator] Running in demo mode with placeholder IDs (signals will be rejected by service).");
+  console.warn(
+    "[simulator] Running in demo mode with placeholder IDs (signals will be rejected by service)."
+  );
   VEHICLE_IDS.push("00000000-0000-0000-0000-000000000001");
 }
 
-let states = initStates();
+const states = initStates();
 
-console.log(`[simulator] starting — ${states.length} vehicle(s), interval ${INTERVAL_MS}ms → ${TRANSPORTATIONS_URL}`);
+console.log(
+  `[simulator] starting — ${states.length} vehicle(s), interval ${INTERVAL_MS}ms → ${TRANSPORTATIONS_URL}`
+);
 states.forEach((s) => console.log(`  • ${s.vehicleId} on route "${s.route.name}"`));
 
 setInterval(() => {

@@ -114,7 +114,9 @@ async function checkGeofence(signal: GpsSignalDTO): Promise<void> {
           message: `Vehicle entered red zone "${zone.name}"`,
           location: signal.location,
         });
-        console.warn(`[alerts] geofence alert for vehicle ${signal.vehicleId} in zone "${zone.name}"`);
+        console.warn(
+          `[alerts] geofence alert for vehicle ${signal.vehicleId} in zone "${zone.name}"`
+        );
       }
       return;
     }
@@ -213,11 +215,15 @@ function mapAlert(row: AlertRow): AlertDTO {
     type: row.type,
     severity: row.severity,
     message: row.message,
-    createdAt: typeof row.created_at === "string" ? row.created_at : new Date(row.created_at).toISOString(),
+    createdAt:
+      typeof row.created_at === "string" ? row.created_at : new Date(row.created_at).toISOString(),
   };
   if (row.location) dto.location = row.location;
   if (row.resolved_at) {
-    dto.resolvedAt = typeof row.resolved_at === "string" ? row.resolved_at : new Date(row.resolved_at).toISOString();
+    dto.resolvedAt =
+      typeof row.resolved_at === "string"
+        ? row.resolved_at
+        : new Date(row.resolved_at).toISOString();
   }
   return dto;
 }
