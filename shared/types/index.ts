@@ -4,6 +4,7 @@ export * from "./zone";
 export * from "./vehicle";
 export * from "./category";
 export * from "./reservation";
+export * from "./payment";
 export * from "./preregistration";
 export * from "./trip";
 export * from "./gps";

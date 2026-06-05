@@ -49,7 +49,6 @@ export interface ReservationDTO {
   quotedPrice?: number | null;
   vehicleId?: string | null;
   driverId?: string | null;
-  paymentId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

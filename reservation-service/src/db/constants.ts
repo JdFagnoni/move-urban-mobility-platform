@@ -3,6 +3,8 @@ import type {
   AuthAuditEventType,
   AuthProvider,
   ClientType,
+  PaymentProvider,
+  PaymentStatus,
   ReservationStatus,
   UserRole,
   UserStatus,
@@ -13,6 +15,8 @@ export const AUTH_PROVIDERS: readonly AuthProvider[] = ["auth0"];
 export const USER_ROLES: readonly UserRole[] = ["admin", "operator", "client", "driver"];
 export const USER_STATUSES: readonly UserStatus[] = ["active", "suspended", "disabled"];
 export const CLIENT_TYPES: readonly ClientType[] = ["individual", "company"];
+export const PAYMENT_PROVIDERS: readonly PaymentProvider[] = ["stripe"];
+export const PAYMENT_STATUSES: readonly PaymentStatus[] = ["pending", "accepted", "rejected"];
 export const RESERVATION_STATUSES: readonly ReservationStatus[] = [
   "pending_classification",
   "pending_quote",
