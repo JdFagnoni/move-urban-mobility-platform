@@ -13,6 +13,7 @@ import { AUTH_PROVIDERS, CLIENT_TYPES, USER_ROLES, USER_STATUSES } from "../cons
 import { AuthAuditLogModel } from "./auth-audit-log";
 import { CompanyLocationModel } from "./company-location";
 import { CompanyProductModel } from "./company-product";
+import { PaymentModel } from "./payment";
 import { ReservationModel } from "./reservation";
 
 @Table({
@@ -83,4 +84,7 @@ export class UserModel extends Model {
 
   @HasMany(() => AuthAuditLogModel, { foreignKey: "userId", as: "auditLogs" })
   declare auditLogs?: AuthAuditLogModel[];
+
+  @HasMany(() => PaymentModel, { foreignKey: "requestedByUserId", as: "paymentsRequested" })
+  declare paymentsRequested?: PaymentModel[];
 }

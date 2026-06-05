@@ -33,6 +33,27 @@ services:
       - reservations
       - transportations
 
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    profiles:
+      - ngrok
+    ports:
+      - "4040:4040"
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+      NGROK_DOMAIN: ${NGROK_DOMAIN:-}
+    depends_on:
+      - api-gateway
+    entrypoint:
+      - /bin/sh
+      - -lc
+      - |
+        if [ -n "$$NGROK_DOMAIN" ]; then
+          exec ngrok http http://api-gateway:3000 --url=https://$$NGROK_DOMAIN
+        fi
+        exec ngrok http http://api-gateway:3000
+
   reservations:
     build:
       context: .
@@ -54,6 +75,11 @@ services:
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
       BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-MOVE Admin}
       CATEGORIZER_SERVICE_URL: ${CATEGORIZER_SERVICE_URL:-http://categorizer-service:3003}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-stripe}
+      PAYMENT_SIMULATION_MODE: ${PAYMENT_SIMULATION_MODE:-none}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_API_BASE_URL: ${STRIPE_API_BASE_URL:-https://api.stripe.com/v1}
       PORT: "3001"
     depends_on:
       - postgres
