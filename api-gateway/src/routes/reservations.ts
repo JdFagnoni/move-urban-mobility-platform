@@ -74,7 +74,6 @@ reservationsRouter.post("/auth/register", reservationsProxy());
 mountProtectedRoute("/reservations");
 reservationsRouter.use("/categories", reservationsProxy());
 mountProtectedRoute("/preregistrations");
-reservationsRouter.use("/vehicles", reservationsProxy());
 // GET /zones is public so F15 geofencing can consume it without auth
 reservationsRouter.get("/zones", reservationsProxy());
 reservationsRouter.get("/zones/:id", reservationsProxy());
