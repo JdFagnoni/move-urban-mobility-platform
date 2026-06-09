@@ -12,7 +12,7 @@ import type {
 } from "@move/shared";
 import { Op, type WhereOptions } from "sequelize";
 import type { PaymentModel } from "../../db/models";
-import { CargoItemModel, ReservationModel } from "../../db/models";
+import { CargoItemModel, CategoryModel, ReservationModel } from "../../db/models";
 import { sequelize } from "../../db/sequelize";
 import { createCompanyReservation } from "./helpers/create-company-reservation";
 import { createIndividualReservation } from "./helpers/create-individual-reservation";
@@ -27,6 +27,7 @@ function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
     estimatedValue: row.estimatedValue !== null ? parseFloat(row.estimatedValue) : null,
     size: row.size,
     categoryId: row.categoryId,
+    category: row.category?.name ?? null,
   };
 }
 
@@ -87,9 +88,21 @@ const CANCELLABLE_STATUSES: readonly ReservationStatus[] = [
 
 export async function loadReservationWithRelations(id: string): Promise<ReservationModel | null> {
   return ReservationModel.findByPk(id, {
-    include: [{ model: CargoItemModel, as: "cargoItems" }],
+    include: [reservationCargoItemsInclude],
   });
 }
+
+const reservationCargoItemsInclude = {
+  model: CargoItemModel,
+  as: "cargoItems",
+  include: [
+    {
+      model: CategoryModel,
+      as: "category",
+      required: false,
+    },
+  ],
+};
 
 export async function createReservation(
   dto: CreateReservationDTO,
@@ -203,7 +216,7 @@ export async function listReservations(
 
   const result = await ReservationModel.findAndCountAll({
     where,
-    include: [{ model: CargoItemModel, as: "cargoItems" }],
+    include: [reservationCargoItemsInclude],
     distinct: true,
     order: [["created_at", "DESC"]],
     limit: pageSize,
