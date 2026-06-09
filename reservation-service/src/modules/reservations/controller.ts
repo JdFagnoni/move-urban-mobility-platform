@@ -27,8 +27,10 @@ export async function getHandler(req: Request, res: Response): Promise<void> {
 
 export async function listHandler(req: Request, res: Response): Promise<void> {
   const clientUser = req.authenticatedUser!.profile;
-  const filters = parseListReservationsQuery(req.query);
-  const result = await handleServiceError(res, () => listReservations(clientUser, filters));
+  const result = await handleServiceError(res, () => {
+    const filters = parseListReservationsQuery(req.query);
+    return listReservations(clientUser, filters);
+  });
   if (!result.ok) {
     return;
   }
