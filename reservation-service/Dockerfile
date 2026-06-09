@@ -33,6 +33,7 @@ ENV NODE_ENV=production
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/reservation-service/dist ./dist
+COPY --from=builder /app/reservation-service/data ./data
 COPY --from=builder /app/reservation-service/package.json ./
 EXPOSE 3001
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
