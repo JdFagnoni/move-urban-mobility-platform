@@ -29,6 +29,7 @@ Aceptado
 ## Consecuencias
 
 **Positivas:**
+
 - Se simplifica la integración externa mediante una única puerta de entrada.
 - Se centralizan autenticación, logging, rate limiting y otras políticas transversales de borde.
 - Se reduce la duplicación de lógica de seguridad y observabilidad en servicios internos.
@@ -37,12 +38,14 @@ Aceptado
 - Se mejora la mantenibilidad al concentrar reglas de exposición de rutas en un único componente.
 
 **Negativas:**
+
 - El gateway se convierte en un punto crítico cuya falla afecta gran parte del sistema.
 - Se agrega un salto de red adicional y, por lo tanto, cierta latencia en las solicitudes.
 - Se concentra complejidad operativa en el componente de borde, especialmente al manejar rutas públicas, protegidas y casos especiales como webhooks.
 - Un error de configuración en el gateway puede bloquear rutas válidas o exponer rutas que debían permanecer protegidas.
 
 **Riesgos:**
+
 - Si la frontera interna no se protege adecuadamente, la identidad propagada podría ser falsificada o utilizada fuera del contexto previsto.
 - Si el gateway no preserva correctamente requests especiales, como webhooks firmados, ciertas integraciones externas pueden fallar aun cuando los servicios internos estén correctos.
 - La centralización de autenticación y políticas de borde exige mayor cuidado en cambios futuros, porque cualquier regresión impacta a múltiples flujos del sistema.

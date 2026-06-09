@@ -21,6 +21,7 @@ El enfoque de identidad federada aporta beneficios relevantes. En primer lugar, 
 La arquitectura implementada confirma esta decisión. El `api-gateway` consulta JWKS de Auth0, verifica `issuer`, `audience` y firma del token antes de aceptar la solicitud, y luego propaga el `sub` autenticado hacia los servicios internos. A su vez, el servicio de reservas crea identidades mediante la Management API y persiste un usuario local con `authSubject`, lo que permite aplicar reglas de negocio sin custodiar credenciales. Esto impacta positivamente en los atributos de seguridad, integrabilidad, mantenibilidad y modificabilidad.
 
 **Alternativas consideradas y rechazadas:**
+
 - **Autenticación propia dentro de la plataforma**: descartada porque incrementa el riesgo de errores de seguridad y obliga a implementar almacenamiento de contraseñas, recuperación de acceso, rotación de claves, validación de credenciales y endurecimiento adicional de endpoints, con alto costo para el alcance del proyecto.
 - **Uso de Keycloak u otro IdP autogestionado**: descartado en esta etapa por su mayor costo operativo y de administración de infraestructura respecto de una solución gestionada, dado que el equipo prioriza velocidad de entrega y menor carga de operación.
 - **Validación del token en cada servicio interno**: descartada porque duplica lógica transversal, aumenta el acoplamiento de múltiples servicios al proveedor de identidad y debilita el patrón de `api-gateway` como punto unificado de autenticación.
@@ -32,6 +33,7 @@ Aceptado
 ## Consecuencias
 
 **Positivas:**
+
 - Se reduce significativamente el esfuerzo de implementar y mantener autenticación segura dentro del sistema.
 - Se evita custodiar contraseñas y otros secretos de autenticación en la plataforma.
 - Se adopta un esquema de identidad federada basado en estándares ampliamente usados, lo que mejora integrabilidad y claridad arquitectónica.
@@ -40,12 +42,14 @@ Aceptado
 - Se habilita una mejor base para incorporar capacidades futuras del proveedor, como MFA o variantes de login, sin reescribir la lógica de negocio.
 
 **Negativas:**
+
 - Se introduce dependencia externa de disponibilidad, costos, políticas y contratos técnicos de Auth0.
 - Se genera cierto vendor lock-in en la capa de infraestructura de identidad.
 - El `api-gateway` se vuelve un punto crítico para la autenticación, ya que concentra la validación de tokens y la propagación del contexto autenticado.
 - La integración requiere coordinación entre identidad externa y registro local de usuarios para evitar inconsistencias.
 
 **Riesgos:**
+
 - Si Auth0 o la resolución de JWKS no están disponibles, la autenticación puede degradarse o quedar temporalmente indisponible.
 - Cambios en configuración de `issuer`, `audience`, claves o credenciales de Management API pueden interrumpir el flujo de autenticación y registro.
 - Si la frontera entre identidad externa y autorización interna no se mantiene clara, pueden aparecer acoplamientos indebidos entre el dominio y el proveedor de identidad.
