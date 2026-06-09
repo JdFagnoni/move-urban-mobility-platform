@@ -64,13 +64,17 @@
               }
             }
           ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+	          "request": {
+	            "method": "POST",
+	            "header": [
+	              {
+	                "key": "Authorization",
+	                "value": "Bearer {{admin_auth_token}}"
+	              },
+	              {
+	                "key": "Content-Type",
+	                "value": "application/json"
+	              }
             ],
             "body": {
               "mode": "raw",
@@ -111,13 +115,17 @@
               }
             }
           ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+	          "request": {
+	            "method": "POST",
+	            "header": [
+	              {
+	                "key": "Authorization",
+	                "value": "Bearer {{admin_auth_token}}"
+	              },
+	              {
+	                "key": "Content-Type",
+	                "value": "application/json"
+	              }
             ],
             "body": {
               "mode": "raw",
@@ -267,13 +275,17 @@
               }
             }
           ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+	          "request": {
+	            "method": "POST",
+	            "header": [
+	              {
+	                "key": "Authorization",
+	                "value": "Bearer {{admin_auth_token}}"
+	              },
+	              {
+	                "key": "Content-Type",
+	                "value": "application/json"
+	              }
             ],
             "body": {
               "mode": "raw",
@@ -1100,6 +1112,10 @@
     },
     {
       "key": "individual_auth_token",
+      "value": ""
+    },
+    {
+      "key": "admin_auth_token",
       "value": ""
     },
     {

@@ -72,7 +72,26 @@ function mountProtectedRoute(path: string): void {
 reservationsRouter.get("/health", reservationsProxy());
 reservationsRouter.post("/auth/register", reservationsProxy());
 mountProtectedRoute("/reservations");
-reservationsRouter.use("/categories", reservationsProxy());
+reservationsRouter.get("/categories", reservationsProxy());
+reservationsRouter.get("/categories/:id", reservationsProxy());
+reservationsRouter.post(
+  "/categories",
+  ensureReservationsGatewayConfiguration,
+  authenticate,
+  reservationsProxy({ forwardIdentity: true })
+);
+reservationsRouter.patch(
+  "/categories/:id",
+  ensureReservationsGatewayConfiguration,
+  authenticate,
+  reservationsProxy({ forwardIdentity: true })
+);
+reservationsRouter.delete(
+  "/categories/:id",
+  ensureReservationsGatewayConfiguration,
+  authenticate,
+  reservationsProxy({ forwardIdentity: true })
+);
 mountProtectedRoute("/preregistrations");
 // GET /zones is public so F15 geofencing can consume it without auth
 reservationsRouter.get("/zones", reservationsProxy());
