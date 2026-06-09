@@ -10,8 +10,14 @@ export interface GenerativeAiInput {
 
 // Uses local Ollama model to classify a reservation description into a category
 export async function classifyWithGenerativeAi(input: GenerativeAiInput): Promise<string | null> {
-  const categoryNames = input.availableCategories.map((c) => c.name).join(", ");
-  const prompt = `Given the following categories: ${categoryNames}\nClassify this request: "${input.description}"\nRespond with only the category name.`;
+  const categoryContext = input.availableCategories
+    .map((category) => {
+      const examples =
+        category.descriptions.length > 0 ? ` Examples: ${category.descriptions.join("; ")}` : "";
+      return `- ${category.name}.${examples}`;
+    })
+    .join("\n");
+  const prompt = `Given the following categories:\n${categoryContext}\nClassify this request: "${input.description}"\nRespond with only the category name.`;
 
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {

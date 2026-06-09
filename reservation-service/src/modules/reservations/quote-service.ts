@@ -45,9 +45,10 @@ export async function quotePreparedReservation(
   const categoryDTOs: CategoryDTO[] = categories.map((category) => ({
     id: category.id,
     name: category.name,
-    rules: category.rules,
+    descriptions: category.descriptions,
     pricing: normalizeCategoryPricingConfig(category.pricing),
     behavior: normalizeCategoryBehaviorConfig(category.behavior),
+    active: category.active,
   }));
 
   const distanceKm = calculateDistanceKm(input.origin, input.destination);
