@@ -250,7 +250,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Electronics F3 {{run_id}}\",\n  \"rules\": []\n}",
+							"raw": "{\n  \"name\": \"Electronics F3 {{run_id}}\",\n  \"descriptions\": [\"monitors and laptops\"]\n}",
 							"options": {
 								"raw": {
 									"language": "json"
