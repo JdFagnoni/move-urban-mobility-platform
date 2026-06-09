@@ -21,9 +21,10 @@ async function fetchActiveCategories(): Promise<CategoryDTO[]> {
   return categories.map((category) => ({
     id: category.id,
     name: category.name,
-    rules: category.rules,
+    descriptions: category.descriptions,
     pricing: normalizeCategoryPricingConfig(category.pricing),
     behavior: normalizeCategoryBehaviorConfig(category.behavior),
+    active: category.active,
   }));
 }
 

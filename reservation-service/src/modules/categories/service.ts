@@ -1,15 +1,20 @@
-import type { CategoryDTO } from "@move/shared";
+import type { CategoryDTO, CreateCategoryDTO, UpdateCategoryDTO } from "@move/shared";
 import { HttpError } from "@move/shared";
 import { CategoryModel } from "../../db/models";
-import { normalizeCategoryBehaviorConfig, normalizeCategoryPricingConfig } from "./config";
+import {
+  normalizeCategoryBehaviorConfig,
+  normalizeCategoryDescriptions,
+  normalizeCategoryPricingConfig,
+} from "./config";
 
 function mapCategory(category: CategoryModel): CategoryDTO {
   return {
     id: category.id,
     name: category.name,
-    rules: category.rules,
+    descriptions: normalizeCategoryDescriptions(category.descriptions),
     pricing: normalizeCategoryPricingConfig(category.pricing),
     behavior: normalizeCategoryBehaviorConfig(category.behavior),
+    active: category.active,
   };
 }
 
@@ -34,7 +39,7 @@ export async function getCategoryForHttp(id: string): Promise<CategoryDTO> {
   return category;
 }
 
-export async function createCategory(dto: Omit<CategoryDTO, "id">): Promise<CategoryDTO> {
+export async function createCategory(dto: CreateCategoryDTO): Promise<CategoryDTO> {
   const name = dto.name.trim();
   if (!name) {
     throw new HttpError(400, "Category name is required", "invalid_category");
@@ -43,18 +48,15 @@ export async function createCategory(dto: Omit<CategoryDTO, "id">): Promise<Cate
   const category = await CategoryModel.create({
     id: crypto.randomUUID(),
     name,
-    active: true,
-    rules: dto.rules ?? [],
+    active: dto.active ?? true,
+    descriptions: normalizeCategoryDescriptions(dto.descriptions),
     pricing: normalizeCategoryPricingConfig(dto.pricing),
     behavior: normalizeCategoryBehaviorConfig(dto.behavior),
   });
   return mapCategory(category);
 }
 
-export async function updateCategory(
-  id: string,
-  dto: Partial<Omit<CategoryDTO, "id">>
-): Promise<CategoryDTO> {
+export async function updateCategory(id: string, dto: UpdateCategoryDTO): Promise<CategoryDTO> {
   const category = await CategoryModel.findByPk(id);
   if (!category) {
     throw new HttpError(404, "Category not found", "category_not_found");
@@ -68,8 +70,8 @@ export async function updateCategory(
     category.name = name;
   }
 
-  if (dto.rules !== undefined) {
-    category.rules = dto.rules;
+  if (dto.descriptions !== undefined) {
+    category.descriptions = normalizeCategoryDescriptions(dto.descriptions);
   }
 
   if (dto.pricing !== undefined) {
@@ -78,6 +80,10 @@ export async function updateCategory(
 
   if (dto.behavior !== undefined) {
     category.behavior = normalizeCategoryBehaviorConfig(dto.behavior);
+  }
+
+  if (dto.active !== undefined) {
+    category.active = dto.active;
   }
 
   await category.save();

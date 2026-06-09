@@ -6,7 +6,7 @@ import {
   updateCategory,
   deleteCategory,
 } from "./service";
-import type { CategoryDTO } from "@move/shared";
+import type { CreateCategoryDTO, UpdateCategoryDTO } from "@move/shared";
 import { handleServiceError } from "../../http/handler";
 
 export async function listHandler(_req: Request, res: Response): Promise<void> {
@@ -29,9 +29,7 @@ export async function getHandler(req: Request, res: Response): Promise<void> {
 }
 
 export async function createHandler(req: Request, res: Response): Promise<void> {
-  const result = await handleServiceError(res, () =>
-    createCategory(req.body as Omit<CategoryDTO, "id">)
-  );
+  const result = await handleServiceError(res, () => createCategory(req.body as CreateCategoryDTO));
   if (!result.ok) {
     return;
   }
@@ -42,7 +40,7 @@ export async function createHandler(req: Request, res: Response): Promise<void> 
 export async function updateHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
   const result = await handleServiceError(res, () =>
-    updateCategory(id, req.body as Partial<Omit<CategoryDTO, "id">>)
+    updateCategory(id, req.body as UpdateCategoryDTO)
   );
   if (!result.ok) {
     return;
