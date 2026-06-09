@@ -24,6 +24,7 @@ services:
       - ./api-gateway/src:/app/api-gateway/src
     environment:
       NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
       RESERVATIONS_URL: ${RESERVATIONS_URL:-http://reservations:3001}
       TRANSPORTATIONS_URL: ${TRANSPORTATIONS_URL:-http://transportations:3002}
       AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
