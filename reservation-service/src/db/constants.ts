@@ -3,6 +3,8 @@ import type {
   AuthAuditEventType,
   AuthProvider,
   ClientType,
+  NotificationStatus,
+  NotificationType,
   PaymentProvider,
   PaymentStatus,
   ReservationStatus,
@@ -25,7 +27,15 @@ export const RESERVATION_STATUSES: readonly ReservationStatus[] = [
   "assigned",
   "in_progress",
   "completed",
+  "rejected",
   "cancelled",
+];
+export const NOTIFICATION_TYPES: readonly NotificationType[] = [
+  "classification_required",
+];
+export const NOTIFICATION_STATUSES: readonly NotificationStatus[] = [
+  "pending",
+  "acknowledged",
 ];
 export const AUTH_AUDIT_EVENT_TYPES: readonly AuthAuditEventType[] = [
   "registration_success",

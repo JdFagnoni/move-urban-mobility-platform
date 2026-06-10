@@ -12,6 +12,7 @@ import {
 } from "sequelize-typescript";
 import { RESERVATION_STATUSES } from "../constants";
 import { CargoItemModel } from "./cargo-item";
+import { NotificationModel } from "./notification";
 import { PaymentModel } from "./payment";
 import { UserModel } from "./user";
 
@@ -55,6 +56,15 @@ export class ReservationModel extends Model {
   @Column({ type: DataType.UUID, allowNull: true })
   declare driverId: string | null;
 
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare rejectedAt: Date | null;
+
+  @Column({ type: DataType.UUID, allowNull: true })
+  declare rejectedByUserId: string | null;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare rejectionReason: string | null;
+
   @CreatedAt
   declare created_at: Date;
 
@@ -69,4 +79,10 @@ export class ReservationModel extends Model {
 
   @HasMany(() => PaymentModel, { foreignKey: "reservationId", as: "payments" })
   declare payments?: PaymentModel[];
+
+  @HasMany(() => NotificationModel, {
+    foreignKey: "reservationId",
+    as: "notifications",
+  })
+  declare notifications?: NotificationModel[];
 }

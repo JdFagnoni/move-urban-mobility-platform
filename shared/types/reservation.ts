@@ -8,6 +8,7 @@ export type ReservationStatus =
   | "assigned"
   | "in_progress"
   | "completed"
+  | "rejected"
   | "cancelled";
 
 export const RESERVATION_STATUSES: readonly ReservationStatus[] = [
@@ -18,7 +19,21 @@ export const RESERVATION_STATUSES: readonly ReservationStatus[] = [
   "assigned",
   "in_progress",
   "completed",
+  "rejected",
   "cancelled",
+];
+
+export type NotificationType = "classification_required";
+
+export const NOTIFICATION_TYPES: readonly NotificationType[] = [
+  "classification_required",
+];
+
+export type NotificationStatus = "pending" | "acknowledged";
+
+export const NOTIFICATION_STATUSES: readonly NotificationStatus[] = [
+  "pending",
+  "acknowledged",
 ];
 
 export interface CargoItemDTO {
@@ -50,6 +65,9 @@ export interface ReservationDTO {
   quotedPrice?: number | null;
   vehicleId?: string | null;
   driverId?: string | null;
+  rejectedAt?: string | null;
+  rejectedByUserId?: string | null;
+  rejectionReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -69,4 +87,28 @@ export interface ListReservationsQueryDTO {
   status?: ReservationStatus;
   page?: number;
   pageSize?: number;
+}
+
+export interface ManualReservationClassificationItemDTO {
+  cargoItemId: string;
+  categoryId: string;
+}
+
+export interface ManualReservationClassificationDTO {
+  cargoItems: ManualReservationClassificationItemDTO[];
+}
+
+export interface RejectReservationDTO {
+  reason: string;
+}
+
+export interface NotificationDTO {
+  id: string;
+  reservationId: string;
+  type: NotificationType;
+  status: NotificationStatus;
+  acknowledgedAt?: string | null;
+  acknowledgedByUserId?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
