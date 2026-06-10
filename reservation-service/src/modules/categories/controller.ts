@@ -29,7 +29,9 @@ export async function getHandler(req: Request, res: Response): Promise<void> {
 }
 
 export async function createHandler(req: Request, res: Response): Promise<void> {
-  const result = await handleServiceError(res, () => createCategory(parseCreateCategoryDTO(req.body)));
+  const result = await handleServiceError(res, () =>
+    createCategory(parseCreateCategoryDTO(req.body))
+  );
   if (!result.ok) {
     return;
   }
@@ -39,7 +41,9 @@ export async function createHandler(req: Request, res: Response): Promise<void> 
 
 export async function updateHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
-  const result = await handleServiceError(res, () => updateCategory(id, parseUpdateCategoryDTO(req.body)));
+  const result = await handleServiceError(res, () =>
+    updateCategory(id, parseUpdateCategoryDTO(req.body))
+  );
   if (!result.ok) {
     return;
   }

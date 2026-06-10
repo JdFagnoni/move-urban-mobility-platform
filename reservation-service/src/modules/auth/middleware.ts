@@ -76,10 +76,10 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
     });
     res.status(401).json({ success: false, error: "Authentication required" });
     return;
-    }
+  }
 
-    try {
-      const user = await getUserByAuthSubject(authSubject);
+  try {
+    const user = await getUserByAuthSubject(authSubject);
 
     if (!user) {
       await recordAuditLog({
@@ -111,27 +111,27 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       });
       res.status(403).json({ success: false, error: "User is not active" });
       return;
-      }
+    }
 
-      await Promise.all([
-        recordAuditLog({
-          ...context,
-          eventType: "token_accepted",
-          decision: "authorized",
-          statusCode: 200,
-          userId: user.id,
-          authSubject: user.authSubject,
-          email: user.email,
-          role: user.role,
-          clientType: user.clientType,
-          reason: "Gateway identity authorized in reservation-service",
-          metadata: { stage: "reservation_service" },
-        }),
-        touchLastLogin(user.id),
-      ]);
+    await Promise.all([
+      recordAuditLog({
+        ...context,
+        eventType: "token_accepted",
+        decision: "authorized",
+        statusCode: 200,
+        userId: user.id,
+        authSubject: user.authSubject,
+        email: user.email,
+        role: user.role,
+        clientType: user.clientType,
+        reason: "Gateway identity authorized in reservation-service",
+        metadata: { stage: "reservation_service" },
+      }),
+      touchLastLogin(user.id),
+    ]);
 
-      req.authenticatedUser = { profile: user };
-      next();
+    req.authenticatedUser = { profile: user };
+    next();
   } catch (error) {
     const message =
       error instanceof HttpError ? error.message : "Gateway authentication context is invalid";

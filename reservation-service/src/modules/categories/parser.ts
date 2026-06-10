@@ -4,8 +4,14 @@ import { HttpError } from "@move/shared";
 export function parseCreateCategoryDTO(input: unknown): CreateCategoryDTO {
   const payload = getPayload(input);
   const descriptions = parseOptionalStringArray(payload["descriptions"], "descriptions");
-  const pricing = parseOptionalObject(payload["pricing"], "pricing") as CreateCategoryDTO["pricing"];
-  const behavior = parseOptionalObject(payload["behavior"], "behavior") as CreateCategoryDTO["behavior"];
+  const pricing = parseOptionalObject(
+    payload["pricing"],
+    "pricing"
+  ) as CreateCategoryDTO["pricing"];
+  const behavior = parseOptionalObject(
+    payload["behavior"],
+    "behavior"
+  ) as CreateCategoryDTO["behavior"];
   const active = parseOptionalBoolean(payload["active"], "active");
 
   const dto: CreateCategoryDTO = {
@@ -44,7 +50,10 @@ export function parseUpdateCategoryDTO(input: unknown): UpdateCategoryDTO {
   }
 
   if (payload["pricing"] !== undefined) {
-    const pricing = parseOptionalObject(payload["pricing"], "pricing") as UpdateCategoryDTO["pricing"];
+    const pricing = parseOptionalObject(
+      payload["pricing"],
+      "pricing"
+    ) as UpdateCategoryDTO["pricing"];
     if (pricing !== undefined) {
       dto.pricing = pricing;
     }
@@ -98,7 +107,10 @@ function parseOptionalStringArray(value: unknown, field: string): string[] | und
   return [...value];
 }
 
-function parseOptionalObject(value: unknown, field: string): Record<string, unknown> | null | undefined {
+function parseOptionalObject(
+  value: unknown,
+  field: string
+): Record<string, unknown> | null | undefined {
   if (value === undefined || value === null) {
     return value;
   }

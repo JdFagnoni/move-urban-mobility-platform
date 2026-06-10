@@ -107,10 +107,6 @@ async function ensureCategoryIsNotInUse(categoryId: string): Promise<void> {
   ]);
 
   if (reservationUsageCount > 0 || preregistrationUsageCount > 0) {
-    throw new HttpError(
-      409,
-      "Category is in use and cannot be deleted",
-      "category_in_use"
-    );
+    throw new HttpError(409, "Category is in use and cannot be deleted", "category_in_use");
   }
 }
