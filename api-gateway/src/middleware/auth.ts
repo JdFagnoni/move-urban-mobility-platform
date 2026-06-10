@@ -1,6 +1,8 @@
 import { createPublicKey, type JsonWebKey, type KeyObject } from "crypto";
 import type { NextFunction, Request, Response as ExpressResponse } from "express";
+import { getRequestContext } from "@move/shared";
 import jwt, { type JwtPayload } from "jsonwebtoken";
+import { recordGatewayAuditLog } from "../audit/auth-audit";
 
 export interface OidcClaims extends JwtPayload {
   sub: string;
@@ -152,17 +154,43 @@ export async function authenticate(
   res: ExpressResponse,
   next: NextFunction
 ): Promise<void> {
+  const context = getRequestContext(req);
   const token = getBearerToken(req);
   if (!token) {
+    await recordGatewayAuditLog({
+      ...context,
+      eventType: "token_rejected",
+      decision: "denied",
+      statusCode: 401,
+      reason: "Missing bearer token",
+      metadata: { stage: "gateway" },
+    });
     res.status(401).json({ success: false, error: "Missing bearer token" });
     return;
   }
 
   try {
     req.user = await verifyAccessToken(token);
+    await recordGatewayAuditLog({
+      ...context,
+      eventType: "token_accepted",
+      decision: "authorized",
+      authSubject: req.user.sub,
+      statusCode: 200,
+      reason: "Bearer token validated successfully",
+      metadata: { stage: "gateway" },
+    });
     next();
   } catch (error) {
     const authError = getAuthErrorResponse(error);
+    await recordGatewayAuditLog({
+      ...context,
+      eventType: "token_rejected",
+      decision: authError.statusCode >= 500 ? "failed" : "denied",
+      statusCode: authError.statusCode,
+      reason: authError.message,
+      metadata: { stage: "gateway" },
+    });
     res.status(authError.statusCode).json({ success: false, error: authError.message });
   }
 }

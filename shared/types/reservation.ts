@@ -28,6 +28,7 @@ export interface CargoItemDTO {
   estimatedValue?: number | null;
   size?: string | null;
   categoryId?: string | null;
+  category?: string | null;
 }
 
 export interface CreateCargoItemDTO {

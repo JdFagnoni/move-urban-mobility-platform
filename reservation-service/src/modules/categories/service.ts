@@ -1,6 +1,6 @@
 import type { CategoryDTO, CreateCategoryDTO, UpdateCategoryDTO } from "@move/shared";
 import { HttpError } from "@move/shared";
-import { CategoryModel } from "../../db/models";
+import { CargoItemModel, CategoryModel, CompanyProductModel } from "../../db/models";
 import {
   normalizeCategoryBehaviorConfig,
   normalizeCategoryDescriptions,
@@ -96,5 +96,17 @@ export async function deleteCategory(id: string): Promise<void> {
     throw new HttpError(404, "Category not found", "category_not_found");
   }
 
+  await ensureCategoryIsNotInUse(category.id);
   await category.destroy();
+}
+
+async function ensureCategoryIsNotInUse(categoryId: string): Promise<void> {
+  const [reservationUsageCount, preregistrationUsageCount] = await Promise.all([
+    CargoItemModel.count({ where: { categoryId } }),
+    CompanyProductModel.count({ where: { categoryId } }),
+  ]);
+
+  if (reservationUsageCount > 0 || preregistrationUsageCount > 0) {
+    throw new HttpError(409, "Category is in use and cannot be deleted", "category_in_use");
+  }
 }
