@@ -64,13 +64,17 @@
               }
             }
           ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+	          "request": {
+	            "method": "POST",
+	            "header": [
+	              {
+	                "key": "Authorization",
+	                "value": "Bearer {{admin_auth_token}}"
+	              },
+	              {
+	                "key": "Content-Type",
+	                "value": "application/json"
+	              }
             ],
             "body": {
               "mode": "raw",
@@ -111,13 +115,17 @@
               }
             }
           ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+	          "request": {
+	            "method": "POST",
+	            "header": [
+	              {
+	                "key": "Authorization",
+	                "value": "Bearer {{admin_auth_token}}"
+	              },
+	              {
+	                "key": "Content-Type",
+	                "value": "application/json"
+	              }
             ],
             "body": {
               "mode": "raw",
@@ -267,17 +275,21 @@
               }
             }
           ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+	          "request": {
+	            "method": "POST",
+	            "header": [
+	              {
+	                "key": "Authorization",
+	                "value": "Bearer {{admin_auth_token}}"
+	              },
+	              {
+	                "key": "Content-Type",
+	                "value": "application/json"
+	              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"F5 Standard {{run_id}}\",\n  \"rules\": [],\n  \"pricing\": {\n    \"baseFare\": 100,\n    \"pricePerKm\": 12,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 0\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": false,\n    \"generatesAlerts\": false\n  }\n}",
+              "raw": "{\n  \"name\": \"F5 Standard {{run_id}}\",\n  \"descriptions\": [\"standard cargo\"],\n  \"pricing\": {\n    \"baseFare\": 100,\n    \"pricePerKm\": 12,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 0\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": false,\n    \"generatesAlerts\": false\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -326,7 +338,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"F5 Premium {{run_id}}\",\n  \"rules\": [],\n  \"pricing\": {\n    \"baseFare\": 100,\n    \"pricePerKm\": 12,\n    \"surchargeType\": \"percentage\",\n    \"surchargeValue\": 25\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": true,\n    \"generatesAlerts\": true\n  }\n}",
+              "raw": "{\n  \"name\": \"F5 Premium {{run_id}}\",\n  \"descriptions\": [\"premium cargo\"],\n  \"pricing\": {\n    \"baseFare\": 100,\n    \"pricePerKm\": 12,\n    \"surchargeType\": \"percentage\",\n    \"surchargeValue\": 25\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": true,\n    \"generatesAlerts\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -375,7 +387,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"{{individual_keyword}}\",\n  \"rules\": [],\n  \"pricing\": {\n    \"baseFare\": 80,\n    \"pricePerKm\": 9,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 15\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": false,\n    \"generatesAlerts\": false\n  }\n}",
+              "raw": "{\n  \"name\": \"{{individual_keyword}}\",\n  \"descriptions\": [\"{{individual_keyword}} items\"],\n  \"pricing\": {\n    \"baseFare\": 80,\n    \"pricePerKm\": 9,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 15\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": false,\n    \"generatesAlerts\": false\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1100,6 +1112,10 @@
     },
     {
       "key": "individual_auth_token",
+      "value": ""
+    },
+    {
+      "key": "admin_auth_token",
       "value": ""
     },
     {

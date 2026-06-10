@@ -15,6 +15,7 @@ RUN npm ci --ignore-scripts
 FROM base AS dev
 COPY shared/ ./shared/
 COPY api-gateway/ ./api-gateway/
+RUN npm run build --workspace=@move/shared
 WORKDIR /app/api-gateway
 EXPOSE 3000
 CMD ["npm", "run", "dev"]
@@ -23,6 +24,7 @@ CMD ["npm", "run", "dev"]
 FROM base AS builder
 COPY shared/ ./shared/
 COPY api-gateway/ ./api-gateway/
+RUN npm run build --workspace=@move/shared
 RUN npm run build --workspace=@move/api-gateway
 
 # ── prod ───────────────────────────────────────────────────────────────────
@@ -30,6 +32,7 @@ FROM node:20-alpine AS prod
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/api-gateway/dist ./dist
 COPY --from=builder /app/api-gateway/package.json ./
 EXPOSE 3000

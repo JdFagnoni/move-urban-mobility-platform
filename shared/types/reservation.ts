@@ -28,6 +28,7 @@ export interface CargoItemDTO {
   estimatedValue?: number | null;
   size?: string | null;
   categoryId?: string | null;
+  category?: string | null;
 }
 
 export interface CreateCargoItemDTO {
@@ -49,7 +50,6 @@ export interface ReservationDTO {
   quotedPrice?: number | null;
   vehicleId?: string | null;
   driverId?: string | null;
-  paymentId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -10,6 +10,7 @@ const RESERVATIONS_GATEWAY_CONFIG_ERROR = "Reservations gateway is not configure
 const RESERVATIONS_SERVICE_UNAVAILABLE_ERROR = "Reservations service unavailable";
 
 export const reservationsRouter = Router();
+export const webhooksRouter = Router();
 const RESERVATIONS_PREFIX = "/reservations";
 
 class ReservationsProxyError extends Error {
@@ -37,8 +38,9 @@ const forwardIdentityHeaders = (proxyReqOpts: ClientRequestArgs, srcReq: Request
   return proxyReqOpts;
 };
 
-function reservationsProxy(options?: { forwardIdentity?: boolean }) {
+function reservationsProxy(options?: { forwardIdentity?: boolean; parseRequestBody?: boolean }) {
   return proxy(RESERVATIONS_URL, {
+    parseReqBody: options?.parseRequestBody ?? true,
     proxyErrorHandler: (error, res) => {
       const request = res.req;
       const proxyError = getProxyError(error);
@@ -70,7 +72,26 @@ function mountProtectedRoute(path: string): void {
 reservationsRouter.get("/health", reservationsProxy());
 reservationsRouter.post("/auth/register", reservationsProxy());
 mountProtectedRoute("/reservations");
-reservationsRouter.use("/categories", reservationsProxy());
+reservationsRouter.get("/categories", reservationsProxy());
+reservationsRouter.get("/categories/:id", reservationsProxy());
+reservationsRouter.post(
+  "/categories",
+  ensureReservationsGatewayConfiguration,
+  authenticate,
+  reservationsProxy({ forwardIdentity: true })
+);
+reservationsRouter.patch(
+  "/categories/:id",
+  ensureReservationsGatewayConfiguration,
+  authenticate,
+  reservationsProxy({ forwardIdentity: true })
+);
+reservationsRouter.delete(
+  "/categories/:id",
+  ensureReservationsGatewayConfiguration,
+  authenticate,
+  reservationsProxy({ forwardIdentity: true })
+);
 mountProtectedRoute("/preregistrations");
 // GET /zones is public so F15 geofencing can consume it without auth
 reservationsRouter.get("/zones", reservationsProxy());
@@ -83,6 +104,8 @@ reservationsRouter.use("/zones", reservationsProxy());
 mountProtectedRoute("/auth/me");
 mountProtectedRoute("/auth/audit-logs");
 mountProtectedRoute("/users");
+
+webhooksRouter.post("/stripe", reservationsProxy({ parseRequestBody: false }));
 
 export function validateReservationsProxyConfiguration(): void {
   if (getInternalGatewaySecret()) {

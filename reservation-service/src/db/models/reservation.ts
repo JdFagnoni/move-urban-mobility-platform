@@ -12,6 +12,7 @@ import {
 } from "sequelize-typescript";
 import { RESERVATION_STATUSES } from "../constants";
 import { CargoItemModel } from "./cargo-item";
+import { PaymentModel } from "./payment";
 import { UserModel } from "./user";
 
 @Table({
@@ -54,9 +55,6 @@ export class ReservationModel extends Model {
   @Column({ type: DataType.UUID, allowNull: true })
   declare driverId: string | null;
 
-  @Column({ type: DataType.UUID, allowNull: true })
-  declare paymentId: string | null;
-
   @CreatedAt
   declare created_at: Date;
 
@@ -68,4 +66,7 @@ export class ReservationModel extends Model {
 
   @HasMany(() => CargoItemModel, { foreignKey: "reservationId", as: "cargoItems" })
   declare cargoItems?: CargoItemModel[];
+
+  @HasMany(() => PaymentModel, { foreignKey: "reservationId", as: "payments" })
+  declare payments?: PaymentModel[];
 }

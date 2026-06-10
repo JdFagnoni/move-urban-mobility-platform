@@ -36,7 +36,7 @@ export async function classifyWithSemanticSearch(
   const queryEmbedding = await embed(input.description);
   const scored = await Promise.all(
     input.availableCategories.map(async (cat) => {
-      const catEmbedding = await embed(cat.name);
+      const catEmbedding = await embed([cat.name, ...cat.descriptions].join("\n"));
       return { id: cat.id, score: cosineSimilarity(queryEmbedding, catEmbedding) };
     })
   );

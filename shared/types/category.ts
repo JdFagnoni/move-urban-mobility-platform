@@ -1,15 +1,26 @@
 export interface CategoryDTO {
   id: string;
   name: string;
-  rules: CategoryRule[];
+  descriptions: string[];
   pricing: CategoryPricingConfig;
   behavior: CategoryBehaviorConfig;
+  active: boolean;
 }
 
-export interface CategoryRule {
-  field: string;
-  operator: "eq" | "gte" | "lte" | "in";
-  value: unknown;
+export interface CreateCategoryDTO {
+  name: string;
+  descriptions?: string[];
+  pricing?: Partial<CategoryPricingConfig> | null;
+  behavior?: Partial<CategoryBehaviorConfig> | null;
+  active?: boolean;
+}
+
+export interface UpdateCategoryDTO {
+  name?: string;
+  descriptions?: string[];
+  pricing?: Partial<CategoryPricingConfig> | null;
+  behavior?: Partial<CategoryBehaviorConfig> | null;
+  active?: boolean;
 }
 
 export type CategorySurchargeType = "fixed" | "percentage";

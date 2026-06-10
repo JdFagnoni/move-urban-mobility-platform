@@ -52,6 +52,18 @@ export function normalizeCategoryBehaviorConfig(
   };
 }
 
+export function normalizeCategoryDescriptions(descriptions?: readonly string[] | null): string[] {
+  if (!descriptions) {
+    return [];
+  }
+
+  const normalized = descriptions
+    .map((description) => description.trim())
+    .filter((description) => description.length > 0);
+
+  return [...new Set(normalized)];
+}
+
 function validateNonNegativeNumber(value: number, field: string): void {
   if (!Number.isFinite(value) || value < 0) {
     throw new HttpError(400, `${field} must be a non-negative number`, "invalid_category");

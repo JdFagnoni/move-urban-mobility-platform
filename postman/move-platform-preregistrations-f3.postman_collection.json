@@ -28,13 +28,17 @@
 				},
 				{
 					"name": "Register Company Client",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+						"request": {
+							"method": "POST",
+							"header": [
+								{
+									"key": "Authorization",
+									"value": "Bearer {{admin_auth_token}}"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
 						],
 						"body": {
 							"mode": "raw",
@@ -250,7 +254,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Electronics F3 {{run_id}}\",\n  \"rules\": []\n}",
+							"raw": "{\n  \"name\": \"Electronics F3 {{run_id}}\",\n  \"descriptions\": [\"monitors and laptops\"]\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -831,6 +835,10 @@
 		},
 		{
 			"key": "individual_auth_token",
+			"value": ""
+		},
+		{
+			"key": "admin_auth_token",
 			"value": ""
 		},
 		{

@@ -67,13 +67,17 @@
               }
             }
           ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+	          "request": {
+	            "method": "POST",
+	            "header": [
+	              {
+	                "key": "Authorization",
+	                "value": "Bearer {{admin_auth_token}}"
+	              },
+	              {
+	                "key": "Content-Type",
+	                "value": "application/json"
+	              }
             ],
             "body": {
               "mode": "raw",
@@ -362,7 +366,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"{{category_keyword}}\",\n  \"rules\": []\n}",
+              "raw": "{\n  \"name\": \"{{category_keyword}}\",\n  \"descriptions\": [\"Box with {{category_keyword}} components\"]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1539,6 +1543,10 @@
     },
     {
       "key": "individual_auth_token",
+      "value": ""
+    },
+    {
+      "key": "admin_auth_token",
       "value": ""
     },
     {

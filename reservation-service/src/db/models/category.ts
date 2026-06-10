@@ -1,4 +1,4 @@
-import type { CategoryBehaviorConfig, CategoryPricingConfig, CategoryRule } from "@move/shared";
+import type { CategoryBehaviorConfig, CategoryPricingConfig } from "@move/shared";
 import { DEFAULT_CATEGORY_BEHAVIOR, DEFAULT_CATEGORY_PRICING } from "@move/shared";
 import {
   Column,
@@ -32,7 +32,7 @@ export class CategoryModel extends Model {
   declare active: boolean;
 
   @Column({ type: DataType.JSONB, allowNull: false, defaultValue: [] })
-  declare rules: CategoryRule[];
+  declare descriptions: string[];
 
   @Column({ type: DataType.JSONB, allowNull: false, defaultValue: DEFAULT_CATEGORY_PRICING })
   declare pricing: CategoryPricingConfig;
