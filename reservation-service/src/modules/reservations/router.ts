@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   acknowledgeClassificationNotificationHandler,
+  assignHandler,
   cancelHandler,
   classifyReservationHandler,
   createHandler,
@@ -40,7 +41,8 @@ reservationsRouter.patch(
   classifyReservationHandler
 );
 reservationsRouter.patch("/:id/reject", requireRole("operator"), rejectReservationHandler);
-reservationsRouter.get("/:id", getHandler);
+reservationsRouter.patch("/:id/assign", requireRole("operator", "admin"), assignHandler);
+reservationsRouter.patch("/:id/cancel", cancelHandler);
 reservationsRouter.get("/:id/payments", listReservationPaymentsHandler);
 reservationsRouter.post("/:id/confirm-payment", confirmPaymentHandler);
-reservationsRouter.patch("/:id/cancel", cancelHandler);
+reservationsRouter.get("/:id", getHandler);

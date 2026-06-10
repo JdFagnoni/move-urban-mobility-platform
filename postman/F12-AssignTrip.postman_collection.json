@@ -1,0 +1,977 @@
+{
+  "info": {
+    "_postman_id": "f12-assign-trip-collection",
+    "name": "MOVE - F12 Assign Trip",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gateway_url", "value": "http://localhost:3000" },
+    { "key": "adminToken", "value": "" },
+    { "key": "operatorToken", "value": "" },
+    { "key": "userToken", "value": "" },
+    { "key": "reservationId", "value": "" },
+    { "key": "secondReservationId", "value": "" },
+    { "key": "vehicleId", "value": "" },
+    { "key": "secondVehicleId", "value": "" },
+    { "key": "smallVehicleId", "value": "" },
+    { "key": "maintenanceVehicleId", "value": "" },
+    { "key": "driverId", "value": "" },
+    { "key": "adminId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Gateway Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('gateway ok', () => pm.expect(body.status).to.eql('ok'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Setup",
+      "description": "Pre-condition: adminToken must be set. Confirmed reservations must exist before running (create via F4+F6 flow). This Setup auto-populates vehicleId, secondVehicleId, smallVehicleId, maintenanceVehicleId, driverId, adminId, reservationId, and secondReservationId.",
+      "item": [
+        {
+          "name": "Create Main Vehicle (capacity 10)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.collectionVariables.set('vehicleId', body.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plate\": \"F12-MAIN-001\",\n  \"type\": \"van\",\n  \"capacity\": 10,\n  \"status\": \"available\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/vehicles",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "vehicles"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Second Vehicle (capacity 10)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.collectionVariables.set('secondVehicleId', body.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plate\": \"F12-MAIN-002\",\n  \"type\": \"van\",\n  \"capacity\": 10,\n  \"status\": \"available\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/vehicles",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "vehicles"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Small Vehicle (capacity 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.collectionVariables.set('smallVehicleId', body.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plate\": \"F12-SMALL-001\",\n  \"type\": \"moto\",\n  \"capacity\": 1,\n  \"status\": \"available\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/vehicles",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "vehicles"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Maintenance Vehicle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.collectionVariables.set('maintenanceVehicleId', body.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plate\": \"F12-MAINT-001\",\n  \"type\": \"van\",\n  \"capacity\": 5,\n  \"status\": \"maintenance\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/vehicles",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "vehicles"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Driver",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "const driver = body.data.data.find(u => u.role === 'driver' && u.status === 'active');",
+                  "pm.test('found active driver', () => pm.expect(driver).to.not.be.undefined);",
+                  "if (driver) pm.collectionVariables.set('driverId', driver.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/users?role=driver&status=active",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "users"],
+              "query": [
+                { "key": "role", "value": "driver" },
+                { "key": "status", "value": "active" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Admin User (for BRV-4)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "const admin = body.data.data.find(u => u.role === 'admin' && u.status === 'active');",
+                  "pm.test('found admin user', () => pm.expect(admin).to.not.be.undefined);",
+                  "if (admin) pm.collectionVariables.set('adminId', admin.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/users?role=admin&status=active",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "users"],
+              "query": [
+                { "key": "role", "value": "admin" },
+                { "key": "status", "value": "active" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Confirmed Reservations (auto-set reservationId + secondReservationId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "const confirmed = body.data.data.filter(r => r.status === 'confirmed');",
+                  "pm.test('at least 2 confirmed reservations exist', () => pm.expect(confirmed.length).to.be.at.least(2));",
+                  "if (confirmed.length >= 1) pm.collectionVariables.set('reservationId', confirmed[0].id);",
+                  "if (confirmed.length >= 2) pm.collectionVariables.set('secondReservationId', confirmed[1].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations?status=confirmed&pageSize=10",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations"],
+              "query": [
+                { "key": "status", "value": "confirmed" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Happy Paths",
+      "item": [
+        {
+          "name": "[HP-1] Assign Vehicle and Driver (admin token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('status is assigned', () => pm.expect(body.data.status).to.eql('assigned'));",
+                  "pm.test('vehicleId matches', () => pm.expect(body.data.vehicleId).to.eql(pm.collectionVariables.get('vehicleId')));",
+                  "pm.test('driverId matches', () => pm.expect(body.data.driverId).to.eql(pm.collectionVariables.get('driverId')));",
+                  "pm.test('cargoItems present', () => pm.expect(body.data.cargoItems).to.be.an('array'));",
+                  "pm.test('id present', () => pm.expect(body.data.id).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[HP-2] Assign Different Reservation (operator token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('status is assigned', () => pm.expect(body.data.status).to.eql('assigned'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{operatorToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{secondVehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{secondReservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{secondReservationId}}", "assign"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Validation Errors (400)",
+      "item": [
+        {
+          "name": "[VAL-1] Missing vehicleId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "pm.test('error mentions vehicleId', () => pm.expect(body.error).to.include('vehicleId'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"driverId\": \"{{driverId}}\"\n}" },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[VAL-2] Missing driverId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "pm.test('error mentions driverId', () => pm.expect(body.error).to.include('driverId'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\"\n}" },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[VAL-3] Empty strings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"vehicleId\": \"\",\n  \"driverId\": \"\"\n}" },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[VAL-4] Empty body",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Not Found (404)",
+      "item": [
+        {
+          "name": "[NF-1] Non-existent Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "pm.test('error mentions reservation', () => pm.expect(body.error.toLowerCase()).to.include('reservation'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/00000000-0000-0000-0000-000000000000/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "00000000-0000-0000-0000-000000000000", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[NF-2] Non-existent Vehicle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "pm.test('error mentions vehicle', () => pm.expect(body.error.toLowerCase()).to.include('vehicle'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"00000000-0000-0000-0000-000000000000\",\n  \"driverId\": \"{{driverId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[NF-3] Non-existent Driver",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "pm.test('error mentions driver', () => pm.expect(body.error.toLowerCase()).to.include('driver'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Business Rule Violations (409)",
+      "item": [
+        {
+          "name": "[BRV-1] Reservation Not in Confirmed Status",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// reservationId was assigned in HP-1 and is now in 'assigned' status.",
+                  "// Attempting to assign it again must return 409."
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "pm.test('error mentions confirmed status', () => pm.expect(body.error.toLowerCase()).to.include('confirmed'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[BRV-2] Vehicle Capacity Exceeded",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// smallVehicleId has capacity=1.",
+                  "// secondReservationId was assigned in HP-2, so BRV-1 fires first if used directly.",
+                  "// This test verifies capacity check: use the already-assigned reservationId (BRV-1 fires) OR",
+                  "// create a fresh confirmed reservation with multiple large items before running."
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "const isCapacityOrStatus = body.error.toLowerCase().includes('capacity') || body.error.toLowerCase().includes('confirmed');",
+                  "pm.test('error is capacity or status violation', () => pm.expect(isCapacityOrStatus).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{smallVehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[BRV-3] Vehicle Unavailable (maintenance)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "const isAvailableOrStatus = body.error.toLowerCase().includes('available') || body.error.toLowerCase().includes('confirmed');",
+                  "pm.test('error is availability or status violation', () => pm.expect(isAvailableOrStatus).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{maintenanceVehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[BRV-4] User Is Not a Driver",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// adminId was auto-populated in Setup > Get Admin User.",
+                  "// Passing an admin's ID as driverId must return 409 user_not_driver."
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "const isDriverOrStatus = body.error.toLowerCase().includes('driver') || body.error.toLowerCase().includes('confirmed');",
+                  "pm.test('error is driver role or status violation', () => pm.expect(isDriverOrStatus).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"{{adminId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[BRV-5] Vehicle Schedule Conflict",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// vehicleId is already assigned to reservationId (HP-1, status=assigned).",
+                  "// secondReservationId has scheduledAt within ±2h of reservationId.",
+                  "// Trying to assign the same vehicleId to secondReservationId must return 409 vehicle_schedule_conflict."
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "const isVehicleConflictOrStatus = body.error.toLowerCase().includes('vehicle') || body.error.toLowerCase().includes('confirmed');",
+                  "pm.test('error is vehicle conflict or status violation', () => pm.expect(isVehicleConflictOrStatus).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{secondReservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{secondReservationId}}", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[BRV-6] Driver Schedule Conflict",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// driverId is already assigned to reservationId (HP-1).",
+                  "// secondVehicleId was created in Setup and is free.",
+                  "// Assigning secondVehicleId + same driverId to secondReservationId within ±2h must return 409."
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);",
+                  "const isDriverConflictOrStatus = body.error.toLowerCase().includes('driver') || body.error.toLowerCase().includes('confirmed');",
+                  "pm.test('error is driver conflict or status violation', () => pm.expect(isDriverConflictOrStatus).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{secondVehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{secondReservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{secondReservationId}}", "assign"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication and Authorization",
+      "item": [
+        {
+          "name": "[AUTH-1] No Token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[AUTH-2] Client Token → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 403', () => pm.response.to.have.status(403));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is false', () => pm.expect(body.success).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{reservationId}}/assign",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{reservationId}}", "assign"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

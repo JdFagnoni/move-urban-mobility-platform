@@ -84,6 +84,11 @@ export interface ListReservationsQueryDTO {
   pageSize?: number;
 }
 
+export interface AssignReservationDTO {
+  vehicleId: string;
+  driverId: string;
+}
+
 export interface ManualReservationClassificationItemDTO {
   cargoItemId: string;
   categoryId: string;

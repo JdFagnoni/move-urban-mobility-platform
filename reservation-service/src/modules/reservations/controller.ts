@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import {
   acknowledgeClassificationNotification,
+  assignReservation,
   cancelReservation,
   classifyReservationManually,
   createReservation,
@@ -13,6 +14,7 @@ import {
 import type { CreateReservationDTO } from "@move/shared";
 import { handleServiceError } from "../../http/handler";
 import {
+  parseAssignReservationDTO,
   parseListReservationsQuery,
   parseManualReservationClassification,
   parseRejectReservation,
@@ -97,6 +99,20 @@ export async function cancelHandler(req: Request, res: Response): Promise<void> 
   if (!result.ok) {
     return;
   }
+  res.json({ success: true, data: result.data });
+}
+
+export async function assignHandler(req: Request, res: Response): Promise<void> {
+  const user = req.authenticatedUser?.profile;
+  if (!user) {
+    res.status(401).json({ success: false, error: "Authentication required" });
+    return;
+  }
+  const { id } = req.params as { id: string };
+  const result = await handleServiceError(res, () =>
+    assignReservation(id, parseAssignReservationDTO(req.body), user)
+  );
+  if (!result.ok) return;
   res.json({ success: true, data: result.data });
 }
 

@@ -1,5 +1,6 @@
 import { HttpError } from "@move/shared";
 import type {
+  AssignReservationDTO,
   CargoItemDTO,
   CreateReservationDTO,
   GeoPoint,
@@ -28,6 +29,7 @@ import { createIndividualReservation } from "./helpers/create-individual-reserva
 import type { PreparedCargoItemInput } from "./helpers/types";
 import { normalizeCargoItems, validateScheduledAt } from "./helpers/validate-common-input";
 import { quotePreparedReservation } from "./quote-service";
+import { getVehicle } from "../vehicles/service";
 import { reservationEmailProvider } from "./runtime";
 
 function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
@@ -468,6 +470,130 @@ export async function cancelReservation(id: string, clientUser: UserDTO): Promis
 
   const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
   return mapReservationModelToDTO(reservation, cargoItems);
+}
+
+// Size units: small/null=1, medium=2, large=3, extra_large=4. Used to check vehicle capacity.
+function cargoSizeToUnits(size: string | null | undefined): number {
+  if (!size || size.trim() === "" || size.trim().toLowerCase() === "small") return 1;
+  switch (size.trim().toLowerCase()) {
+    case "medium":
+      return 2;
+    case "large":
+      return 3;
+    case "extra_large":
+      return 4;
+    default:
+      return 1;
+  }
+}
+
+function calculateTotalCargoSize(items: CargoItemModel[]): number {
+  return items.reduce((sum, item) => sum + cargoSizeToUnits(item.size), 0);
+}
+
+const SCHEDULE_CONFLICT_WINDOW_MS = 2 * 60 * 60 * 1000; // ±2 hours
+
+export async function assignReservation(
+  reservationId: string,
+  dto: AssignReservationDTO,
+  _requestUser: UserDTO
+): Promise<ReservationDTO> {
+  const reservation = await loadReservationWithRelations(reservationId);
+  if (!reservation) {
+    throw new HttpError(404, "Reservation not found", "reservation_not_found");
+  }
+
+  if (reservation.status !== "confirmed") {
+    throw new HttpError(
+      409,
+      "Reservation must be in 'confirmed' status to assign resources",
+      "invalid_reservation_status"
+    );
+  }
+
+  const vehicle = await getVehicle(dto.vehicleId);
+  if (!vehicle) {
+    throw new HttpError(404, "Vehicle not found", "vehicle_not_found");
+  }
+
+  if (vehicle.status === "maintenance" || vehicle.status === "inactive") {
+    throw new HttpError(409, "Vehicle is not available for assignment", "vehicle_unavailable");
+  }
+
+  const cargoItems = reservation.cargoItems ?? [];
+  const totalSize = calculateTotalCargoSize(cargoItems);
+  if (totalSize > vehicle.capacity) {
+    throw new HttpError(
+      409,
+      `Vehicle capacity (${vehicle.capacity}) is insufficient for cargo size (${totalSize})`,
+      "vehicle_capacity_exceeded"
+    );
+  }
+
+  const driver = await getUser(dto.driverId);
+  if (!driver) {
+    throw new HttpError(404, "Driver not found", "driver_not_found");
+  }
+  if (driver.role !== "driver") {
+    throw new HttpError(409, "User is not a driver", "user_not_driver");
+  }
+  if (driver.status !== "active") {
+    throw new HttpError(409, "Driver is not active", "driver_not_active");
+  }
+
+  const conflictWindow = {
+    [Op.between]: [
+      new Date(reservation.scheduledAt.getTime() - SCHEDULE_CONFLICT_WINDOW_MS),
+      new Date(reservation.scheduledAt.getTime() + SCHEDULE_CONFLICT_WINDOW_MS),
+    ] as [Date, Date],
+  };
+  const conflictStatuses = ["confirmed", "assigned", "in_progress"];
+
+  const vehicleConflict = await ReservationModel.findOne({
+    where: {
+      vehicleId: dto.vehicleId,
+      id: { [Op.ne]: reservationId },
+      status: { [Op.in]: conflictStatuses },
+      scheduledAt: conflictWindow,
+    },
+  });
+  if (vehicleConflict) {
+    throw new HttpError(
+      409,
+      "Vehicle is already assigned to another reservation at this time",
+      "vehicle_schedule_conflict"
+    );
+  }
+
+  const driverConflict = await ReservationModel.findOne({
+    where: {
+      driverId: dto.driverId,
+      id: { [Op.ne]: reservationId },
+      status: { [Op.in]: conflictStatuses },
+      scheduledAt: conflictWindow,
+    },
+  });
+  if (driverConflict) {
+    throw new HttpError(
+      409,
+      "Driver is already assigned to another reservation at this time",
+      "driver_schedule_conflict"
+    );
+  }
+
+  await sequelize.transaction(async (t) => {
+    reservation.vehicleId = dto.vehicleId;
+    reservation.driverId = dto.driverId;
+    reservation.status = "assigned";
+    await reservation.save({ transaction: t });
+  });
+
+  const updated = await loadReservationWithRelations(reservationId);
+  if (!updated) {
+    throw new HttpError(500, "Reservation update failed", "reservation_update_failed");
+  }
+  const sortedItems = sortCargoItemsByCreatedAt(updated.cargoItems ?? []);
+  return mapReservationModelToDTO(updated, sortedItems);
 }
 
 async function createClassificationNotification(
