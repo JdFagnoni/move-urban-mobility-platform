@@ -31,5 +31,23 @@ export async function initDb(): Promise<void> {
       ON alerts (vehicle_id);
     CREATE INDEX IF NOT EXISTS idx_alerts_trip
       ON alerts (trip_id);
+
+    CREATE TABLE IF NOT EXISTS trips (
+      id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      reservation_id UUID        NOT NULL,
+      vehicle_id     UUID        NOT NULL,
+      driver_id      UUID        NOT NULL,
+      status         VARCHAR(20) NOT NULL DEFAULT 'assigned',
+      started_at     TIMESTAMPTZ,
+      completed_at   TIMESTAMPTZ,
+      route          JSONB       NOT NULL DEFAULT '[]',
+      created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_trips_reservation ON trips (reservation_id);
+    CREATE INDEX IF NOT EXISTS idx_trips_driver      ON trips (driver_id);
+    CREATE INDEX IF NOT EXISTS idx_trips_vehicle     ON trips (vehicle_id);
+    CREATE INDEX IF NOT EXISTS idx_trips_status      ON trips (status);
   `);
 }
