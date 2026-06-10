@@ -4,20 +4,31 @@ import type {
   CreateReservationDTO,
   GeoPoint,
   ListReservationsQueryDTO,
-  PaymentDTO,
+  ManualReservationClassificationDTO,
+  NotificationDTO,
   PaginatedResult,
+  PaymentDTO,
+  RejectReservationDTO,
   ReservationDTO,
   ReservationStatus,
   UserDTO,
 } from "@move/shared";
-import { Op, type WhereOptions } from "sequelize";
+import { Op, type Transaction, type WhereOptions } from "sequelize";
 import type { PaymentModel } from "../../db/models";
-import { CargoItemModel, CategoryModel, ReservationModel } from "../../db/models";
+import {
+  CargoItemModel,
+  CategoryModel,
+  NotificationModel,
+  ReservationModel,
+} from "../../db/models";
 import { sequelize } from "../../db/sequelize";
+import { getUser } from "../users/service";
 import { createCompanyReservation } from "./helpers/create-company-reservation";
 import { createIndividualReservation } from "./helpers/create-individual-reservation";
+import type { PreparedCargoItemInput } from "./helpers/types";
 import { normalizeCargoItems, validateScheduledAt } from "./helpers/validate-common-input";
 import { quotePreparedReservation } from "./quote-service";
+import { reservationEmailProvider } from "./runtime";
 
 function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
   return {
@@ -28,6 +39,19 @@ function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
     size: row.size,
     categoryId: row.categoryId,
     category: row.category?.name ?? null,
+  };
+}
+
+function modelToNotificationDTO(row: NotificationModel): NotificationDTO {
+  return {
+    id: row.id,
+    reservationId: row.reservationId,
+    type: row.type,
+    status: row.status,
+    acknowledgedAt: row.acknowledgedAt?.toISOString() ?? null,
+    acknowledgedByUserId: row.acknowledgedByUserId,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
   };
 }
 
@@ -69,6 +93,9 @@ export function mapReservationModelToDTO(
     vehicleId: row.vehicleId,
     driverId: row.driverId,
     cargoItems: cargoItems.map(modelToCargoItemDTO),
+    rejectedAt: row.rejectedAt?.toISOString() ?? null,
+    rejectedByUserId: row.rejectedByUserId,
+    rejectionReason: row.rejectionReason,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -163,6 +190,10 @@ export async function createReservation(
       })),
       { transaction }
     );
+
+    if (finalStatus === "pending_classification") {
+      await createClassificationNotification(reservationId, transaction);
+    }
   });
 
   const reservation = await loadReservationWithRelations(reservationId);
@@ -231,6 +262,191 @@ export async function listReservations(
   return { data, total: result.count, page, pageSize };
 }
 
+export async function listPendingClassificationReservations(
+  operatorUser: UserDTO,
+  filters: ListReservationsQueryDTO
+): Promise<PaginatedResult<ReservationDTO>> {
+  assertOperator(operatorUser);
+  return listReservations(operatorUser, { ...filters, status: "pending_classification" });
+}
+
+export async function listClassificationNotifications(
+  operatorUser: UserDTO
+): Promise<NotificationDTO[]> {
+  assertOperator(operatorUser);
+
+  const notifications = await NotificationModel.findAll({
+    where: {
+      type: "classification_required",
+      status: "pending",
+    },
+    order: [["created_at", "DESC"]],
+  });
+
+  return notifications.map(modelToNotificationDTO);
+}
+
+export async function acknowledgeClassificationNotification(
+  notificationId: string,
+  operatorUser: UserDTO
+): Promise<NotificationDTO> {
+  assertOperator(operatorUser);
+
+  const notification = await NotificationModel.findOne({
+    where: {
+      id: notificationId,
+      type: "classification_required",
+    },
+  });
+
+  if (!notification) {
+    throw new HttpError(404, "Notification not found", "notification_not_found");
+  }
+
+  if (notification.status === "pending") {
+    notification.status = "acknowledged";
+    notification.acknowledgedAt = new Date();
+    notification.acknowledgedByUserId = operatorUser.id;
+    await notification.save();
+  }
+
+  return modelToNotificationDTO(notification);
+}
+
+export async function classifyReservationManually(
+  reservationId: string,
+  dto: ManualReservationClassificationDTO,
+  operatorUser: UserDTO
+): Promise<ReservationDTO> {
+  assertOperator(operatorUser);
+
+  const reservation = await loadReservationWithRelations(reservationId);
+  if (!reservation) {
+    throw new HttpError(404, "Reservation not found", "reservation_not_found");
+  }
+
+  ensurePendingClassification(reservation);
+  assertUniqueCargoItemAssignments(dto);
+
+  const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
+  if (cargoItems.length === 0) {
+    throw new HttpError(409, "Reservation has no cargo items", "invalid_reservation_state");
+  }
+
+  const requestedCategoryIds = [
+    ...new Set(dto.cargoItems.map(({ categoryId }) => categoryId)),
+  ];
+  const categories = await CategoryModel.findAll({
+    where: {
+      id: {
+        [Op.in]: requestedCategoryIds,
+      },
+    },
+  });
+
+  if (categories.length !== requestedCategoryIds.length) {
+    throw new HttpError(404, "Category not found", "category_not_found");
+  }
+
+  const cargoItemById = new Map(cargoItems.map((cargoItem) => [cargoItem.id, cargoItem]));
+  for (const assignment of dto.cargoItems) {
+    const cargoItem = cargoItemById.get(assignment.cargoItemId);
+    if (!cargoItem) {
+      throw new HttpError(404, "Cargo item not found in reservation", "cargo_item_not_found");
+    }
+    cargoItem.categoryId = assignment.categoryId;
+  }
+
+  if (cargoItems.some((cargoItem) => cargoItem.categoryId === null)) {
+    throw new HttpError(
+      409,
+      "All cargo items must be classified before quoting the reservation",
+      "reservation_not_quotable"
+    );
+  }
+
+  const quote = await quotePreparedReservation({
+    origin: reservation.origin as GeoPoint,
+    destination: reservation.destination as GeoPoint,
+    cargoItems: cargoItems.map(mapCargoItemModelToPreparedCargoItem),
+  });
+
+  await sequelize.transaction(async (transaction) => {
+    await Promise.all(cargoItems.map((cargoItem) => cargoItem.save({ transaction })));
+
+    reservation.status = "pending_confirmation";
+    reservation.quotedPrice = String(quote.quotedPrice);
+    await reservation.save({ transaction });
+
+    await acknowledgeNotification(reservation.id, operatorUser.id, transaction);
+  });
+
+  const updatedReservation = await loadReservationWithRelations(reservationId);
+  if (!updatedReservation) {
+    throw new HttpError(500, "Reservation update failed", "reservation_update_failed");
+  }
+
+  return mapReservationModelToDTO(
+    updatedReservation,
+    sortCargoItemsByCreatedAt(updatedReservation.cargoItems ?? [])
+  );
+}
+
+export async function rejectReservation(
+  reservationId: string,
+  dto: RejectReservationDTO,
+  operatorUser: UserDTO
+): Promise<ReservationDTO> {
+  assertOperator(operatorUser);
+
+  const reservation = await loadReservationWithRelations(reservationId);
+  if (!reservation) {
+    throw new HttpError(404, "Reservation not found", "reservation_not_found");
+  }
+
+  ensurePendingClassification(reservation);
+
+  await sequelize.transaction(async (transaction) => {
+    reservation.status = "rejected";
+    reservation.quotedPrice = null;
+    reservation.rejectedAt = new Date();
+    reservation.rejectedByUserId = operatorUser.id;
+    reservation.rejectionReason = dto.reason;
+
+    await reservation.save({ transaction });
+    await acknowledgeNotification(reservation.id, operatorUser.id, transaction);
+  });
+
+  const client = await getUser(reservation.clientId);
+  if (client) {
+    await sendUnsupportedReservationEmailSafely({
+      reservationId: reservation.id,
+      recipientEmail: client.email,
+      recipientName: client.name,
+      rejectionReason: dto.reason,
+    });
+  } else {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        event: "unsupported_reservation_email_client_missing",
+        reservationId: reservation.id,
+        clientId: reservation.clientId,
+      })
+    );
+  }
+
+  const updatedReservation = await loadReservationWithRelations(reservationId);
+  if (!updatedReservation) {
+    throw new HttpError(500, "Reservation update failed", "reservation_update_failed");
+  }
+
+  return mapReservationModelToDTO(
+    updatedReservation,
+    sortCargoItemsByCreatedAt(updatedReservation.cargoItems ?? [])
+  );
+}
+
 export async function cancelReservation(id: string, clientUser: UserDTO): Promise<ReservationDTO> {
   const reservation = await loadReservationWithRelations(id);
   if (!reservation) {
@@ -254,4 +470,112 @@ export async function cancelReservation(id: string, clientUser: UserDTO): Promis
 
   const cargoItems = sortCargoItemsByCreatedAt(reservation.cargoItems ?? []);
   return mapReservationModelToDTO(reservation, cargoItems);
+}
+
+async function createClassificationNotification(
+  reservationId: string,
+  transaction: Transaction
+): Promise<void> {
+  await NotificationModel.create(
+    {
+      id: crypto.randomUUID(),
+      reservationId,
+      type: "classification_required",
+      status: "pending",
+    },
+    { transaction }
+  );
+}
+
+async function acknowledgeNotification(
+  reservationId: string,
+  operatorUserId: string,
+  transaction: Transaction
+): Promise<void> {
+  const notification = await NotificationModel.findOne({
+    where: {
+      reservationId,
+      type: "classification_required",
+      status: "pending",
+    },
+    transaction,
+  });
+
+  if (!notification) {
+    return;
+  }
+
+  notification.status = "acknowledged";
+  notification.acknowledgedAt = new Date();
+  notification.acknowledgedByUserId = operatorUserId;
+  await notification.save({ transaction });
+}
+
+function assertOperator(user: UserDTO): void {
+  if (user.role !== "operator") {
+    throw new HttpError(403, "Only operators can perform this action", "forbidden");
+  }
+}
+
+function ensurePendingClassification(reservation: ReservationModel): void {
+  if (reservation.status !== "pending_classification") {
+    throw new HttpError(
+      409,
+      `Reservation must be in 'pending_classification' status, current status is '${reservation.status}'`,
+      "invalid_status_transition"
+    );
+  }
+}
+
+function assertUniqueCargoItemAssignments(dto: ManualReservationClassificationDTO): void {
+  const uniqueAssignments = new Set(dto.cargoItems.map(({ cargoItemId }) => cargoItemId));
+  if (uniqueAssignments.size !== dto.cargoItems.length) {
+    throw new HttpError(
+      400,
+      "cargoItems cannot contain duplicated cargoItemId values",
+      "invalid_reservation_classification"
+    );
+  }
+}
+
+function mapCargoItemModelToPreparedCargoItem(cargoItem: CargoItemModel): PreparedCargoItemInput {
+  return {
+    description: cargoItem.description,
+    estimatedValue: cargoItem.estimatedValue !== null ? parseFloat(cargoItem.estimatedValue) : null,
+    size: cargoItem.size,
+    categoryId: cargoItem.categoryId,
+  };
+}
+
+async function sendUnsupportedReservationEmailSafely(input: {
+  reservationId: string;
+  recipientEmail: string;
+  recipientName: string;
+  rejectionReason: string;
+}): Promise<void> {
+  try {
+    await reservationEmailProvider.sendUnsupportedReservationEmail(input);
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        event: "unsupported_reservation_email_failed",
+        reservationId: input.reservationId,
+        recipientEmail: input.recipientEmail,
+        error: serializeError(error),
+      })
+    );
+  }
+}
+
+function serializeError(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    };
+  }
+
+  return { value: String(error) };
 }
