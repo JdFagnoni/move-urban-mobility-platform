@@ -1,6 +1,13 @@
 import type { Request } from "express";
-import { HttpError, RESERVATION_STATUSES } from "@move/shared";
-import type { AssignReservationDTO, ListReservationsQueryDTO, ReservationStatus } from "@move/shared";
+import {
+  HttpError,
+  RESERVATION_STATUSES,
+  type AssignReservationDTO,
+  type ListReservationsQueryDTO,
+  type ManualReservationClassificationDTO,
+  type RejectReservationDTO,
+  type ReservationStatus,
+} from "@move/shared";
 
 export function parseAssignReservationDTO(body: unknown): AssignReservationDTO {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -58,6 +65,58 @@ export function parseListReservationsQuery(query: Request["query"]): ListReserva
   return filters;
 }
 
+export function parseManualReservationClassification(
+  body: unknown
+): ManualReservationClassificationDTO {
+  if (!isRecord(body)) {
+    throw new HttpError(400, "Request body must be an object", "invalid_reservation");
+  }
+
+  const cargoItems = body["cargoItems"];
+  if (!Array.isArray(cargoItems) || cargoItems.length === 0) {
+    throw new HttpError(
+      400,
+      "cargoItems must be a non-empty array",
+      "invalid_reservation_classification"
+    );
+  }
+
+  return {
+    cargoItems: cargoItems.map((item, index) => {
+      if (!isRecord(item)) {
+        throw new HttpError(
+          400,
+          `cargoItems[${index}] must be an object`,
+          "invalid_reservation_classification"
+        );
+      }
+
+      return {
+        cargoItemId: parseRequiredString(
+          item["cargoItemId"],
+          `cargoItems[${index}].cargoItemId`,
+          "invalid_reservation_classification"
+        ),
+        categoryId: parseRequiredString(
+          item["categoryId"],
+          `cargoItems[${index}].categoryId`,
+          "invalid_reservation_classification"
+        ),
+      };
+    }),
+  };
+}
+
+export function parseRejectReservation(body: unknown): RejectReservationDTO {
+  if (!isRecord(body)) {
+    throw new HttpError(400, "Request body must be an object", "invalid_reservation");
+  }
+
+  return {
+    reason: parseRequiredString(body["reason"], "reason", "invalid_reservation_rejection"),
+  };
+}
+
 function parseOptionalIsoDate(value: unknown, field: string): string | undefined {
   if (value === undefined) {
     return undefined;
@@ -111,4 +170,21 @@ function parseOptionalPositiveInteger(value: unknown, field: string): number | u
   }
 
   return parsed;
+}
+
+function parseRequiredString(value: unknown, field: string, code: string): string {
+  if (typeof value !== "string") {
+    throw new HttpError(400, `${field} must be a string`, code);
+  }
+
+  const normalized = value.trim();
+  if (!normalized) {
+    throw new HttpError(400, `${field} is required`, code);
+  }
+
+  return normalized;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
