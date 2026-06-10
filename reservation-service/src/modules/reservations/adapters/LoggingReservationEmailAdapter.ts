@@ -4,9 +4,7 @@ import type {
 } from "../ports/ReservationEmailPort";
 
 export class LoggingReservationEmailAdapter implements ReservationEmailPort {
-  async sendUnsupportedReservationEmail(
-    input: UnsupportedReservationEmailInput
-  ): Promise<void> {
+  async sendUnsupportedReservationEmail(input: UnsupportedReservationEmailInput): Promise<void> {
     console.warn(
       JSON.stringify({
         level: "warn",

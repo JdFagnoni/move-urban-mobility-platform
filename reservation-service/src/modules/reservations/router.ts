@@ -34,7 +34,11 @@ reservationsRouter.patch(
   requireRole("operator"),
   acknowledgeClassificationNotificationHandler
 );
-reservationsRouter.patch("/:id/classification", requireRole("operator"), classifyReservationHandler);
+reservationsRouter.patch(
+  "/:id/classification",
+  requireRole("operator"),
+  classifyReservationHandler
+);
 reservationsRouter.patch("/:id/reject", requireRole("operator"), rejectReservationHandler);
 reservationsRouter.get("/:id", getHandler);
 reservationsRouter.get("/:id/payments", listReservationPaymentsHandler);

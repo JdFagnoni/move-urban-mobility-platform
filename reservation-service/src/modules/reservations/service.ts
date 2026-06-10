@@ -333,9 +333,7 @@ export async function classifyReservationManually(
     throw new HttpError(409, "Reservation has no cargo items", "invalid_reservation_state");
   }
 
-  const requestedCategoryIds = [
-    ...new Set(dto.cargoItems.map(({ categoryId }) => categoryId)),
-  ];
+  const requestedCategoryIds = [...new Set(dto.cargoItems.map(({ categoryId }) => categoryId))];
   const categories = await CategoryModel.findAll({
     where: {
       id: {

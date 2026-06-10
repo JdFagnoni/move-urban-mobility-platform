@@ -9,10 +9,7 @@ import {
   Table,
   UpdatedAt,
 } from "sequelize-typescript";
-import {
-  NOTIFICATION_STATUSES,
-  NOTIFICATION_TYPES,
-} from "../constants";
+import { NOTIFICATION_STATUSES, NOTIFICATION_TYPES } from "../constants";
 import { ReservationModel } from "./reservation";
 import { UserModel } from "./user";
 

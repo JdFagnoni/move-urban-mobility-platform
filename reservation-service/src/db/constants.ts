@@ -30,13 +30,8 @@ export const RESERVATION_STATUSES: readonly ReservationStatus[] = [
   "rejected",
   "cancelled",
 ];
-export const NOTIFICATION_TYPES: readonly NotificationType[] = [
-  "classification_required",
-];
-export const NOTIFICATION_STATUSES: readonly NotificationStatus[] = [
-  "pending",
-  "acknowledged",
-];
+export const NOTIFICATION_TYPES: readonly NotificationType[] = ["classification_required"];
+export const NOTIFICATION_STATUSES: readonly NotificationStatus[] = ["pending", "acknowledged"];
 export const AUTH_AUDIT_EVENT_TYPES: readonly AuthAuditEventType[] = [
   "registration_success",
   "registration_failure",

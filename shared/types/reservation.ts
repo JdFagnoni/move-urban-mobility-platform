@@ -25,16 +25,11 @@ export const RESERVATION_STATUSES: readonly ReservationStatus[] = [
 
 export type NotificationType = "classification_required";
 
-export const NOTIFICATION_TYPES: readonly NotificationType[] = [
-  "classification_required",
-];
+export const NOTIFICATION_TYPES: readonly NotificationType[] = ["classification_required"];
 
 export type NotificationStatus = "pending" | "acknowledged";
 
-export const NOTIFICATION_STATUSES: readonly NotificationStatus[] = [
-  "pending",
-  "acknowledged",
-];
+export const NOTIFICATION_STATUSES: readonly NotificationStatus[] = ["pending", "acknowledged"];
 
 export interface CargoItemDTO {
   id: string;

@@ -51,10 +51,7 @@ export async function listHandler(req: Request, res: Response): Promise<void> {
   res.json({ success: true, data: result.data });
 }
 
-export async function listPendingClassificationHandler(
-  req: Request,
-  res: Response
-): Promise<void> {
+export async function listPendingClassificationHandler(req: Request, res: Response): Promise<void> {
   const clientUser = req.authenticatedUser!.profile;
   const result = await handleServiceError(res, () => {
     const filters = parseListReservationsQuery(req.query);

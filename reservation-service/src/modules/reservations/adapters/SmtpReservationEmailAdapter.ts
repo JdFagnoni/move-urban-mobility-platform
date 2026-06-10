@@ -32,9 +32,7 @@ export class SmtpReservationEmailAdapter implements ReservationEmailPort {
     });
   }
 
-  async sendUnsupportedReservationEmail(
-    input: UnsupportedReservationEmailInput
-  ): Promise<void> {
+  async sendUnsupportedReservationEmail(input: UnsupportedReservationEmailInput): Promise<void> {
     await this.transporter.sendMail({
       from: formatSender(this.config.fromEmail, this.config.fromName),
       to: input.recipientEmail,
