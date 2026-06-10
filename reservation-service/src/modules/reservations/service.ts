@@ -32,6 +32,8 @@ import { quotePreparedReservation } from "./quote-service";
 import { getVehicle } from "../vehicles/service";
 import { reservationEmailProvider } from "./runtime";
 
+const TRANSPORTATIONS_URL = process.env["TRANSPORTATIONS_URL"] ?? "http://localhost:3002";
+
 function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
   return {
     id: row.id,
@@ -588,12 +590,29 @@ export async function assignReservation(
     await reservation.save({ transaction: t });
   });
 
+  await createTripForReservation(reservationId, dto.vehicleId, dto.driverId);
+
   const updated = await loadReservationWithRelations(reservationId);
   if (!updated) {
     throw new HttpError(500, "Reservation update failed", "reservation_update_failed");
   }
   const sortedItems = sortCargoItemsByCreatedAt(updated.cargoItems ?? []);
   return mapReservationModelToDTO(updated, sortedItems);
+}
+
+async function createTripForReservation(
+  reservationId: string,
+  vehicleId: string,
+  driverId: string
+): Promise<void> {
+  const response = await fetch(`${TRANSPORTATIONS_URL}/trips`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reservationId, vehicleId, driverId }),
+  });
+  if (!response.ok) {
+    throw new HttpError(502, "Failed to create trip record", "trip_creation_failed");
+  }
 }
 
 async function createClassificationNotification(
