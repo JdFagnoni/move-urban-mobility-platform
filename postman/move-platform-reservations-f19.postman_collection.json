@@ -276,7 +276,7 @@
                   "  pm.response.to.have.status(200);",
                   "});",
                   "const body = pm.response.json();",
-                  "pm.collectionVariables.set('individual_user_id', body.data.id);"
+                  "pm.collectionVariables.set('individual_user_id', body.data.user.id);"
                 ]
               }
             }
@@ -316,7 +316,7 @@
                   "  pm.response.to.have.status(200);",
                   "});",
                   "const body = pm.response.json();",
-                  "pm.collectionVariables.set('operator_user_id', body.data.id);"
+                  "pm.collectionVariables.set('operator_user_id', body.data.user.id);"
                 ]
               }
             }
