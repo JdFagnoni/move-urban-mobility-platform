@@ -1,9 +1,13 @@
 import type { CategoryDTO } from "@move/shared";
+import { buildOllamaHttpError, fetchOllamaResponse, resolveOllamaModel } from "../ollama";
+import type { StrategyDiagnostics } from "../types";
 
 export interface SemanticSearchInput {
   description: string;
   availableCategories: CategoryDTO[];
 }
+
+const embeddingCache = new Map<string, Promise<number[]>>();
 
 // Cosine similarity between two vectors
 function cosineSimilarity(a: number[], b: number[]): number {
@@ -16,32 +20,81 @@ function cosineSimilarity(a: number[], b: number[]): number {
 
 // Embed text using Ollama embeddings endpoint
 async function embed(text: string): Promise<number[]> {
-  const OLLAMA_URL = process.env["OLLAMA_URL"] ?? "http://localhost:11434";
   const MODEL = process.env["OLLAMA_EMBED_MODEL"] ?? "nomic-embed-text";
+  const resolvedModel = await resolveOllamaModel(MODEL, [
+    "nomic-embed-text:latest",
+    "mxbai-embed-large",
+    "mxbai-embed-large:latest",
+  ]);
+  const cacheKey = `${resolvedModel}:${text}`;
+  const cached = embeddingCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
 
-  const res = await fetch(`${OLLAMA_URL}/api/embeddings`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, prompt: text }),
-  });
-  if (!res.ok) throw new Error("Embedding request failed");
-  const body = (await res.json()) as { embedding: number[] };
-  return body.embedding;
+  const embeddingPromise = (async () => {
+    const res = await fetchOllamaResponse("/api/embed", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: resolvedModel, input: text }),
+    });
+
+    if (!res.ok) {
+      throw new Error(await buildOllamaHttpError(res));
+    }
+
+    const body = (await res.json()) as { embeddings?: number[][] };
+    const embedding = body.embeddings?.[0];
+    if (!embedding) {
+      throw new Error("Embedding response did not include embeddings[0]");
+    }
+
+    return embedding;
+  })();
+
+  embeddingCache.set(cacheKey, embeddingPromise);
+
+  try {
+    return await embeddingPromise;
+  } catch (error) {
+    embeddingCache.delete(cacheKey);
+    throw error;
+  }
 }
 
 // R10 – classify via semantic similarity of embeddings
 export async function classifyWithSemanticSearch(
   input: SemanticSearchInput
 ): Promise<string | null> {
-  const queryEmbedding = await embed(input.description);
-  const scored = await Promise.all(
-    input.availableCategories.map(async (cat) => {
-      const catEmbedding = await embed([cat.name, ...cat.descriptions].join("\n"));
-      return { id: cat.id, score: cosineSimilarity(queryEmbedding, catEmbedding) };
-    })
-  );
+  const result = await diagnoseSemanticSearchClassification(input);
+  return result.categoryId;
+}
 
-  scored.sort((a, b) => b.score - a.score);
-  const best = scored[0];
-  return best && best.score > 0.6 ? best.id : null;
+export async function diagnoseSemanticSearchClassification(
+  input: SemanticSearchInput
+): Promise<StrategyDiagnostics> {
+  try {
+    const queryEmbedding = await embed(input.description);
+    const scored = await Promise.all(
+      input.availableCategories.map(async (cat) => {
+        const catEmbedding = await embed([cat.name, ...cat.descriptions].join("\n"));
+        return { id: cat.id, score: cosineSimilarity(queryEmbedding, catEmbedding) };
+      })
+    );
+
+    scored.sort((a, b) => b.score - a.score);
+    const best = scored[0];
+
+    return best
+      ? {
+          categoryId: best.score > 0.6 ? best.id : null,
+          rawLabel: `score=${best.score.toFixed(4)}`,
+        }
+      : { categoryId: null };
+  } catch (error) {
+    return {
+      categoryId: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }

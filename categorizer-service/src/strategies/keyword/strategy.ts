@@ -1,4 +1,5 @@
 import type { CategoryDTO } from "@move/shared";
+import type { StrategyDiagnostics } from "../types";
 
 export interface KeywordInput {
   description: string;
@@ -7,6 +8,10 @@ export interface KeywordInput {
 
 // R10 – fallback keyword-match strategy
 export function classifyWithKeyword(input: KeywordInput): string | null {
+  return diagnoseKeywordClassification(input).categoryId;
+}
+
+export function diagnoseKeywordClassification(input: KeywordInput): StrategyDiagnostics {
   const normalized = input.description.toLowerCase();
 
   for (const category of input.availableCategories) {
@@ -21,8 +26,12 @@ export function classifyWithKeyword(input: KeywordInput): string | null {
       descriptionMatches ||
       nameKeywords.some((kw) => normalized.includes(kw))
     ) {
-      return category.id;
+      return {
+        categoryId: category.id,
+        rawLabel: category.name,
+      };
     }
   }
-  return null;
+
+  return { categoryId: null };
 }

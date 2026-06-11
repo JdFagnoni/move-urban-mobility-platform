@@ -112,7 +112,8 @@ services:
       - "${CATEGORIZER_SERVICE_PORT:-3003}:3003"
     volumes:
       - ./shared:/app/shared
-      - ./categorizer-service/src:/app/categorizer-service/src
+      - ./categorizer-service:/app/categorizer-service
+      - ./reservation-service/data:/app/reservation-service/data:ro
     environment:
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
