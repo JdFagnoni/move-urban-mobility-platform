@@ -46,10 +46,21 @@ export async function startHandler(req: Request, res: Response): Promise<void> {
 
 export async function completeHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
-  const result = await completeTrip(id);
-  if (!result) {
-    res.status(404).json({ success: false, error: "Trip not found" });
+  const authSubject = req.headers["x-auth-subject"] as string | undefined;
+
+  if (!authSubject) {
+    res.status(401).json({ success: false, error: "Missing driver identity" });
     return;
   }
-  res.json({ success: true, data: result });
+
+  try {
+    const result = await completeTrip(id, authSubject);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      res.status(error.statusCode).json({ success: false, error: error.message });
+      return;
+    }
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
 }

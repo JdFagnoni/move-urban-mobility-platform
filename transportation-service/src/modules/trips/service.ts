@@ -101,7 +101,40 @@ export async function startTrip(id: string, callerAuthSubject: string): Promise<
   return rowToDTO(updated.rows[0]!);
 }
 
-export async function completeTrip(id: string): Promise<TripDTO | null> {
-  void id;
-  return null;
+export async function completeTrip(id: string, callerAuthSubject: string): Promise<TripDTO> {
+  const tripResult = await query<TripRow>("SELECT * FROM trips WHERE id = $1", [id]);
+  const trip = tripResult.rows[0];
+  if (trip === undefined) {
+    throw new HttpError(404, "Trip not found", "trip_not_found");
+  }
+
+  if (trip.status !== "in_progress") {
+    throw new HttpError(
+      409,
+      `Trip cannot be completed from status '${trip.status}'`,
+      "invalid_trip_status"
+    );
+  }
+
+  const userResult = await query<{ id: string }>(
+    "SELECT id FROM users WHERE auth_subject = $1 AND role = 'driver'",
+    [callerAuthSubject]
+  );
+  const callerUser = userResult.rows[0];
+  if (callerUser === undefined) {
+    throw new HttpError(403, "Caller is not a registered driver", "caller_not_driver");
+  }
+
+  if (callerUser.id !== trip.driver_id) {
+    throw new HttpError(403, "You are not the assigned driver for this trip", "driver_mismatch");
+  }
+
+  const updated = await query<TripRow>(
+    `UPDATE trips
+     SET status = 'completed', completed_at = NOW(), updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [id]
+  );
+  return rowToDTO(updated.rows[0]!);
 }
