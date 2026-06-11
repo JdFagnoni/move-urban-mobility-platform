@@ -8,6 +8,8 @@ export interface SemanticSearchInput {
 }
 
 const embeddingCache = new Map<string, Promise<number[]>>();
+const MIN_SEMANTIC_SCORE = 0.52;
+const MIN_SEMANTIC_MARGIN = 0.03;
 
 // Cosine similarity between two vectors
 function cosineSimilarity(a: number[], b: number[]): number {
@@ -74,21 +76,25 @@ export async function diagnoseSemanticSearchClassification(
   input: SemanticSearchInput
 ): Promise<StrategyDiagnostics> {
   try {
-    const queryEmbedding = await embed(input.description);
+    const queryEmbedding = await embed(buildQueryText(input.description));
     const scored = await Promise.all(
       input.availableCategories.map(async (cat) => {
-        const catEmbedding = await embed([cat.name, ...cat.descriptions].join("\n"));
+        const catEmbedding = await embed(buildCategoryText(cat));
         return { id: cat.id, score: cosineSimilarity(queryEmbedding, catEmbedding) };
       })
     );
 
     scored.sort((a, b) => b.score - a.score);
     const best = scored[0];
+    const secondBest = scored[1];
+    const scoreMargin = best && secondBest ? best.score - secondBest.score : best?.score ?? 0;
+    const shouldClassify =
+      !!best && best.score >= MIN_SEMANTIC_SCORE && scoreMargin >= MIN_SEMANTIC_MARGIN;
 
     return best
       ? {
-          categoryId: best.score > 0.6 ? best.id : null,
-          rawLabel: `score=${best.score.toFixed(4)}`,
+          categoryId: shouldClassify ? best.id : null,
+          rawLabel: `score=${best.score.toFixed(4)} margin=${scoreMargin.toFixed(4)}`,
         }
       : { categoryId: null };
   } catch (error) {
@@ -97,4 +103,19 @@ export async function diagnoseSemanticSearchClassification(
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+function buildQueryText(description: string): string {
+  return `Reservation item description in Spanish:\n${description.trim()}`;
+}
+
+function buildCategoryText(category: CategoryDTO): string {
+  const examples = category.descriptions
+    .map((description) => description.trim())
+    .filter((description) => description.length > 0)
+    .join("\n");
+
+  return [`MOVE category in Spanish: ${category.name}`, "Representative examples:", examples]
+    .filter((segment) => segment.trim().length > 0)
+    .join("\n");
 }

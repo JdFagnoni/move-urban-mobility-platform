@@ -10,6 +10,7 @@ import {
 interface SeedCategoryRecord {
   id: string;
   name: string;
+  englishName: string;
   descriptions: string[];
 }
 
@@ -48,26 +49,31 @@ async function loadSeedCategories(): Promise<SeedCategoryRecord[]> {
 
   for (const row of dataRows) {
     const sourceId = getRequiredValue(row, headerIndexes.id, "id", csvPath);
-    const name = getRequiredValue(row, headerIndexes.category_name, "category_name", csvPath);
+    const englishName = getRequiredValue(row, headerIndexes.category_name, "category_name", csvPath);
+    const spanishName =
+      getOptionalValue(row, headerIndexes.category_name_es) || englishName;
     const description = getOptionalDescription(row, headerIndexes.description);
     const id = toDeterministicUuid(sourceId);
     const existing = groupedRecords.get(id);
 
     if (existing) {
-      if (existing.name !== name) {
+      if (existing.name !== spanishName || existing.englishName !== englishName) {
         throw new Error(`Category seed CSV contains conflicting names for id ${id}`);
       }
 
-      if (description && !existing.descriptions.includes(description)) {
-        existing.descriptions.push(description);
-      }
+      addUnique(existing.descriptions, description);
       continue;
     }
 
+    const descriptions: string[] = [];
+    addUnique(descriptions, englishName);
+    addUnique(descriptions, description);
+
     groupedRecords.set(id, {
       id,
-      name,
-      descriptions: description ? [description] : [],
+      name: spanishName,
+      englishName,
+      descriptions,
     });
   }
 
@@ -149,6 +155,15 @@ function getOptionalDescription(row: string[], index: number): string {
     .replace(/"+$/u, "")
     .replace(/;"+/gu, "; ")
     .replace(/""/gu, '"');
+}
+
+function addUnique(values: string[], value: string): void {
+  const normalized = value.trim();
+  if (!normalized || values.includes(normalized)) {
+    return;
+  }
+
+  values.push(normalized);
 }
 
 function toDeterministicUuid(value: string): string {
