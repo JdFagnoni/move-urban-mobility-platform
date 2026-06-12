@@ -10,30 +10,6 @@ export interface SemanticSearchInput {
 const embeddingCache = new Map<string, Promise<number[]>>();
 const MIN_SEMANTIC_SCORE = 0.52;
 const MIN_SEMANTIC_MARGIN = 0.01;
-const MIN_LEXICAL_OVERLAP = 2;
-const LEXICAL_STOP_WORDS = new Set([
-  "para",
-  "con",
-  "por",
-  "las",
-  "los",
-  "una",
-  "uno",
-  "unos",
-  "unas",
-  "que",
-  "del",
-  "hay",
-  "quiero",
-  "necesito",
-  "enviar",
-  "mover",
-  "traslado",
-  "llevar",
-  "equipo",
-  "articulos",
-  "artículos",
-]);
 
 // Cosine similarity between two vectors
 function cosineSimilarity(a: number[], b: number[]): number {
@@ -107,9 +83,12 @@ export async function diagnoseSemanticSearchClassification(
   try {
     const queryEmbedding = await embed(buildQueryText(input.description));
     const scored = await Promise.all(
-      input.availableCategories.map(async (cat) => {
-        const catEmbedding = await embed(buildCategoryText(cat));
-        return { id: cat.id, score: cosineSimilarity(queryEmbedding, catEmbedding) };
+      input.availableCategories.map(async (category) => {
+        const categoryEmbedding = await embed(buildCategoryText(category));
+        return {
+          id: category.id,
+          score: cosineSimilarity(queryEmbedding, categoryEmbedding),
+        };
       })
     );
 
@@ -117,22 +96,15 @@ export async function diagnoseSemanticSearchClassification(
     const best = scored[0];
     const secondBest = scored[1];
     const scoreMargin = best && secondBest ? best.score - secondBest.score : best?.score ?? 0;
-    const bestCategory = best
-      ? input.availableCategories.find((category) => category.id === best.id) ?? null
-      : null;
-    const lexicalOverlap = bestCategory
-      ? countLexicalOverlap(input.description, bestCategory)
-      : 0;
     const shouldClassify =
       !!best &&
       best.score >= MIN_SEMANTIC_SCORE &&
-      scoreMargin >= MIN_SEMANTIC_MARGIN &&
-      lexicalOverlap >= MIN_LEXICAL_OVERLAP;
+      scoreMargin >= MIN_SEMANTIC_MARGIN;
 
     return best
       ? {
           categoryId: shouldClassify ? best.id : null,
-          rawLabel: `score=${best.score.toFixed(4)} margin=${scoreMargin.toFixed(4)} overlap=${lexicalOverlap}`,
+          rawLabel: `score=${best.score.toFixed(4)} margin=${scoreMargin.toFixed(4)}`,
         }
       : { categoryId: null };
   } catch (error) {
@@ -156,36 +128,4 @@ function buildCategoryText(category: CategoryDTO): string {
   return [`MOVE category in Spanish: ${category.name}`, "Representative examples:", examples]
     .filter((segment) => segment.trim().length > 0)
     .join("\n");
-}
-
-function countLexicalOverlap(description: string, category: CategoryDTO): number {
-  const descriptionTokens = tokenize(description);
-  const categoryTokens = tokenize([category.name, ...category.descriptions].join(" "));
-  let overlap = 0;
-
-  for (const token of descriptionTokens) {
-    if (categoryTokens.has(token)) {
-      overlap += 1;
-    }
-  }
-
-  return overlap;
-}
-
-function tokenize(input: string): Set<string> {
-  return new Set(
-    normalizeText(input)
-      .split(" ")
-      .filter((token) => token.length >= 4 && !LEXICAL_STOP_WORDS.has(token))
-  );
-}
-
-function normalizeText(input: string): string {
-  return input
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/gu, " ")
-    .trim()
-    .replace(/\s+/gu, " ");
 }
