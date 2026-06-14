@@ -9,7 +9,7 @@ export interface SemanticSearchInput {
 
 const embeddingCache = new Map<string, Promise<number[]>>();
 const MIN_SEMANTIC_SCORE = 0.52;
-const MIN_SEMANTIC_MARGIN = 0.01;
+const MIN_SEMANTIC_MARGIN = 0.024;
 
 // Cosine similarity between two vectors
 function cosineSimilarity(a: number[], b: number[]): number {
