@@ -1,0 +1,268 @@
+[
+  {
+    "id": "case-001",
+    "description": "Necesito mover un monitor 4K de 27 pulgadas para diseño gráfico.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "022f2252-5023-5a5a-90f2-acd20ece332f",
+    "notes": "Monitor individual claramente clasificado."
+  },
+  {
+    "id": "case-002",
+    "description": "Hay dos pantallas IPS de 24 pulgadas con soporte VESA para llevar a la oficina nueva.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "022f2252-5023-5a5a-90f2-acd20ece332f",
+    "notes": "Múltiples bienes de la misma categoría."
+  },
+  {
+    "id": "case-003",
+    "description": "Traslado de monitor ultrawide curvo para setup gamer.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "022f2252-5023-5a5a-90f2-acd20ece332f",
+    "notes": "Paráfrasis no literal del CSV."
+  },
+  {
+    "id": "case-004",
+    "description": "Quiero enviar una laptop gamer de 16 pulgadas con su cargador.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "70078c75-ddc8-5819-b57c-303f76477eaf",
+    "notes": "Laptop incluida en Computers & Tablets."
+  },
+  {
+    "id": "case-005",
+    "description": "Necesito trasladar una tablet Android con teclado desmontable.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "70078c75-ddc8-5819-b57c-303f76477eaf",
+    "notes": "Tablet 2 en 1."
+  },
+  {
+    "id": "case-006",
+    "description": "Mudanza de una computadora all-in-one para el estudio.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "70078c75-ddc8-5819-b57c-303f76477eaf",
+    "notes": "Computadora all-in-one."
+  },
+  {
+    "id": "case-007",
+    "description": "Debo enviar una impresora láser multifunción para la sucursal.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "61a9a377-020d-522a-a926-fcfba0cdf689",
+    "notes": "Electrónica de oficina."
+  },
+  {
+    "id": "case-008",
+    "description": "Hay un escáner de documentos de alta velocidad y una destructora de papel.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "61a9a377-020d-522a-a926-fcfba0cdf689",
+    "notes": "Múltiples bienes de la misma categoría de oficina."
+  },
+  {
+    "id": "case-009",
+    "description": "Necesito mover una carriola doble con cobertor de lluvia.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "299b07ab-1725-5382-8a99-e09603f79895",
+    "notes": "Carriola con accesorio."
+  },
+  {
+    "id": "case-010",
+    "description": "Enviar un travel system para bebé con coche y huevito.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "299b07ab-1725-5382-8a99-e09603f79895",
+    "notes": "Sistema de viaje para bebé."
+  },
+  {
+    "id": "case-011",
+    "description": "Quiero trasladar una cuna de madera con colchón antialérgico.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "b7230ddd-aa88-5e23-812e-7189a4fd3d16",
+    "notes": "Muebles de cuarto de bebé."
+  },
+  {
+    "id": "case-012",
+    "description": "Hay un cambiador con cómoda y una mecedora de lactancia.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "b7230ddd-aa88-5e23-812e-7189a4fd3d16",
+    "notes": "Múltiples bienes de nursery."
+  },
+  {
+    "id": "case-013",
+    "description": "Se debe llevar shampoo, acondicionador y serum antifrizz al local.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "ebfdedd4-3ab3-5ab4-87c9-6009cf81a846",
+    "notes": "Productos de cuidado capilar."
+  },
+  {
+    "id": "case-014",
+    "description": "Traslado de un kit de queratina profesional con protector térmico.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "ebfdedd4-3ab3-5ab4-87c9-6009cf81a846",
+    "notes": "Tratamiento de cabello."
+  },
+  {
+    "id": "case-015",
+    "description": "Necesito mover un lote de protector solar SPF 50 y serums de vitamina C.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "9643b4dc-8525-53aa-a6c8-4ed3b788b178",
+    "notes": "Skin care con productos específicos."
+  },
+  {
+    "id": "case-016",
+    "description": "Enviar limpiadores faciales, crema hidratante y mascarillas de arcilla.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "9643b4dc-8525-53aa-a6c8-4ed3b788b178",
+    "notes": "Rutina de cuidado de la piel."
+  },
+  {
+    "id": "case-017",
+    "description": "Instalaremos una dashcam 4K y sensores de estacionamiento en otro vehículo.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "2bd6a5da-350d-55c0-8ef0-6e4083a7fd6f",
+    "notes": "Electrónica automotriz."
+  },
+  {
+    "id": "case-018",
+    "description": "Traslado de un autoestéreo con Android Auto y una cámara de reversa.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "2bd6a5da-350d-55c0-8ef0-6e4083a7fd6f",
+    "notes": "Multimedia y accesorios automotrices."
+  },
+  {
+    "id": "case-019",
+    "description": "Hay bolsas de arena aglomerante, rascadores y una transportadora para gatos.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "a6605b74-7b30-5135-b66b-0f991675909e",
+    "notes": "Artículos para gatos."
+  },
+  {
+    "id": "case-020",
+    "description": "Enviar alimento húmedo para felinos y juguetes con plumas.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "a6605b74-7b30-5135-b66b-0f991675909e",
+    "notes": "Paráfrasis de cat supplies."
+  },
+  {
+    "id": "case-021",
+    "description": "Necesito llevar arneses, snacks y una cama ortopédica para perros.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "cc5456bf-3c79-5d1e-864d-b693f47849b4",
+    "notes": "Artículos para perros."
+  },
+  {
+    "id": "case-022",
+    "description": "Traslado de un kennel de viaje con correas y juguetes masticables para perro.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "cc5456bf-3c79-5d1e-864d-b693f47849b4",
+    "notes": "Perro con accesorios."
+  },
+  {
+    "id": "case-023",
+    "description": "Enviar mancuernas ajustables y bandas de resistencia al gimnasio.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "8e5eb8c8-4f41-5faf-acc8-f24622e97837",
+    "notes": "Fitness."
+  },
+  {
+    "id": "case-024",
+    "description": "Necesito mover una bicicleta estática y una colchoneta de yoga.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "8e5eb8c8-4f41-5faf-acc8-f24622e97837",
+    "notes": "Equipos deportivos."
+  },
+  {
+    "id": "case-025",
+    "description": "Llevar dos kettlebells y una cuerda de saltar al box de entrenamiento.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "8e5eb8c8-4f41-5faf-acc8-f24622e97837",
+    "notes": "Múltiples implementos de la misma categoría."
+  },
+  {
+    "id": "case-026",
+    "description": "Traslado de un microondas y un lavavajillas nuevos para un apartamento.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "eb47ad6e-4965-5deb-bf4b-4a6b239aa301",
+    "notes": "Electrodomésticos."
+  },
+  {
+    "id": "case-027",
+    "description": "Necesito mover una lavadora frontal y una secadora de ropa.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "eb47ad6e-4965-5deb-bf4b-4a6b239aa301",
+    "notes": "Línea blanca."
+  },
+  {
+    "id": "case-028",
+    "description": "Enviar un taladro percutor inalámbrico, un juego de destornilladores y un nivel láser.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "a03577e9-17ce-5773-8ddf-56d861104045",
+    "notes": "Herramientas eléctricas y manuales."
+  },
+  {
+    "id": "case-029",
+    "description": "Traslado de una sierra circular con su maletín de herramientas manuales.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "a03577e9-17ce-5773-8ddf-56d861104045",
+    "notes": "Herramientas con accesorios."
+  },
+  {
+    "id": "case-030",
+    "description": "Hay una soldadora MIG con máscara automática y electrodos.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "9c05d9ec-6d83-5577-a1b4-fc29a650e266",
+    "notes": "Soldadura."
+  },
+  {
+    "id": "case-031",
+    "description": "Enviar cajas de Catan, UNO y un set de dados para juegos de mesa.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "5be4f45b-91f1-5f1b-8122-f729ec122303",
+    "notes": "Juegos y accesorios."
+  },
+  {
+    "id": "case-032",
+    "description": "Necesito trasladar un nebulizador y un oxímetro para uso en el hogar.",
+    "expectedOutcome": "classified",
+    "expectedCategoryId": "3da98a96-fe98-58b9-81b6-06c9628a810e",
+    "notes": "Equipos médicos domiciliarios."
+  },
+  {
+    "id": "case-033",
+    "description": "Necesito mover un piano de cola antiguo con su banqueta.",
+    "expectedOutcome": "operator_fallback",
+    "expectedCategoryId": null,
+    "notes": "Fuera de alcance."
+  },
+  {
+    "id": "case-034",
+    "description": "Traslado de material radiactivo de laboratorio en contenedor blindado.",
+    "expectedOutcome": "operator_fallback",
+    "expectedCategoryId": null,
+    "notes": "Fuera de alcance y de alto riesgo."
+  },
+  {
+    "id": "case-035",
+    "description": "Enviar un set de cuidado personal con shampoo, crema facial y perfume.",
+    "expectedOutcome": "operator_fallback",
+    "expectedCategoryId": null,
+    "notes": "Cruza múltiples categorías de belleza."
+  },
+  {
+    "id": "case-036",
+    "description": "Hay un monitor gamer y una silla ergonómica para oficina en la misma caja.",
+    "expectedOutcome": "operator_fallback",
+    "expectedCategoryId": null,
+    "notes": "Múltiples bienes de categorías distintas."
+  },
+  {
+    "id": "case-037",
+    "description": "Quiero mover documentación confidencial en cajas selladas.",
+    "expectedOutcome": "operator_fallback",
+    "expectedCategoryId": null,
+    "notes": "Sin categoría explícita en el catálogo utilizado."
+  },
+  {
+    "id": "case-038",
+    "description": "Traslado de equipo delicado para bebé, viaje y dormitorio, sin más detalle.",
+    "expectedOutcome": "operator_fallback",
+    "expectedCategoryId": null,
+    "notes": "Descripción ambigua."
+  }
+]

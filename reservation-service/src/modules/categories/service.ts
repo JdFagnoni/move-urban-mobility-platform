@@ -11,6 +11,7 @@ function mapCategory(category: CategoryModel): CategoryDTO {
   return {
     id: category.id,
     name: category.name,
+    spanishName: category.spanishName ?? category.name,
     descriptions: normalizeCategoryDescriptions(category.descriptions),
     pricing: normalizeCategoryPricingConfig(category.pricing),
     behavior: normalizeCategoryBehaviorConfig(category.behavior),
@@ -41,13 +42,18 @@ export async function getCategoryForHttp(id: string): Promise<CategoryDTO> {
 
 export async function createCategory(dto: CreateCategoryDTO): Promise<CategoryDTO> {
   const name = dto.name.trim();
+  const spanishName = dto.spanishName.trim();
   if (!name) {
     throw new HttpError(400, "Category name is required", "invalid_category");
+  }
+  if (!spanishName) {
+    throw new HttpError(400, "Category spanishName is required", "invalid_category");
   }
 
   const category = await CategoryModel.create({
     id: crypto.randomUUID(),
     name,
+    spanishName,
     active: dto.active ?? true,
     descriptions: normalizeCategoryDescriptions(dto.descriptions),
     pricing: normalizeCategoryPricingConfig(dto.pricing),
@@ -68,6 +74,14 @@ export async function updateCategory(id: string, dto: UpdateCategoryDTO): Promis
       throw new HttpError(400, "Category name is required", "invalid_category");
     }
     category.name = name;
+  }
+
+  if (dto.spanishName !== undefined) {
+    const spanishName = dto.spanishName.trim();
+    if (!spanishName) {
+      throw new HttpError(400, "Category spanishName is required", "invalid_category");
+    }
+    category.spanishName = spanishName;
   }
 
   if (dto.descriptions !== undefined) {

@@ -45,6 +45,7 @@ export async function quotePreparedReservation(
   const categoryDTOs: CategoryDTO[] = categories.map((category) => ({
     id: category.id,
     name: category.name,
+    spanishName: category.spanishName ?? category.name,
     descriptions: category.descriptions,
     pricing: normalizeCategoryPricingConfig(category.pricing),
     behavior: normalizeCategoryBehaviorConfig(category.behavior),

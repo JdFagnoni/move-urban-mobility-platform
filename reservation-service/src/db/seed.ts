@@ -15,7 +15,11 @@ export async function seedDefaultCategories(): Promise<void> {
   for (const category of seedCategories) {
     const existingCategory = await CategoryModel.findOne({
       where: {
-        [Op.or]: [{ id: category.id }, { name: category.name }],
+        [Op.or]: [
+          { id: category.id },
+          { name: category.name },
+          { spanishName: category.spanishName },
+        ],
       },
     });
 
@@ -23,6 +27,7 @@ export async function seedDefaultCategories(): Promise<void> {
       await CategoryModel.create({
         id: category.id,
         name: category.name,
+        spanishName: category.spanishName,
         descriptions: normalizeCategoryDescriptions(category.descriptions),
         active: true,
         pricing: normalizeCategoryPricingConfig(),
@@ -32,6 +37,7 @@ export async function seedDefaultCategories(): Promise<void> {
     }
 
     existingCategory.name = category.name;
+    existingCategory.spanishName = category.spanishName;
     existingCategory.descriptions = normalizeCategoryDescriptions(category.descriptions);
     existingCategory.active = true;
     existingCategory.pricing = normalizeCategoryPricingConfig(existingCategory.pricing);

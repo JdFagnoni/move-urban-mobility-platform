@@ -5,6 +5,7 @@ import { resolve } from "path";
 export interface SeedCategoryRecord {
   id: string;
   name: string;
+  spanishName: string;
   descriptions: string[];
 }
 
@@ -31,6 +32,7 @@ export async function loadSeedCategories(): Promise<SeedCategoryRecord[]> {
   for (const row of dataRows) {
     const sourceId = getRequiredValue(row, headerIndexes.id, "id", csvPath);
     const name = getRequiredValue(row, headerIndexes.category_name, "category_name", csvPath);
+    const spanishName = getOptionalValue(row, headerIndexes.category_name_es) || name;
     const description = getOptionalDescription(row, headerIndexes.description);
 
     if (!sourceId) {
@@ -41,7 +43,7 @@ export async function loadSeedCategories(): Promise<SeedCategoryRecord[]> {
 
     const existing = groupedRecords.get(id);
     if (existing) {
-      if (existing.name !== name) {
+      if (existing.name !== name || existing.spanishName !== spanishName) {
         throw new Error(`Category seed CSV contains conflicting names for id ${id}`);
       }
 
@@ -54,6 +56,7 @@ export async function loadSeedCategories(): Promise<SeedCategoryRecord[]> {
     groupedRecords.set(id, {
       id,
       name,
+      spanishName,
       descriptions: description ? [description] : [],
     });
   }

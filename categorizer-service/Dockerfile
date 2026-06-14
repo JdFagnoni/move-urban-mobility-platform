@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:20-alpine AS base
+FROM node:20-bookworm-slim AS base
 WORKDIR /app
 
 COPY package*.json tsconfig.base.json ./
@@ -27,7 +27,7 @@ RUN npm run build --workspace=@move/shared
 RUN npm run build --workspace=@move/categorizer-service
 
 # ── prod ───────────────────────────────────────────────────────────────────
-FROM node:20-alpine AS prod
+FROM node:20-bookworm-slim AS prod
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/node_modules ./node_modules
@@ -36,5 +36,5 @@ COPY --from=builder /app/categorizer-service/dist ./dist
 COPY --from=builder /app/categorizer-service/package.json ./
 EXPOSE 3003
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
-  CMD wget -qO- http://localhost:3003/health || exit 1
+  CMD node -e "fetch('http://localhost:3003/health').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1))"
 CMD ["node", "dist/index.js"]

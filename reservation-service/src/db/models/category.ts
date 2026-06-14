@@ -28,6 +28,9 @@ export class CategoryModel extends Model {
   @Column({ type: DataType.STRING, allowNull: false, unique: true })
   declare name: string;
 
+  @Column({ type: DataType.STRING, allowNull: true, field: "spanish_name" })
+  declare spanishName: string | null;
+
   @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: true })
   declare active: boolean;
 

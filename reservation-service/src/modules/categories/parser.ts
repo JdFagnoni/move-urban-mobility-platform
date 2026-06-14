@@ -16,6 +16,7 @@ export function parseCreateCategoryDTO(input: unknown): CreateCategoryDTO {
 
   const dto: CreateCategoryDTO = {
     name: parseRequiredString(payload["name"], "name"),
+    spanishName: parseRequiredString(payload["spanishName"], "spanishName"),
   };
 
   if (descriptions !== undefined) {
@@ -40,6 +41,10 @@ export function parseUpdateCategoryDTO(input: unknown): UpdateCategoryDTO {
 
   if (payload["name"] !== undefined) {
     dto.name = parseRequiredString(payload["name"], "name");
+  }
+
+  if (payload["spanishName"] !== undefined) {
+    dto.spanishName = parseRequiredString(payload["spanishName"], "spanishName");
   }
 
   if (payload["descriptions"] !== undefined) {
