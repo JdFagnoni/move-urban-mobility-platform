@@ -10,6 +10,7 @@ import { Pool } from "pg";
 interface CategoryRow {
   id: string;
   name: string;
+  spanish_name: string | null;
   descriptions: unknown;
   pricing: unknown;
   behavior: unknown;
@@ -20,7 +21,7 @@ let pool: Pool | null = null;
 
 export async function loadActiveCategories(): Promise<CategoryDTO[]> {
   const result = await getPool().query<CategoryRow>(
-    `SELECT id, name, descriptions, pricing, behavior, active
+    `SELECT id, name, spanish_name, descriptions, pricing, behavior, active
        FROM categories
       WHERE active = true
       ORDER BY name ASC`
@@ -29,6 +30,7 @@ export async function loadActiveCategories(): Promise<CategoryDTO[]> {
   return result.rows.map((row) => ({
     id: row.id,
     name: row.name,
+    spanishName: row.spanish_name ?? row.name,
     descriptions: normalizeDescriptions(row.descriptions),
     pricing: normalizePricing(row.pricing),
     behavior: normalizeBehavior(row.behavior),

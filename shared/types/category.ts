@@ -1,6 +1,7 @@
 export interface CategoryDTO {
   id: string;
   name: string;
+  spanishName: string;
   descriptions: string[];
   pricing: CategoryPricingConfig;
   behavior: CategoryBehaviorConfig;
@@ -9,6 +10,7 @@ export interface CategoryDTO {
 
 export interface CreateCategoryDTO {
   name: string;
+  spanishName: string;
   descriptions?: string[];
   pricing?: Partial<CategoryPricingConfig> | null;
   behavior?: Partial<CategoryBehaviorConfig> | null;
@@ -17,6 +19,7 @@ export interface CreateCategoryDTO {
 
 export interface UpdateCategoryDTO {
   name?: string;
+  spanishName?: string;
   descriptions?: string[];
   pricing?: Partial<CategoryPricingConfig> | null;
   behavior?: Partial<CategoryBehaviorConfig> | null;

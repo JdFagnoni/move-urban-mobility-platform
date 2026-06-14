@@ -21,7 +21,8 @@ export async function loadEvaluationCategories(): Promise<CategoryDTO[]> {
 
   return categories.map((category) => ({
     id: category.id,
-    name: category.name,
+    name: category.englishName,
+    spanishName: category.name,
     descriptions: category.descriptions,
     pricing: DEFAULT_CATEGORY_PRICING,
     behavior: DEFAULT_CATEGORY_BEHAVIOR,
@@ -67,6 +68,7 @@ async function loadSeedCategories(): Promise<SeedCategoryRecord[]> {
 
     const descriptions: string[] = [];
     addUnique(descriptions, englishName);
+    addUnique(descriptions, spanishName);
     addUnique(descriptions, description);
 
     groupedRecords.set(id, {
