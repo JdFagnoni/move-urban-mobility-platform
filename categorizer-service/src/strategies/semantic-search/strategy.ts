@@ -77,6 +77,14 @@ export async function classifyWithSemanticSearch(
   return result.categoryId;
 }
 
+export async function warmSemanticSearchCategories(
+  availableCategories: CategoryDTO[]
+): Promise<void> {
+  for (const category of availableCategories) {
+    await embed(buildCategoryText(category));
+  }
+}
+
 export async function diagnoseSemanticSearchClassification(
   input: SemanticSearchInput
 ): Promise<StrategyDiagnostics> {
@@ -96,10 +104,7 @@ export async function diagnoseSemanticSearchClassification(
     const best = scored[0];
     const secondBest = scored[1];
     const scoreMargin = best && secondBest ? best.score - secondBest.score : best?.score ?? 0;
-    const shouldClassify =
-      !!best &&
-      best.score >= MIN_SEMANTIC_SCORE &&
-      scoreMargin >= MIN_SEMANTIC_MARGIN;
+    const shouldClassify = hasConfidentSemanticMatch(best?.score ?? 0, scoreMargin);
 
     return best
       ? {
@@ -113,6 +118,13 @@ export async function diagnoseSemanticSearchClassification(
       error: error instanceof Error ? error.message : String(error),
     };
   }
+}
+
+function hasConfidentSemanticMatch(bestScore: number, scoreMargin: number): boolean {
+  // A weak top score means the description is not close enough to any category.
+  // A low margin means there are competing categories, so the item description is ambiguous
+  // and should fall back to manual operator classification instead of forcing one category.
+  return bestScore >= MIN_SEMANTIC_SCORE && scoreMargin >= MIN_SEMANTIC_MARGIN;
 }
 
 function buildQueryText(description: string): string {

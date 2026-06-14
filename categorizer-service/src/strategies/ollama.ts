@@ -1,4 +1,6 @@
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
+let availableModelsCache: Promise<Set<string>> | null = null;
+const resolvedModelCache = new Map<string, Promise<string>>();
 
 export interface OllamaTagsResponse {
   models?: Array<{
@@ -45,42 +47,74 @@ export async function resolveOllamaModel(
   configuredModel: string,
   fallbackModels: readonly string[]
 ): Promise<string> {
-  const availableModels = await listAvailableOllamaModels();
-  const candidates = [configuredModel, ...fallbackModels];
-
-  for (const candidate of candidates) {
-    if (availableModels.has(candidate)) {
-      return candidate;
-    }
-
-    if (!candidate.includes(":") && availableModels.has(`${candidate}:latest`)) {
-      return `${candidate}:latest`;
-    }
+  const cacheKey = `${getOllamaBaseUrl()}::${configuredModel}::${fallbackModels.join("|")}`;
+  const cached = resolvedModelCache.get(cacheKey);
+  if (cached) {
+    return cached;
   }
 
-  throw new Error(
-    `No compatible Ollama model is installed. Requested '${configuredModel}'. Available models: ${[...availableModels].join(", ") || "none"}`
-  );
+  const resolutionPromise = (async () => {
+    const availableModels = await listAvailableOllamaModels();
+    const candidates = [configuredModel, ...fallbackModels];
+
+    for (const candidate of candidates) {
+      if (availableModels.has(candidate)) {
+        return candidate;
+      }
+
+      if (!candidate.includes(":") && availableModels.has(`${candidate}:latest`)) {
+        return `${candidate}:latest`;
+      }
+    }
+
+    throw new Error(
+      `No compatible Ollama model is installed. Requested '${configuredModel}'. Available models: ${[...availableModels].join(", ") || "none"}`
+    );
+  })();
+
+  resolvedModelCache.set(cacheKey, resolutionPromise);
+
+  try {
+    return await resolutionPromise;
+  } catch (error) {
+    resolvedModelCache.delete(cacheKey);
+    throw error;
+  }
 }
 
 async function listAvailableOllamaModels(): Promise<Set<string>> {
-  const response = await fetchOllamaResponse("/api/tags", { method: "GET" });
-  if (!response.ok) {
-    throw new Error(await buildOllamaHttpError(response));
+  if (availableModelsCache) {
+    return availableModelsCache;
   }
 
-  const body = (await response.json()) as OllamaTagsResponse;
-  const availableModels = new Set<string>();
-
-  for (const model of body.models ?? []) {
-    if (model.name) {
-      availableModels.add(model.name);
+  const modelsPromise = (async () => {
+    const response = await fetchOllamaResponse("/api/tags", { method: "GET" });
+    if (!response.ok) {
+      throw new Error(await buildOllamaHttpError(response));
     }
 
-    if (model.model) {
-      availableModels.add(model.model);
+    const body = (await response.json()) as OllamaTagsResponse;
+    const availableModels = new Set<string>();
+
+    for (const model of body.models ?? []) {
+      if (model.name) {
+        availableModels.add(model.name);
+      }
+
+      if (model.model) {
+        availableModels.add(model.model);
+      }
     }
+
+    return availableModels;
+  })();
+
+  availableModelsCache = modelsPromise;
+
+  try {
+    return await modelsPromise;
+  } catch (error) {
+    availableModelsCache = null;
+    throw error;
   }
-
-  return availableModels;
 }
