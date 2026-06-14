@@ -4,6 +4,7 @@ import { resolve } from "path";
 import { performance } from "perf_hooks";
 import { loadEvaluationCategories } from "./category-catalog";
 import { loadEvaluationDataset } from "./dataset";
+import { warmSemanticSearchCache } from "../modules/semantic-search/service";
 import { STRATEGY_QUALITATIVE_ASSESSMENTS } from "./qualitative-assessments";
 import { renderSummaryMarkdown } from "./reporting";
 import { resolveEvaluationStrategies } from "./strategies";
@@ -28,6 +29,10 @@ async function main(): Promise<void> {
   const categories = await loadEvaluationCategories();
   const dataset = loadEvaluationDataset(categories);
   const strategies = resolveEvaluationStrategies(options.strategies);
+
+  if (strategies.some((strategy) => strategy.name === "semantic-search")) {
+    await warmSemanticSearchCache();
+  }
 
   const results: CaseEvaluationResult[] = [];
 

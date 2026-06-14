@@ -1,7 +1,7 @@
 import type { CategorizationStrategyInput } from "../strategies/types";
 import { diagnoseGenerativeAiClassification } from "../strategies/generative-ai/strategy";
 import { diagnoseKeywordClassification } from "../strategies/keyword/strategy";
-import { diagnoseSemanticSearchClassification } from "../strategies/semantic-search/strategy";
+import { classifyDescription } from "../modules/semantic-search/service";
 import type { StrategyDecision, StrategyName } from "./types";
 
 export interface EvaluationStrategyDefinition {
@@ -19,7 +19,7 @@ export const EVALUATION_STRATEGIES: readonly EvaluationStrategyDefinition[] = [
   {
     name: "semantic-search",
     displayName: "Búsqueda semántica",
-    evaluate: async (input) => normalizeDecision(await diagnoseSemanticSearchClassification(input)),
+    evaluate: async (input) => normalizeDecision(await evaluateProductionSemanticSearch(input)),
   },
   {
     name: "keyword-baseline",
@@ -58,4 +58,24 @@ function normalizeDecision(result: {
     ...(result.rawLabel !== undefined ? { rawLabel: result.rawLabel } : {}),
     ...(result.error !== undefined ? { error: result.error } : {}),
   };
+}
+
+async function evaluateProductionSemanticSearch(
+  input: CategorizationStrategyInput
+): Promise<{
+  categoryId: string | null;
+  rawLabel?: string;
+  error?: string;
+}> {
+  void input;
+
+  try {
+    const categoryId = await classifyDescription(input.description);
+    return { categoryId };
+  } catch (error) {
+    return {
+      categoryId: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }

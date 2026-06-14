@@ -6,7 +6,7 @@ El requerimiento R10 no introduce una funcionalidad distinta, sino una exigencia
 
 Para resolver esta exigencia sin sesgar la decisión, el equipo construyó una evaluación empírica común sobre un dataset etiquetado manualmente a partir del CSV de categorías y descripciones provisto por MOVE, complementado con casos adicionales de redacción libre, casos ambiguos y casos que debían derivarse a operador. La comparación se ejecutó con un mismo catálogo de categorías, un mismo contrato de categorización y un mismo harness para las estrategias comparadas.
 
-Como resultado de dicha evaluación, la versión final de búsqueda semántica obtuvo sobre 38 casos un `accuracy` de `71.05%`, una `classificationPrecision` de `68.75%`, una `fallbackCorrectness` de `83.33%`, un `errorRate` de `0%`, latencia promedio de `913.61 ms` y `p95` de `271.14 ms`. En la misma corrida, el baseline determinístico obtuvo `31.58%` de `accuracy`, `25.00%` de `classificationPrecision` y `66.67%` de `fallbackCorrectness`. La alternativa de IA generativa local fue prototipada con modelos locales sobre Ollama, pero presentó dificultades operativas relevantes en el entorno disponible, principalmente asociadas al peso de los modelos, al consumo de memoria y a la estabilidad de ejecución, lo que impidió obtener una evidencia experimental más sólida y ventajosa que la alcanzada por la búsqueda semántica.
+Como resultado de la corrida final del harness actualizada para utilizar la configuración productiva vigente de búsqueda semántica, esta estrategia obtuvo sobre 38 casos un `accuracy` de `73.68%`, una `classificationPrecision` de `75.00%`, una `fallbackCorrectness` de `66.67%`, un `errorRate` de `0%`, latencia promedio de `231.98 ms` y `p95` de `299.57 ms`. En la misma corrida, el baseline determinístico obtuvo `36.84%` de `accuracy`, `25.00%` de `classificationPrecision` y `100.00%` de `fallbackCorrectness`. La alternativa de IA generativa local fue prototipada con modelos locales sobre Ollama, pero presentó dificultades operativas relevantes en el entorno disponible, principalmente asociadas al peso de los modelos, al consumo de memoria y a la estabilidad de ejecución, lo que impidió obtener una evidencia experimental más sólida y ventajosa que la alcanzada por la búsqueda semántica.
 
 ## Decisión
 
@@ -22,7 +22,7 @@ La alternativa de IA generativa local con Ollama quedará descartada para la imp
 
 ## Justificación
 
-La búsqueda semántica fue elegida porque presentó el mejor balance entre precisión, comportamiento de fallback y viabilidad operativa dentro de la evidencia efectivamente obtenida por el equipo. Frente al baseline determinístico, la mejora fue significativa en los atributos más relevantes para R10: `71.05%` de `accuracy` frente a `31.58%`, `68.75%` de precisión de clasificación frente a `25.00%`, y `83.33%` de correctitud de fallback frente a `66.67%`. Estos resultados indican que el enfoque semántico captura mejor las paráfrasis, descripciones no literales y variaciones de redacción del usuario.
+La búsqueda semántica fue elegida porque presentó el mejor balance entre precisión, comportamiento de fallback y viabilidad operativa dentro de la evidencia efectivamente obtenida por el equipo. Frente al baseline determinístico, la mejora fue significativa en los atributos más relevantes para R10: `73.68%` de `accuracy` frente a `36.84%`, `75.00%` de precisión de clasificación frente a `25.00%`, y `66.67%` de correctitud de fallback frente a `100.00%`. Si bien el baseline mostró mejor comportamiento en fallback puro, la búsqueda semántica obtuvo un desempeño global claramente superior en exactitud total y precisión de clasificación, que son los atributos más determinantes para automatizar la categorización de reservas individuales.
 
 La IA generativa local fue rechazada por razones principalmente operativas y de evaluabilidad. En el ambiente disponible, los modelos locales de mayor tamaño resultaron pesados en consumo de memoria y ejecución, generando inestabilidad y dificultad para producir corridas reproducibles. Esto afectó negativamente atributos como deployabilidad, operabilidad y testabilidad. Incluso utilizando variantes más livianas, no se obtuvo una combinación de simplicidad operativa, estabilidad y evidencia experimental superior a la alcanzada por la búsqueda semántica.
 
@@ -33,6 +33,8 @@ La evaluación se realizó sobre una interfaz funcional única de categorizació
 La utilización de un dataset etiquetado manualmente, construido tomando como base el CSV provisto por MOVE y complementado con casos adicionales redactados por el equipo, evitó comparaciones subjetivas y permitió medir no sólo la capacidad de clasificar correctamente, sino también la capacidad de derivar a operador cuando la inferencia no era suficientemente confiable. Esto alinea la comparación con F19, donde no sólo importa acertar, sino también fallar de forma controlada.
 
 La búsqueda semántica también resulta una decisión más defendible desde el punto de vista arquitectónico porque mantiene desacoplado el flujo de negocio respecto del proveedor concreto de embeddings. La estrategia elegida describe un mecanismo de categorización, no una dependencia irreversible de una tecnología puntual. Por lo tanto, si en una iteración posterior se resolviera migrar desde un modelo local a un servicio externo de embeddings, la decisión seguiría siendo consistente con la arquitectura seleccionada.
+
+En la implementación vigente, el servicio de categorización precalienta al arrancar el caché de embeddings de categorías. Esto implica que los tiempos reportados en la evaluación corresponden al régimen estable de operación, es decir, una vez completado el warmup inicial. Esta decisión reduce significativamente la latencia percibida por la primera reserva clasificada luego del arranque, a costa de asumir un tiempo de inicialización mayor del servicio.
 
 **Alternativas consideradas y rechazadas:**
 
@@ -57,12 +59,14 @@ Aceptado
 - Se preserva un mecanismo explícito de fallback cuando la clasificación no es suficientemente confiable.
 - Se mantiene una complejidad operativa menor que la observada en la alternativa de IA generativa local.
 - Se conserva flexibilidad para reemplazar el proveedor de embeddings en el futuro sin rediseñar el flujo funcional.
+- El precalentamiento del caché de embeddings de categorías al inicio permite que la latencia de categorización observada en operación normal sea baja y consistente.
 
 **Negativas:**
 
 - La latencia promedio es mayor que la del baseline determinístico.
 - La solución depende de un componente de embeddings y de su disponibilidad operativa.
 - La calibración de umbrales de aceptación sigue requiriendo ajuste y validación sobre dataset.
+- El servicio requiere un warmup inicial para precalentar embeddings de categorías antes de alcanzar su mejor latencia operativa.
 
 **Riesgos:**
 
