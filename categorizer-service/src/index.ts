@@ -1,8 +1,10 @@
 import "dotenv/config";
 import express from "express";
-import { loadActiveCategories } from "./categories";
 import { categorizerRouter } from "./router";
-import { warmSemanticSearchCategories } from "./strategies/semantic-search/strategy";
+import {
+  getSemanticSearchCacheStatus,
+  warmSemanticSearchCache as warmSemanticSearchCacheService,
+} from "./modules/semantic-search/service";
 
 const app = express();
 const PORT = process.env["PORT"] ?? "3003";
@@ -10,29 +12,28 @@ const PORT = process.env["PORT"] ?? "3003";
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", service: "categorizer-service" });
+  res.json({
+    status: "ok",
+    service: "categorizer-service",
+    semanticSearchCache: getSemanticSearchCacheStatus(),
+  });
 });
 
 app.use("/categorize", categorizerRouter);
 
 app.listen(Number(PORT), () => {
   console.log(`categorizer-service running on port ${PORT}`);
-  void warmSemanticSearchCache();
+  void warmSemanticSearchCacheOnStartup();
 });
 
-async function warmSemanticSearchCache(): Promise<void> {
+async function warmSemanticSearchCacheOnStartup(): Promise<void> {
   const startedAt = Date.now();
 
   try {
-    const categories = await loadActiveCategories();
-    if (categories.length === 0) {
-      console.warn("categorizer-service semantic cache warmup skipped: no active categories");
-      return;
-    }
-
-    await warmSemanticSearchCategories(categories);
+    await warmSemanticSearchCacheService();
+    const cacheStatus = getSemanticSearchCacheStatus();
     console.log(
-      `categorizer-service semantic cache warmed for ${categories.length} categories in ${Date.now() - startedAt}ms`
+      `categorizer-service semantic cache warmed for ${cacheStatus.categoryCount} categories in ${Date.now() - startedAt}ms`
     );
   } catch (error) {
     console.warn(
