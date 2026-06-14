@@ -16,10 +16,7 @@ export function getOllamaBaseUrl(): string {
   return normalized.endsWith("/api") ? normalized.slice(0, -4) : normalized;
 }
 
-export async function fetchOllamaResponse(
-  path: string,
-  init: RequestInit
-): Promise<Response> {
+export async function fetchOllamaResponse(path: string, init: RequestInit): Promise<Response> {
   return fetch(`${getOllamaBaseUrl()}${path}`, init);
 }
 

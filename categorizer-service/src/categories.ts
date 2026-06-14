@@ -71,9 +71,7 @@ function normalizePricing(value: unknown): CategoryPricingConfig {
   const pricing = value as Partial<CategoryPricingConfig>;
   return {
     baseFare:
-      typeof pricing.baseFare === "number"
-        ? pricing.baseFare
-        : DEFAULT_CATEGORY_PRICING.baseFare,
+      typeof pricing.baseFare === "number" ? pricing.baseFare : DEFAULT_CATEGORY_PRICING.baseFare,
     pricePerKm:
       typeof pricing.pricePerKm === "number"
         ? pricing.pricePerKm

@@ -28,7 +28,9 @@ export const EVALUATION_STRATEGIES: readonly EvaluationStrategyDefinition[] = [
   },
 ] as const;
 
-export function resolveEvaluationStrategies(strategyNames: string[]): EvaluationStrategyDefinition[] {
+export function resolveEvaluationStrategies(
+  strategyNames: string[]
+): EvaluationStrategyDefinition[] {
   if (strategyNames.length === 0) {
     return [...EVALUATION_STRATEGIES];
   }
@@ -60,9 +62,7 @@ function normalizeDecision(result: {
   };
 }
 
-async function evaluateProductionSemanticSearch(
-  input: CategorizationStrategyInput
-): Promise<{
+async function evaluateProductionSemanticSearch(input: CategorizationStrategyInput): Promise<{
   categoryId: string | null;
   rawLabel?: string;
   error?: string;

@@ -103,7 +103,7 @@ export async function diagnoseSemanticSearchClassification(
     scored.sort((a, b) => b.score - a.score);
     const best = scored[0];
     const secondBest = scored[1];
-    const scoreMargin = best && secondBest ? best.score - secondBest.score : best?.score ?? 0;
+    const scoreMargin = best && secondBest ? best.score - secondBest.score : (best?.score ?? 0);
     const shouldClassify = hasConfidentSemanticMatch(best?.score ?? 0, scoreMargin);
 
     return best

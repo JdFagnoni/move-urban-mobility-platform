@@ -75,7 +75,7 @@ export async function classifyDescription(description: string): Promise<string |
 
   const best = scored[0];
   const secondBest = scored[1];
-  const scoreMargin = best && secondBest ? best.score - secondBest.score : best?.score ?? 0;
+  const scoreMargin = best && secondBest ? best.score - secondBest.score : (best?.score ?? 0);
   const accepted = Boolean(best && hasConfidentSemanticMatch(best.score, scoreMargin));
 
   logSemanticDecision({
@@ -193,11 +193,7 @@ function buildCategoryText(category: CategoryDTO): string {
     .filter((description) => description.length > 0)
     .join("\n");
 
-  const categoryText = [
-    category.spanishName.trim(),
-    category.name.trim(),
-    examples,
-  ]
+  const categoryText = [category.spanishName.trim(), category.name.trim(), examples]
     .filter((segment) => segment.trim().length > 0)
     .join("\n");
 

@@ -71,9 +71,8 @@ export class TransformersJsEmbeddingsAdapter implements EmbeddingsPort {
   }
 
   private async initializeExtractor(): Promise<FeatureExtractor> {
-    const { env, pipeline } = (await import(
-      "@huggingface/transformers"
-    )) as unknown as TransformersJsModule;
+    const { env, pipeline } =
+      (await import("@huggingface/transformers")) as unknown as TransformersJsModule;
 
     configureEnvironment(env);
 

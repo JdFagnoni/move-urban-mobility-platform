@@ -13,9 +13,7 @@ categorizerRouter.post("/", async (req: Request, res: Response): Promise<void> =
   const { description } = req.body as ClassifyRequest;
 
   if (typeof description !== "string" || description.trim().length === 0) {
-    res
-      .status(400)
-      .json({ success: false, error: "description is required" });
+    res.status(400).json({ success: false, error: "description is required" });
     return;
   }
 

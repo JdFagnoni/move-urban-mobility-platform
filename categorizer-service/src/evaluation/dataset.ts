@@ -15,7 +15,9 @@ function validateDataset(
   availableCategories: CategoryDTO[]
 ): void {
   if (dataset.length < 30 || dataset.length > 50) {
-    throw new Error(`R10 dataset must contain between 30 and 50 cases. Received: ${dataset.length}`);
+    throw new Error(
+      `R10 dataset must contain between 30 and 50 cases. Received: ${dataset.length}`
+    );
   }
 
   const categoryIds = new Set(availableCategories.map((category) => category.id));

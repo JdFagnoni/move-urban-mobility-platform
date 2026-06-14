@@ -82,7 +82,10 @@ async function main(): Promise<void> {
     results.push(caseResult);
   }
 
-  const summaries = summarizeResults(results, strategies.map((strategy) => strategy.name));
+  const summaries = summarizeResults(
+    results,
+    strategies.map((strategy) => strategy.name)
+  );
   const summaryMarkdown = renderSummaryMarkdown(
     summaries,
     STRATEGY_QUALITATIVE_ASSESSMENTS,
@@ -171,9 +174,7 @@ function summarizeResults(
     ).length;
     const fallbackCases = results.length - classifiableCases;
     const correctlyClassifiedCases = results.filter((result) =>
-      result.expectedOutcome === "classified"
-        ? wasFirstAttemptCorrect(result, strategyName)
-        : false
+      result.expectedOutcome === "classified" ? wasFirstAttemptCorrect(result, strategyName) : false
     ).length;
     const correctlyHandledFallbackCases = results.filter((result) =>
       result.expectedOutcome === "operator_fallback"
@@ -197,7 +198,8 @@ function summarizeResults(
       averageLatencyMs: average(latencies),
       p95LatencyMs: percentile(latencies, 0.95),
       errorRate: ratio(
-        attempts.filter((attempt) => attempt.error !== undefined && attempt.error.length > 0).length,
+        attempts.filter((attempt) => attempt.error !== undefined && attempt.error.length > 0)
+          .length,
         attempts.length
       ),
     };
@@ -266,7 +268,7 @@ async function writeJson(path: string, value: unknown): Promise<void> {
 }
 
 void main().catch((error: unknown) => {
-  const message = error instanceof Error ? error.stack ?? error.message : String(error);
+  const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
   console.error(message);
   process.exitCode = 1;
 });

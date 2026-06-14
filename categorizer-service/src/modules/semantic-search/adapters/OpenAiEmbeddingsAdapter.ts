@@ -13,8 +13,7 @@ interface OpenAiEmbeddingsResponse {
 export class OpenAiEmbeddingsAdapter implements EmbeddingsPort {
   async embed(text: string): Promise<number[]> {
     const apiKey = getRequiredEnv("OPENAI_API_KEY");
-    const model =
-      process.env["OPENAI_EMBEDDINGS_MODEL"]?.trim() || DEFAULT_OPENAI_EMBEDDINGS_MODEL;
+    const model = process.env["OPENAI_EMBEDDINGS_MODEL"]?.trim() || DEFAULT_OPENAI_EMBEDDINGS_MODEL;
     const baseUrl = normalizeBaseUrl(process.env["OPENAI_API_BASE_URL"] ?? DEFAULT_OPENAI_BASE_URL);
     const timeoutMs = parseTimeoutMs(process.env["EMBEDDINGS_TIMEOUT_MS"]);
     const controller = new AbortController();

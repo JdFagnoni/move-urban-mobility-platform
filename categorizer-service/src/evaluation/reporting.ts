@@ -14,9 +14,7 @@ export function renderSummaryMarkdown(
   lines.push(
     "| Estrategia | Accuracy | Precisión clasificación | Correctitud fallback | Latencia promedio (ms) | p95 (ms) | Error rate |"
   );
-  lines.push(
-    "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"
-  );
+  lines.push("| --- | ---: | ---: | ---: | ---: | ---: | ---: |");
 
   for (const summary of summaries) {
     lines.push(

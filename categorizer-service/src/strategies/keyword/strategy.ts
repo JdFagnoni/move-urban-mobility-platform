@@ -92,7 +92,10 @@ function scoreCategory(
 
   for (const description of category.descriptions) {
     const normalizedCategoryDescription = normalizeText(description);
-    if (normalizedCategoryDescription && normalizedDescription.includes(normalizedCategoryDescription)) {
+    if (
+      normalizedCategoryDescription &&
+      normalizedDescription.includes(normalizedCategoryDescription)
+    ) {
       score += 4;
       break;
     }
