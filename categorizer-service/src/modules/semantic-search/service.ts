@@ -3,7 +3,7 @@ import { loadActiveCategories } from "../../categories";
 import { getEmbeddingsPort } from "./runtime";
 
 const MIN_SEMANTIC_SCORE = 0.52;
-const MIN_SEMANTIC_MARGIN = 0.011;
+const MIN_SEMANTIC_MARGIN = 0.012;
 
 interface CachedCategoryEmbedding {
   category: CategoryDTO;
@@ -184,7 +184,7 @@ function roundScore(value: number): number {
 }
 
 function buildQueryText(description: string): string {
-  return description.trim();
+  return `query: ${description.trim()}`;
 }
 
 function buildCategoryText(category: CategoryDTO): string {
@@ -193,11 +193,13 @@ function buildCategoryText(category: CategoryDTO): string {
     .filter((description) => description.length > 0)
     .join("\n");
 
-  return [
+  const categoryText = [
     category.spanishName.trim(),
     category.name.trim(),
     examples,
   ]
     .filter((segment) => segment.trim().length > 0)
     .join("\n");
+
+  return `passage: ${categoryText}`;
 }
