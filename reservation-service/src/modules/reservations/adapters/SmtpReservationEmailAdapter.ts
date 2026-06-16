@@ -36,15 +36,16 @@ export class SmtpReservationEmailAdapter implements ReservationEmailPort {
     await this.transporter.sendMail({
       from: formatSender(this.config.fromEmail, this.config.fromName),
       to: input.recipientEmail,
-      subject: `MOVE no puede atender la reserva ${input.reservationId}`,
+      subject: "MOVE could not accept your reservation request",
       text: [
-        `Hola ${input.recipientName},`,
+        `Hello ${input.recipientName},`,
         "",
-        `No podemos atender la reserva ${input.reservationId}.`,
-        `Motivo: ${input.rejectionReason}`,
+        "Thank you for choosing MOVE.",
+        "After reviewing your request, our operations team determined that we cannot fulfill it.",
+        "This can happen when the requested cargo does not match the types of items MOVE currently transports.",
         "",
-        "Lamentamos los inconvenientes.",
-        "Equipo MOVE",
+        "We apologize for the inconvenience.",
+        "MOVE Team",
       ].join("\n"),
     });
   }
