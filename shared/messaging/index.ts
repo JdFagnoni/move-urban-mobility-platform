@@ -4,6 +4,7 @@ export {
   isConnected,
   onReconnect,
   startMessaging,
+  stopMessaging,
   type Channel,
   type ConfirmChannel,
   type ReconnectListener,

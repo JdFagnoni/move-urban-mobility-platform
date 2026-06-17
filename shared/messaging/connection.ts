@@ -23,6 +23,7 @@ const reconnectListeners = new Set<ReconnectListener>();
 let connection: AmqpConnection | null = null;
 let publishChannel: ConfirmChannel | null = null;
 let supervisorRunning = false;
+let stopped = false;
 
 export function onReconnect(listener: ReconnectListener): void {
   reconnectListeners.add(listener);
@@ -37,7 +38,19 @@ export function startMessaging(): void {
     return;
   }
   supervisorRunning = true;
+  stopped = false;
   void superviseConnection();
+}
+
+export async function stopMessaging(): Promise<void> {
+  stopped = true;
+  const active = connection;
+  connection = null;
+  publishChannel = null;
+  supervisorRunning = false;
+  if (active !== null) {
+    await active.close();
+  }
 }
 
 export function getPublishChannel(): ConfirmChannel {
@@ -58,7 +71,7 @@ export async function createConsumerChannel(prefetch: number): Promise<Channel> 
 
 async function superviseConnection(): Promise<void> {
   let attempt = 0;
-  for (;;) {
+  while (!stopped) {
     try {
       const established = await connect(RABBITMQ_URL);
       attempt = 0;
@@ -73,6 +86,9 @@ async function superviseConnection(): Promise<void> {
     }
     connection = null;
     publishChannel = null;
+    if (stopped) {
+      return;
+    }
     attempt += 1;
     await delay(backoffDelay(attempt));
   }
