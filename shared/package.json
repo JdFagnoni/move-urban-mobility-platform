@@ -5,9 +5,15 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "node --test \"test/**/*.unit.test.ts\"",
+    "test:integration": "node --test \"test/**/*.integration.test.ts\""
+  },
+  "dependencies": {
+    "amqplib": "^0.10.4"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.5",
     "typescript": "^5.4.5"
   }
 }

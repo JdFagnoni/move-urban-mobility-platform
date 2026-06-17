@@ -16,7 +16,15 @@ El riesgo de esta decisión es que si `detectAndAlert` falla silenciosamente, la
 
 ## Estado
 
-Aceptado.
+Supersedido parcialmente por ADR-010.
+
+La decisión original de responder `202 Accepted` y desacoplar la detección del ciclo de respuesta HTTP se mantiene vigente. Lo que se supersede es el mecanismo de ejecución de la detección: el patrón fire-and-forget in-process (`detectAndAlert(signal).catch()`) se reemplaza por la publicación de la señal en una cola RabbitMQ (`gps.detection`) consumida por workers dedicados.
+
+## Enmienda (ADR-010)
+
+Al evaluar los requisitos no funcionales de pico de carga (R8: soportar picos de hasta 50x) y de durabilidad de las alertas (R3: alertas procesadas en menos de 5 segundos desde su detección), el patrón fire-and-forget in-process resultó insuficiente. Su principal debilidad ya estaba documentada en la consecuencia 4 de este ADR: si el proceso cae entre la persistencia de la señal y la ejecución de la detección, la alerta puede perderse, sin reintento ni durabilidad del trabajo en vuelo.
+
+La detección pasa entonces a un esquema basado en cola: el endpoint `POST /gps/signal` sigue validando y persistiendo la señal y respondiendo `202 Accepted` en tiempo acotado, pero en lugar de invocar la detección en proceso publica un evento `gps.signal.ingested` en el exchange `move.gps`. La cola `gps.detection` actúa como buffer ante ráfagas (R8) y otorga durabilidad y reintento controlado al trabajo de detección (R3, R7). La lógica de detección y su idempotencia (deduplicación vía `hasActiveAlert`) se conservan sin cambios; solo cambia el mecanismo de invocación. Los detalles de la topología, garantías de entrega y resiliencia se documentan en ADR-010.
 
 ## Consecuencias
 

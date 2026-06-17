@@ -12,6 +12,7 @@ import { zonesRouter } from "./modules/zones/router";
 import { vehiclesRouter } from "./modules/vehicles/router";
 import { usersRouter } from "./modules/users/router";
 import { paymentsRouter } from "./modules/payments/router";
+import { startReservationMessaging } from "./messaging";
 
 const app = express();
 const PORT = process.env["PORT"] ?? "3001";
@@ -43,6 +44,7 @@ async function start(): Promise<void> {
   await withRetry(initializeDatabase, { attempts: 10, delayMs: 3000 });
   await seedDefaultCategories();
   await seedBootstrapAdmin();
+  startReservationMessaging();
   app.listen(Number(PORT), () => {
     process.stdout.write(`reservations running on port ${PORT}\n`);
   });

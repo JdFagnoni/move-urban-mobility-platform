@@ -12,6 +12,22 @@ services:
     volumes:
       - pg_data_dev:/var/lib/postgresql/data
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-move}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-move_secret}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - rabbitmq_data_dev:/var/lib/rabbitmq
+
   api-gateway:
     build:
       context: .
@@ -88,10 +104,15 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-notifications@move.local}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-MOVE}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://move:move_secret@rabbitmq:5672}
       PORT: "3001"
     depends_on:
-      - postgres
-      - categorizer-service
+      postgres:
+        condition: service_started
+      categorizer-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   transportations:
     build:
@@ -106,9 +127,13 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://move:move_secret@rabbitmq:5672}
       PORT: "3002"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   categorizer-service:
     build:
@@ -161,3 +186,4 @@ services:
 volumes:
   pg_data_dev:
   ollama_data_dev:
+  rabbitmq_data_dev:

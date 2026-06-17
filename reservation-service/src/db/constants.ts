@@ -48,3 +48,6 @@ export const AUTH_AUDIT_DECISIONS: readonly AuthAuditDecision[] = [
   "success",
 ];
 export const ZONE_TYPES: readonly ZoneType[] = ["red", "preferred"];
+
+export type OutboxEventStatus = "pending" | "published";
+export const OUTBOX_EVENT_STATUSES: readonly OutboxEventStatus[] = ["pending", "published"];
