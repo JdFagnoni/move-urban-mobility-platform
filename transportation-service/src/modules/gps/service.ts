@@ -11,24 +11,38 @@ interface GpsRow {
 }
 
 const GPS_LATEST_TTL_SECONDS = 6 * 60 * 60;
+const GPS_RECENT_TTL_SECONDS = 60 * 60;
+const GPS_RECENT_MAX_ENTRIES = 5;
 
 function latestKey(vehicleId: string): string {
   return `gps:latest:${vehicleId}`;
 }
 
+function recentKey(vehicleId: string): string {
+  return `gps:recent:${vehicleId}`;
+}
+
 async function cacheSignal(signal: GpsSignalDTO): Promise<void> {
   const [lon, lat] = signal.location.coordinates;
-  await redisClient
-    .multi()
-    .hset(latestKey(signal.vehicleId), {
-      lon: String(lon),
-      lat: String(lat),
-      speed: String(signal.speed),
-      heading: String(signal.heading),
-      timestamp: signal.timestamp,
-    })
-    .expire(latestKey(signal.vehicleId), GPS_LATEST_TTL_SECONDS)
-    .exec();
+  await Promise.all([
+    redisClient
+      .multi()
+      .hset(latestKey(signal.vehicleId), {
+        lon: String(lon),
+        lat: String(lat),
+        speed: String(signal.speed),
+        heading: String(signal.heading),
+        timestamp: signal.timestamp,
+      })
+      .expire(latestKey(signal.vehicleId), GPS_LATEST_TTL_SECONDS)
+      .exec(),
+    redisClient
+      .multi()
+      .lpush(recentKey(signal.vehicleId), JSON.stringify(signal))
+      .ltrim(recentKey(signal.vehicleId), 0, GPS_RECENT_MAX_ENTRIES - 1)
+      .expire(recentKey(signal.vehicleId), GPS_RECENT_TTL_SECONDS)
+      .exec(),
+  ]);
 }
 
 async function getLatestSignalFromCache(vehicleId: string): Promise<GpsSignalDTO | null> {
