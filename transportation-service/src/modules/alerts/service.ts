@@ -186,34 +186,60 @@ async function checkGeofence(signal: GpsSignalDTO): Promise<void> {
 
 const STOP_THRESHOLD_MS = 60_000; // 60 seconds stopped = alert
 
-async function checkProlongedStop(signal: GpsSignalDTO): Promise<void> {
-  if (signal.speed > 0) return;
+interface RecentSignalSample {
+  speed: number;
+  timestamp: string;
+}
 
-  const result = await query<{ speed: number; timestamp: string }>(
+// Reads the last 2 signals from the same gps:recent:{vehicleId} list that
+// gps/service.ts populates on ingest. Falls back to Postgres on a cache miss
+// (cold start, TTL expiry) or Redis error.
+async function getRecentSpeedSamples(vehicleId: string): Promise<RecentSignalSample[]> {
+  try {
+    const raw = await redisClient.lrange(`gps:recent:${vehicleId}`, 0, 1);
+    if (raw.length >= 2) {
+      return raw.map((item) => JSON.parse(item) as RecentSignalSample);
+    }
+  } catch (err) {
+    console.error("[alerts] redis read error:", err);
+  }
+
+  const result = await query<RecentSignalSample>(
     `SELECT speed, timestamp FROM gps_signals
      WHERE vehicle_id = $1
      ORDER BY timestamp DESC
      LIMIT 2`,
-    [signal.vehicleId]
+    [vehicleId]
   );
+  return result.rows;
+}
 
-  if (result.rows.length < 2) return;
+async function checkProlongedStop(signal: GpsSignalDTO): Promise<void> {
+  if (signal.speed > 0) return;
 
-  const [latest, previous] = result.rows;
+  const samples = await getRecentSpeedSamples(signal.vehicleId);
+  if (samples.length < 2) return;
+
+  const [latest, previous] = samples;
   if (!latest || !previous || latest.speed > 0 || previous.speed > 0) return;
 
   const elapsed = new Date(signal.timestamp).getTime() - new Date(previous.timestamp).getTime();
   if (elapsed >= STOP_THRESHOLD_MS) {
-    const alreadyAlerted = await hasActiveAlert(signal.vehicleId, "delay");
-    if (!alreadyAlerted) {
-      await createAlert({
-        vehicleId: signal.vehicleId,
-        type: "delay",
-        severity: "warning",
-        message: `Vehicle has been stopped for over ${Math.round(elapsed / 1000)}s`,
-        location: signal.location,
-      });
-      console.warn(`[alerts] stop alert for vehicle ${signal.vehicleId}`);
+    const acquired = await acquireAlertLock(signal.vehicleId, "delay");
+    if (acquired) {
+      try {
+        await createAlert({
+          vehicleId: signal.vehicleId,
+          type: "delay",
+          severity: "warning",
+          message: `Vehicle has been stopped for over ${Math.round(elapsed / 1000)}s`,
+          location: signal.location,
+        });
+        console.warn(`[alerts] stop alert for vehicle ${signal.vehicleId}`);
+      } catch (err) {
+        await releaseAlertLock(signal.vehicleId, "delay");
+        throw err;
+      }
     }
   }
 }

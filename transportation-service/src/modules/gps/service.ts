@@ -91,10 +91,13 @@ export async function ingestSignal(signal: GpsSignalDTO): Promise<void> {
     ]
   );
 
-  // Best-effort: Postgres already guarantees durability, so a Redis failure here is non-fatal (R7)
-  cacheSignal(signal).catch((err: unknown) => {
+  // Awaited (but best-effort) so detection below sees this signal already cached.
+  // Postgres already guarantees durability, so a Redis failure here is non-fatal (R7).
+  try {
+    await cacheSignal(signal);
+  } catch (err) {
     console.error("[gps] redis cache error:", err);
-  });
+  }
 
   // Non-blocking: detect geofence and stop situations after persisting
   detectAndAlert(signal).catch((err: unknown) => {
