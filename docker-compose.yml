@@ -76,9 +76,11 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       PORT: "3002"
     depends_on:
       - postgres
+      - redis
 
   categorizer-service:
     build:
@@ -102,6 +104,16 @@ services:
       - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama_data:/root/.ollama
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 volumes:
   pg_data:
