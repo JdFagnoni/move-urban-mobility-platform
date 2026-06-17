@@ -5,6 +5,7 @@ import { gpsRouter } from "./modules/gps/router";
 import { alertsRouter } from "./modules/alerts/router";
 import { operatorRouter } from "./modules/operator/router";
 import { initDb } from "./db/init";
+import { warmAlertCache } from "./modules/alerts/service";
 
 const app = express();
 const PORT = process.env["PORT"] ?? "3002";
@@ -21,6 +22,7 @@ app.use("/alerts", alertsRouter);
 app.use("/operator", operatorRouter);
 
 initDb()
+  .then(() => warmAlertCache())
   .then(() => {
     app.listen(Number(PORT), () => {
       console.log(`transportations running on port ${PORT}`);

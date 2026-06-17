@@ -98,6 +98,24 @@ async function releaseAlertLock(vehicleId: string, type: AlertType): Promise<voi
   }
 }
 
+// Rebuilds Redis dedup locks from the currently unresolved alerts in Postgres.
+// Called once on service startup so a Redis restart can't make the system forget
+// alerts that are still active according to the source of truth.
+export async function warmAlertCache(): Promise<void> {
+  try {
+    const result = await query<{ vehicle_id: string; type: AlertType }>(
+      "SELECT vehicle_id, type FROM alerts WHERE resolved_at IS NULL"
+    );
+    await Promise.all(
+      result.rows.map((row) =>
+        redisClient.set(alertLockKey(row.vehicle_id, row.type), "1", "EX", ALERT_LOCK_TTL_SECONDS)
+      )
+    );
+  } catch (err) {
+    console.error("[alerts] redis warm-up error:", err);
+  }
+}
+
 // ─── Core persistence ─────────────────────────────────────────────────────────
 
 export async function createAlert(params: {
