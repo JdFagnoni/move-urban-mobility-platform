@@ -4,6 +4,7 @@ export { CategoryModel } from "./category";
 export { CompanyLocationModel } from "./company-location";
 export { CompanyProductModel } from "./company-product";
 export { NotificationModel } from "./notification";
+export { OutboxEventModel } from "./outbox-event";
 export { PaymentModel } from "./payment";
 export { ReservationModel } from "./reservation";
 export { UserModel } from "./user";

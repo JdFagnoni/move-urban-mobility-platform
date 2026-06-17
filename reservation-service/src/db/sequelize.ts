@@ -7,6 +7,7 @@ import {
   CompanyLocationModel,
   CompanyProductModel,
   NotificationModel,
+  OutboxEventModel,
   PaymentModel,
   ReservationModel,
   UserModel,
@@ -31,6 +32,7 @@ export const sequelize = new Sequelize(connectionString, {
     CompanyLocationModel,
     ZoneModel,
     VehicleModel,
+    OutboxEventModel,
   ],
   logging: false,
 });
