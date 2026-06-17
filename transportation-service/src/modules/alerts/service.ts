@@ -289,7 +289,9 @@ export async function resolveAlert(id: string): Promise<AlertDTO | null> {
     [id]
   );
   const row = result.rows[0];
-  return row ? mapAlert(row) : null;
+  if (!row) return null;
+  await releaseAlertLock(row.vehicle_id, row.type);
+  return mapAlert(row);
 }
 
 // ─── Mapper ───────────────────────────────────────────────────────────────────
