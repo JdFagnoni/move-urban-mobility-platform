@@ -55,6 +55,12 @@ async function getActiveTripId(vehicleId: string): Promise<string | null> {
 
 // ─── Deduplication ───────────────────────────────────────────────────────────
 
+const ALERT_LOCK_TTL_SECONDS = 24 * 60 * 60;
+
+function alertLockKey(vehicleId: string, type: AlertType): string {
+  return `alerts:active:${vehicleId}:${type}`;
+}
+
 async function hasActiveAlert(vehicleId: string, type: AlertType): Promise<boolean> {
   const result = await query<{ id: string }>(
     `SELECT id FROM alerts
@@ -62,6 +68,34 @@ async function hasActiveAlert(vehicleId: string, type: AlertType): Promise<boole
     [vehicleId, type]
   );
   return (result.rowCount ?? 0) > 0;
+}
+
+// Atomically marks (vehicleId, type) as alerted. Returns true only when no alert
+// was already active, which avoids the race between two instances both reading
+// "no active alert" before either has inserted one.
+async function acquireAlertLock(vehicleId: string, type: AlertType): Promise<boolean> {
+  try {
+    const result = await redisClient.set(
+      alertLockKey(vehicleId, type),
+      "1",
+      "EX",
+      ALERT_LOCK_TTL_SECONDS,
+      "NX"
+    );
+    return result === "OK";
+  } catch (err) {
+    console.error("[alerts] redis lock error:", err);
+    const alreadyAlerted = await hasActiveAlert(vehicleId, type);
+    return !alreadyAlerted;
+  }
+}
+
+async function releaseAlertLock(vehicleId: string, type: AlertType): Promise<void> {
+  try {
+    await redisClient.del(alertLockKey(vehicleId, type));
+  } catch (err) {
+    console.error("[alerts] redis unlock error:", err);
+  }
 }
 
 // ─── Core persistence ─────────────────────────────────────────────────────────
@@ -127,18 +161,23 @@ async function checkGeofence(signal: GpsSignalDTO): Promise<void> {
     if (!ring) continue;
     const inside = pointInPolygon(signal.location.coordinates, ring);
     if (inside) {
-      const alreadyAlerted = await hasActiveAlert(signal.vehicleId, "geofence_exit");
-      if (!alreadyAlerted) {
-        await createAlert({
-          vehicleId: signal.vehicleId,
-          type: "geofence_exit",
-          severity: "critical",
-          message: `Vehicle entered red zone "${zone.name}"`,
-          location: signal.location,
-        });
-        console.warn(
-          `[alerts] geofence alert for vehicle ${signal.vehicleId} in zone "${zone.name}"`
-        );
+      const acquired = await acquireAlertLock(signal.vehicleId, "geofence_exit");
+      if (acquired) {
+        try {
+          await createAlert({
+            vehicleId: signal.vehicleId,
+            type: "geofence_exit",
+            severity: "critical",
+            message: `Vehicle entered red zone "${zone.name}"`,
+            location: signal.location,
+          });
+          console.warn(
+            `[alerts] geofence alert for vehicle ${signal.vehicleId} in zone "${zone.name}"`
+          );
+        } catch (err) {
+          await releaseAlertLock(signal.vehicleId, "geofence_exit");
+          throw err;
+        }
       }
       return;
     }
