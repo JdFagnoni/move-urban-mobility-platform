@@ -12,6 +12,7 @@
     "@move/shared": "*",
     "express": "^4.19.2",
     "pg": "^8.12.0",
+    "ioredis": "^5.4.1",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
