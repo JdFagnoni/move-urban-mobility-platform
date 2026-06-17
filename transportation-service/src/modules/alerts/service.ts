@@ -1,4 +1,4 @@
-import { query } from "@move/shared";
+import { query, redisClient } from "@move/shared";
 import type { AlertDTO, AlertType, AlertSeverity, GeoPoint, GpsSignalDTO } from "@move/shared";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -95,12 +95,34 @@ export async function createAlert(params: {
 
 // ─── Detection logic (F15) ────────────────────────────────────────────────────
 
-async function checkGeofence(signal: GpsSignalDTO): Promise<void> {
-  const zones = await query<ZoneRow>(
+const RED_ZONES_CACHE_KEY = "zones:red";
+const RED_ZONES_TTL_SECONDS = 30;
+
+async function getRedZones(): Promise<ZoneRow[]> {
+  try {
+    const cached = await redisClient.get(RED_ZONES_CACHE_KEY);
+    if (cached) return JSON.parse(cached) as ZoneRow[];
+  } catch (err) {
+    console.error("[alerts] redis read error:", err);
+  }
+
+  const result = await query<ZoneRow>(
     "SELECT id, name, type, polygon FROM zones WHERE type = 'red' AND active = true"
   );
 
-  for (const zone of zones.rows) {
+  redisClient
+    .set(RED_ZONES_CACHE_KEY, JSON.stringify(result.rows), "EX", RED_ZONES_TTL_SECONDS)
+    .catch((err: unknown) => {
+      console.error("[alerts] redis write error:", err);
+    });
+
+  return result.rows;
+}
+
+async function checkGeofence(signal: GpsSignalDTO): Promise<void> {
+  const zones = await getRedZones();
+
+  for (const zone of zones) {
     const ring = zone.polygon.coordinates[0];
     if (!ring) continue;
     const inside = pointInPolygon(signal.location.coordinates, ring);
