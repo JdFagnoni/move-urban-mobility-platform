@@ -30,7 +30,6 @@ import type { PreparedCargoItemInput } from "./helpers/types";
 import { normalizeCargoItems, validateScheduledAt } from "./helpers/validate-common-input";
 import { quotePreparedReservation } from "./quote-service";
 import { getVehicle } from "../vehicles/service";
-import { reservationEmailProvider } from "./runtime";
 import { enqueueOutboxEvent } from "../../messaging/outbox";
 import { OUTBOX_EVENT_TYPES } from "../../messaging/events";
 
@@ -408,6 +407,8 @@ export async function rejectReservation(
 
   ensurePendingClassification(reservation);
 
+  const client = await getUser(reservation.clientId);
+
   await sequelize.transaction(async (transaction) => {
     reservation.status = "rejected";
     reservation.quotedPrice = null;
@@ -417,17 +418,26 @@ export async function rejectReservation(
 
     await reservation.save({ transaction });
     await acknowledgeNotification(reservation.id, operatorUser.id, transaction);
+
+    if (client) {
+      await enqueueOutboxEvent(
+        {
+          aggregateId: reservation.id,
+          type: OUTBOX_EVENT_TYPES.reservationUnsupported,
+          routingKey: ROUTING_KEYS.reservationUnsupported,
+          payload: {
+            reservationId: reservation.id,
+            recipientEmail: client.email,
+            recipientName: client.name,
+            rejectionReason: dto.reason,
+          },
+        },
+        transaction
+      );
+    }
   });
 
-  const client = await getUser(reservation.clientId);
-  if (client) {
-    await sendUnsupportedReservationEmailSafely({
-      reservationId: reservation.id,
-      recipientEmail: client.email,
-      recipientName: client.name,
-      rejectionReason: dto.reason,
-    });
-  } else {
+  if (!client) {
     console.error(
       JSON.stringify({
         level: "error",
@@ -681,37 +691,4 @@ function mapCargoItemModelToPreparedCargoItem(cargoItem: CargoItemModel): Prepar
     size: cargoItem.size,
     categoryId: cargoItem.categoryId,
   };
-}
-
-async function sendUnsupportedReservationEmailSafely(input: {
-  reservationId: string;
-  recipientEmail: string;
-  recipientName: string;
-  rejectionReason: string;
-}): Promise<void> {
-  try {
-    await reservationEmailProvider.sendUnsupportedReservationEmail(input);
-  } catch (error) {
-    console.error(
-      JSON.stringify({
-        level: "error",
-        event: "unsupported_reservation_email_failed",
-        reservationId: input.reservationId,
-        recipientEmail: input.recipientEmail,
-        error: serializeError(error),
-      })
-    );
-  }
-}
-
-function serializeError(error: unknown): Record<string, unknown> {
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-    };
-  }
-
-  return { value: String(error) };
 }
