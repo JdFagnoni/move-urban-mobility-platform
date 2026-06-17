@@ -6,6 +6,7 @@ export { CompanyProductModel } from "./company-product";
 export { NotificationModel } from "./notification";
 export { OutboxEventModel } from "./outbox-event";
 export { PaymentModel } from "./payment";
+export { SentEmailModel } from "./sent-email";
 export { ReservationModel } from "./reservation";
 export { UserModel } from "./user";
 export { ZoneModel } from "./zone";

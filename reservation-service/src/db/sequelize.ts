@@ -10,6 +10,7 @@ import {
   OutboxEventModel,
   PaymentModel,
   ReservationModel,
+  SentEmailModel,
   UserModel,
   ZoneModel,
   VehicleModel,
@@ -33,6 +34,7 @@ export const sequelize = new Sequelize(connectionString, {
     ZoneModel,
     VehicleModel,
     OutboxEventModel,
+    SentEmailModel,
   ],
   logging: false,
 });
