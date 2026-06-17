@@ -18,6 +18,21 @@ services:
       retries: 20
       start_period: 3s
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: move
+      RABBITMQ_DEFAULT_PASS: move_secret
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
   api-gateway:
     build:
       context: .
@@ -55,9 +70,12 @@ services:
       BOOTSTRAP_ADMIN_AUTH_SUBJECT: ""
       BOOTSTRAP_ADMIN_EMAIL: ""
       BOOTSTRAP_ADMIN_NAME: MOVE Admin
+      RABBITMQ_URL: amqp://move:move_secret@rabbitmq:5672
       PORT: "3001"
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   transportations:
@@ -70,9 +88,12 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      RABBITMQ_URL: amqp://move:move_secret@rabbitmq:5672
       PORT: "3002"
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   categorizer-service:

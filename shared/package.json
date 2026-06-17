@@ -7,7 +7,11 @@
     "build": "tsc",
     "dev": "tsc --watch"
   },
+  "dependencies": {
+    "amqplib": "^0.10.4"
+  },
   "devDependencies": {
+    "@types/amqplib": "^0.10.5",
     "typescript": "^5.4.5"
   }
 }
