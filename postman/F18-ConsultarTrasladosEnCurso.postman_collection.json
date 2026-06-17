@@ -1,0 +1,531 @@
+{
+  "info": {
+    "_postman_id": "f18-consultar-traslados-en-curso",
+    "name": "F18 – Consultar Traslados en Curso",
+    "description": "Verifica el endpoint GET /transportations/operator/trips/active con todos los filtros opcionales (vehicleId, driverId, categoryId, hasActiveAlerts) y el control de acceso por rol Operador.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url",            "value": "http://localhost:3000" },
+    { "key": "auth0_domain",        "value": "dev-v18wbrah03r8lc5v.us.auth0.com" },
+    { "key": "auth0_client_id",     "value": "y1zVsp6x4vS4jN5mtFUiIIMqjYRruQSz" },
+    { "key": "auth0_client_secret", "value": "O_m5mem6bJ_z2vpQKNfxb_wFQT2RBPpwFWyrPR-Ub0_nIkeJeaZDbw64qYDhrW_v" },
+    { "key": "auth0_audience",      "value": "https://move-platform-api" },
+    { "key": "admin_token",         "value": "" },
+    { "key": "operator_token",      "value": "" },
+    { "key": "driver_token",        "value": "" },
+    { "key": "client_token",        "value": "" },
+    { "key": "operator_user_id",    "value": "" },
+    { "key": "driver_user_id",      "value": "" },
+    { "key": "vehicle_id",          "value": "" },
+    { "key": "reservation_id",      "value": "" },
+    { "key": "cargo_item_id",       "value": "" },
+    { "key": "category_id",         "value": "" },
+    { "key": "trip_id",             "value": "" },
+    { "key": "nonexistent_uuid",    "value": "00000000-0000-4000-8000-000000000000" }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "S01 – Admin Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "https://{{auth0_domain}}/oauth/token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"Username-Password-Authentication\",\"username\":\"admin@move.local\",\"password\":\"Admin123\"}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Got admin token', () => pm.expect(pm.response.code).to.eql(200));",
+            "pm.collectionVariables.set('admin_token', pm.response.json().access_token);"
+          ]}}]
+        },
+        {
+          "name": "S02 – Register Operator",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/reservations/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"operator-f18@move.local\",\"password\":\"Operator123!\",\"name\":\"Operator F18 Test\",\"clientType\":\"individual\"}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Register completed (201 or 409)', () => pm.expect([201,409]).to.include(pm.response.code));"
+          ]}}]
+        },
+        {
+          "name": "S03 – Get Operator ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/reservations/users?email=operator-f18@move.local",
+              "host": ["{{base_url}}"],
+              "path": ["reservations","users"],
+              "query": [{ "key": "email", "value": "operator-f18@move.local" }]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const users = pm.response.json().data.data;",
+            "const u = users.find(x => x.email === 'operator-f18@move.local');",
+            "pm.test('Operator found', () => pm.expect(u).to.not.be.undefined);",
+            "if (u) pm.collectionVariables.set('operator_user_id', u.id);"
+          ]}}]
+        },
+        {
+          "name": "S04 – Promote to Operator",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{base_url}}/reservations/users/{{operator_user_id}}",
+            "body": { "mode": "raw", "raw": "{\"role\":\"operator\"}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Promoted to operator', () => pm.expect(pm.response.code).to.eql(200));",
+            "pm.test('Role is operator', () => pm.expect(pm.response.json().data.role).to.eql('operator'));"
+          ]}}]
+        },
+        {
+          "name": "S05 – Operator Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "https://{{auth0_domain}}/oauth/token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"Username-Password-Authentication\",\"username\":\"operator-f18@move.local\",\"password\":\"Operator123!\"}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Got operator token', () => pm.expect(pm.response.code).to.eql(200));",
+            "pm.collectionVariables.set('operator_token', pm.response.json().access_token);"
+          ]}}]
+        },
+        {
+          "name": "S06 – Register Driver",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/reservations/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"driver-f18@move.local\",\"password\":\"Driver123!\",\"name\":\"Driver F18 Test\",\"clientType\":\"individual\"}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Register completed (201 or 409)', () => pm.expect([201,409]).to.include(pm.response.code));"
+          ]}}]
+        },
+        {
+          "name": "S07 – Get Driver ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/reservations/users?email=driver-f18@move.local",
+              "host": ["{{base_url}}"],
+              "path": ["reservations","users"],
+              "query": [{ "key": "email", "value": "driver-f18@move.local" }]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const users = pm.response.json().data.data;",
+            "const u = users.find(x => x.email === 'driver-f18@move.local');",
+            "pm.test('Driver found', () => pm.expect(u).to.not.be.undefined);",
+            "if (u) pm.collectionVariables.set('driver_user_id', u.id);"
+          ]}}]
+        },
+        {
+          "name": "S08 – Promote to Driver",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{base_url}}/reservations/users/{{driver_user_id}}",
+            "body": { "mode": "raw", "raw": "{\"role\":\"driver\"}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Promoted to driver', () => pm.expect(pm.response.code).to.eql(200));",
+            "pm.test('Role is driver', () => pm.expect(pm.response.json().data.role).to.eql('driver'));"
+          ]}}]
+        },
+        {
+          "name": "S09 – Driver Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "https://{{auth0_domain}}/oauth/token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"Username-Password-Authentication\",\"username\":\"driver-f18@move.local\",\"password\":\"Driver123!\"}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Got driver token', () => pm.expect(pm.response.code).to.eql(200));",
+            "pm.collectionVariables.set('driver_token', pm.response.json().access_token);"
+          ]}}]
+        },
+        {
+          "name": "S10 – Register Client",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/reservations/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"client-f18@move.local\",\"password\":\"Client123!\",\"name\":\"Client F18 Test\",\"clientType\":\"individual\"}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Register completed (201 or 409)', () => pm.expect([201,409]).to.include(pm.response.code));"
+          ]}}]
+        },
+        {
+          "name": "S11 – Client Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "https://{{auth0_domain}}/oauth/token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"Username-Password-Authentication\",\"username\":\"client-f18@move.local\",\"password\":\"Client123!\"}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Got client token', () => pm.expect(pm.response.code).to.eql(200));",
+            "pm.collectionVariables.set('client_token', pm.response.json().access_token);"
+          ]}}]
+        },
+        {
+          "name": "S12 – Create Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{base_url}}/reservations/vehicles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"plate\":\"F18-TST\",\"type\":\"VAN\",\"capacity\":3,\"status\":\"available\"}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Vehicle created (201 or 409)', () => pm.expect([201,409]).to.include(pm.response.code));",
+            "if (pm.response.code === 201) {",
+            "  pm.collectionVariables.set('vehicle_id', pm.response.json().data.id);",
+            "}"
+          ]}}]
+        },
+        {
+          "name": "S12b – Get Vehicle by Plate (if already exists)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": "{{base_url}}/reservations/vehicles"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Vehicles listed', () => pm.expect(pm.response.code).to.eql(200));",
+            "if (!pm.collectionVariables.get('vehicle_id')) {",
+            "  const v = pm.response.json().data.find(x => x.plate === 'F18-TST');",
+            "  if (v) pm.collectionVariables.set('vehicle_id', v.id);",
+            "}"
+          ]}}]
+        },
+        {
+          "name": "S13 – List Categories (pick one)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/reservations/categories"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Categories listed', () => pm.expect(pm.response.code).to.eql(200));",
+            "const cats = pm.response.json().data;",
+            "pm.test('At least one category exists', () => pm.expect(cats.length).to.be.greaterThan(0));",
+            "const cat = cats.find(c => c.active !== false) || cats[0];",
+            "pm.collectionVariables.set('category_id', cat.id);"
+          ]}}]
+        },
+        {
+          "name": "S14 – Create Reservation (client)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{client_token}}" }
+            ],
+            "url": "{{base_url}}/reservations/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"scheduledAt\":\"2099-12-31T10:00:00Z\",\"origin\":{\"type\":\"Point\",\"coordinates\":[-56.1645,-34.9011]},\"destination\":{\"type\":\"Point\",\"coordinates\":[-56.1882,-34.9033]},\"cargoItems\":[{\"description\":\"f18-test-cargo-xyz-unique\",\"estimatedValue\":500,\"size\":\"small\"}]}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Reservation created', () => pm.expect(pm.response.code).to.eql(201));",
+            "const body = pm.response.json();",
+            "pm.collectionVariables.set('reservation_id', body.data.id);",
+            "pm.collectionVariables.set('cargo_item_id', body.data.cargoItems[0].id);"
+          ]}}]
+        },
+        {
+          "name": "S15 – Classify Reservation (operator)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{operator_token}}" }
+            ],
+            "url": "{{base_url}}/reservations/reservations/{{reservation_id}}/classification",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"cargoItems\":[{\"cargoItemId\":\"{{cargo_item_id}}\",\"categoryId\":\"{{category_id}}\"}]}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Reservation classified (200) or already classified (409)', () => pm.expect([200,409]).to.include(pm.response.code));"
+          ]}}]
+        },
+        {
+          "name": "S16 – Create Trip (admin assigns trip)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{base_url}}/transportations/trips",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"reservationId\":\"{{reservation_id}}\",\"vehicleId\":\"{{vehicle_id}}\",\"driverId\":\"{{driver_user_id}}\"}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Trip created', () => pm.expect(pm.response.code).to.eql(201));",
+            "pm.collectionVariables.set('trip_id', pm.response.json().data.id);"
+          ]}}]
+        },
+        {
+          "name": "S17 – Start Trip (driver)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
+            "url": "{{base_url}}/transportations/trips/{{trip_id}}/start"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Trip started (200) or already in progress (409)', () => pm.expect([200,409]).to.include(pm.response.code));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "F18 – Consultar Traslados en Curso",
+      "item": [
+        {
+          "name": "T01 – Sin filtros (todos los traslados activos)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations/operator/trips/active"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "const body = pm.response.json();",
+            "pm.test('success true', () => pm.expect(body.success).to.be.true);",
+            "pm.test('data es array', () => pm.expect(body.data).to.be.an('array'));",
+            "const trip = body.data.find(t => t.id === pm.collectionVariables.get('trip_id'));",
+            "pm.test('El traslado creado aparece en resultados', () => pm.expect(trip).to.not.be.undefined);",
+            "pm.test('Tiene campo origin', () => pm.expect(trip.origin).to.exist);",
+            "pm.test('Tiene campo destination', () => pm.expect(trip.destination).to.exist);",
+            "pm.test('Tiene campo vehicle con plate', () => pm.expect(trip.vehicle.plate).to.be.a('string'));",
+            "pm.test('Tiene campo driver con name', () => pm.expect(trip.driver.name).to.be.a('string'));",
+            "pm.test('Tiene campo hasActiveAlerts (boolean)', () => pm.expect(trip.hasActiveAlerts).to.be.a('boolean'));",
+            "pm.test('Status no es completed ni cancelled', () => pm.expect(['completed','cancelled']).to.not.include(trip.status));"
+          ]}}]
+        },
+        {
+          "name": "T02 – Filtro por vehicleId",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/transportations/operator/trips/active?vehicleId={{vehicle_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["transportations","operator","trips","active"],
+              "query": [{ "key": "vehicleId", "value": "{{vehicle_id}}" }]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "const body = pm.response.json();",
+            "pm.test('success true', () => pm.expect(body.success).to.be.true);",
+            "pm.test('data es array', () => pm.expect(body.data).to.be.an('array'));",
+            "const trip = body.data.find(t => t.id === pm.collectionVariables.get('trip_id'));",
+            "pm.test('El traslado aparece en resultados filtrados por vehicleId', () => pm.expect(trip).to.not.be.undefined);",
+            "pm.test('Todos los resultados tienen el vehicleId correcto', () => {",
+            "  body.data.forEach(t => pm.expect(t.vehicle.id).to.eql(pm.collectionVariables.get('vehicle_id')));",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "T03 – Filtro por driverId",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/transportations/operator/trips/active?driverId={{driver_user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["transportations","operator","trips","active"],
+              "query": [{ "key": "driverId", "value": "{{driver_user_id}}" }]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "const body = pm.response.json();",
+            "pm.test('success true', () => pm.expect(body.success).to.be.true);",
+            "const trip = body.data.find(t => t.id === pm.collectionVariables.get('trip_id'));",
+            "pm.test('El traslado aparece en resultados filtrados por driverId', () => pm.expect(trip).to.not.be.undefined);",
+            "pm.test('Todos los resultados tienen el driverId correcto', () => {",
+            "  body.data.forEach(t => pm.expect(t.driver.id).to.eql(pm.collectionVariables.get('driver_user_id')));",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "T04 – Filtro por categoryId",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/transportations/operator/trips/active?categoryId={{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["transportations","operator","trips","active"],
+              "query": [{ "key": "categoryId", "value": "{{category_id}}" }]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "const body = pm.response.json();",
+            "pm.test('success true', () => pm.expect(body.success).to.be.true);",
+            "pm.test('data es array', () => pm.expect(body.data).to.be.an('array'));",
+            "const trip = body.data.find(t => t.id === pm.collectionVariables.get('trip_id'));",
+            "pm.test('El traslado con esa categoria aparece en resultados', () => pm.expect(trip).to.not.be.undefined);"
+          ]}}]
+        },
+        {
+          "name": "T05 – Filtro hasActiveAlerts=false (el traslado no tiene alertas)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/transportations/operator/trips/active?hasActiveAlerts=false",
+              "host": ["{{base_url}}"],
+              "path": ["transportations","operator","trips","active"],
+              "query": [{ "key": "hasActiveAlerts", "value": "false" }]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "const body = pm.response.json();",
+            "pm.test('success true', () => pm.expect(body.success).to.be.true);",
+            "const trip = body.data.find(t => t.id === pm.collectionVariables.get('trip_id'));",
+            "pm.test('El traslado sin alertas aparece con filtro hasActiveAlerts=false', () => pm.expect(trip).to.not.be.undefined);",
+            "pm.test('Ningún resultado tiene alertas activas', () => {",
+            "  body.data.forEach(t => pm.expect(t.hasActiveAlerts).to.be.false);",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "T06 – Filtro hasActiveAlerts=true (no hay alertas → lista vacía o sin el traslado)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/transportations/operator/trips/active?hasActiveAlerts=true",
+              "host": ["{{base_url}}"],
+              "path": ["transportations","operator","trips","active"],
+              "query": [{ "key": "hasActiveAlerts", "value": "true" }]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "const body = pm.response.json();",
+            "pm.test('success true', () => pm.expect(body.success).to.be.true);",
+            "pm.test('data es array', () => pm.expect(body.data).to.be.an('array'));",
+            "const trip = body.data.find(t => t.id === pm.collectionVariables.get('trip_id'));",
+            "pm.test('El traslado sin alertas NO aparece con filtro hasActiveAlerts=true', () => pm.expect(trip).to.be.undefined);",
+            "pm.test('Todos los resultados tienen alertas activas', () => {",
+            "  body.data.forEach(t => pm.expect(t.hasActiveAlerts).to.be.true);",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "T07 – Filtros combinados (vehicleId + driverId)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/transportations/operator/trips/active?vehicleId={{vehicle_id}}&driverId={{driver_user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["transportations","operator","trips","active"],
+              "query": [
+                { "key": "vehicleId", "value": "{{vehicle_id}}" },
+                { "key": "driverId",  "value": "{{driver_user_id}}" }
+              ]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "const body = pm.response.json();",
+            "pm.test('success true', () => pm.expect(body.success).to.be.true);",
+            "const trip = body.data.find(t => t.id === pm.collectionVariables.get('trip_id'));",
+            "pm.test('El traslado aparece con filtros combinados', () => pm.expect(trip).to.not.be.undefined);"
+          ]}}]
+        },
+        {
+          "name": "T08 – vehicleId inexistente → lista vacía",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/transportations/operator/trips/active?vehicleId={{nonexistent_uuid}}",
+              "host": ["{{base_url}}"],
+              "path": ["transportations","operator","trips","active"],
+              "query": [{ "key": "vehicleId", "value": "{{nonexistent_uuid}}" }]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.expect(pm.response.code).to.eql(200));",
+            "const body = pm.response.json();",
+            "pm.test('success true', () => pm.expect(body.success).to.be.true);",
+            "pm.test('Lista vacía para UUID inexistente', () => pm.expect(body.data).to.eql([]));"
+          ]}}]
+        },
+        {
+          "name": "T09 – Error 403: conductor intenta acceder como operador",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
+            "url": "{{base_url}}/transportations/operator/trips/active"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 403', () => pm.expect(pm.response.code).to.eql(403));",
+            "const body = pm.response.json();",
+            "pm.test('success false', () => pm.expect(body.success).to.be.false);",
+            "pm.test('Error mensaje presente', () => pm.expect(body.error).to.be.a('string').and.not.empty);"
+          ]}}]
+        }
+      ]
+    }
+  ]
+}
