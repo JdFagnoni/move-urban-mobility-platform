@@ -1,4 +1,4 @@
-import { HttpError } from "@move/shared";
+import { HttpError, ROUTING_KEYS } from "@move/shared";
 import type {
   AssignReservationDTO,
   CargoItemDTO,
@@ -31,8 +31,8 @@ import { normalizeCargoItems, validateScheduledAt } from "./helpers/validate-com
 import { quotePreparedReservation } from "./quote-service";
 import { getVehicle } from "../vehicles/service";
 import { reservationEmailProvider } from "./runtime";
-
-const TRANSPORTATIONS_URL = process.env["TRANSPORTATIONS_URL"] ?? "http://localhost:3002";
+import { enqueueOutboxEvent } from "../../messaging/outbox";
+import { OUTBOX_EVENT_TYPES } from "../../messaging/events";
 
 function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
   return {
@@ -588,9 +588,17 @@ export async function assignReservation(
     reservation.driverId = dto.driverId;
     reservation.status = "assigned";
     await reservation.save({ transaction: t });
-  });
 
-  await createTripForReservation(reservationId, dto.vehicleId, dto.driverId);
+    await enqueueOutboxEvent(
+      {
+        aggregateId: reservationId,
+        type: OUTBOX_EVENT_TYPES.reservationAssigned,
+        routingKey: ROUTING_KEYS.reservationAssigned,
+        payload: { reservationId, vehicleId: dto.vehicleId, driverId: dto.driverId },
+      },
+      t
+    );
+  });
 
   const updated = await loadReservationWithRelations(reservationId);
   if (!updated) {
@@ -598,21 +606,6 @@ export async function assignReservation(
   }
   const sortedItems = sortCargoItemsByCreatedAt(updated.cargoItems ?? []);
   return mapReservationModelToDTO(updated, sortedItems);
-}
-
-async function createTripForReservation(
-  reservationId: string,
-  vehicleId: string,
-  driverId: string
-): Promise<void> {
-  const response = await fetch(`${TRANSPORTATIONS_URL}/trips`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reservationId, vehicleId, driverId }),
-  });
-  if (!response.ok) {
-    throw new HttpError(502, "Failed to create trip record", "trip_creation_failed");
-  }
 }
 
 async function createClassificationNotification(
