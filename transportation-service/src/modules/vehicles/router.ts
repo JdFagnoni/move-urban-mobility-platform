@@ -1,6 +1,8 @@
 import { Router } from "express";
-import { authenticate, requireRole } from "../auth/middleware";
+import { createAuthenticate, requireRole } from "@move/shared";
 import { createHandler, deleteHandler, getHandler, listHandler, updateHandler } from "./controller";
+
+const authenticate = createAuthenticate();
 
 export const vehiclesRouter = Router();
 

@@ -88,6 +88,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
       RABBITMQ_URL: amqp://move:move_secret@rabbitmq:5672
       PORT: "3002"
     depends_on:

@@ -1,6 +1,8 @@
 import { Router } from "express";
-import { authenticate, requireRole } from "../auth/middleware";
+import { createAuthenticate, requireRole } from "@move/shared";
 import { listHandler, getHandler, createHandler, updateHandler, deleteHandler } from "./controller";
+
+const authenticate = createAuthenticate();
 
 export const zonesRouter = Router();
 

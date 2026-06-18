@@ -4,7 +4,10 @@ import { tripsRouter } from "./modules/trips/router";
 import { gpsRouter } from "./modules/gps/router";
 import { alertsRouter } from "./modules/alerts/router";
 import { operatorRouter } from "./modules/operator/router";
+import { vehiclesRouter } from "./modules/vehicles/router";
+import { zonesRouter } from "./modules/zones/router";
 import { initDb } from "./db/init";
+import { initializeSequelize } from "./db/sequelize";
 import { warmAlertCache } from "./modules/alerts/service";
 import { startTransportationMessaging } from "./messaging";
 
@@ -21,8 +24,11 @@ app.use("/trips", tripsRouter);
 app.use("/gps", gpsRouter);
 app.use("/alerts", alertsRouter);
 app.use("/operator", operatorRouter);
+app.use("/vehicles", vehiclesRouter);
+app.use("/zones", zonesRouter);
 
-initDb()
+initializeSequelize()
+  .then(() => initDb())
   .then(() => warmAlertCache())
   .then(() => {
     startTransportationMessaging();

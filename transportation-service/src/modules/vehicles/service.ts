@@ -1,7 +1,7 @@
 import type { VehicleDTO, VehicleStatus } from "@move/shared";
-import { HttpError } from "@move/shared";
-import { Op, UniqueConstraintError } from "sequelize";
-import { ReservationModel, VehicleModel } from "../../db/models";
+import { HttpError, query } from "@move/shared";
+import { UniqueConstraintError } from "sequelize";
+import { VehicleModel } from "../../db/models";
 
 export interface ListVehiclesFilters {
   status?: VehicleStatus;
@@ -127,13 +127,13 @@ export async function deleteVehicle(id: string): Promise<void> {
     throw new HttpError(404, "Vehicle not found", "vehicle_not_found");
   }
 
-  const activeCount = await ReservationModel.count({
-    where: {
-      vehicleId: id,
-      status: { [Op.notIn]: ["completed", "cancelled"] },
-    },
-  });
+  const result = await query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count FROM reservations
+     WHERE vehicle_id = $1 AND status NOT IN ('completed', 'cancelled')`,
+    [id]
+  );
 
+  const activeCount = parseInt(result.rows[0]?.count ?? "0", 10);
   if (activeCount > 0) {
     throw new HttpError(
       409,

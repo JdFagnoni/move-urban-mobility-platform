@@ -3,7 +3,9 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "dist",
-    "declaration": true
+    "declaration": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
-  "include": ["index.ts", "types", "db", "http", "messaging", "redis"]
+  "include": ["index.ts", "types", "db", "http", "messaging", "redis", "auth"]
 }

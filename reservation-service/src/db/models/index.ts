@@ -1,4 +1,3 @@
-export { AuthAuditLogModel } from "./auth-audit-log";
 export { CargoItemModel } from "./cargo-item";
 export { CategoryModel } from "./category";
 export { CompanyLocationModel } from "./company-location";
@@ -9,5 +8,4 @@ export { PaymentModel } from "./payment";
 export { SentEmailModel } from "./sent-email";
 export { ReservationModel } from "./reservation";
 export { UserModel } from "./user";
-export { ZoneModel } from "./zone";
-export { VehicleModel } from "./vehicle";
+export { VehicleReadModel } from "./vehicle";

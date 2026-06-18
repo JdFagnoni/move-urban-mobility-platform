@@ -21,6 +21,7 @@ import {
   CategoryModel,
   NotificationModel,
   ReservationModel,
+  VehicleReadModel,
 } from "../../db/models";
 import { sequelize } from "../../db/sequelize";
 import { getUser } from "../users/service";
@@ -29,7 +30,6 @@ import { createIndividualReservation } from "./helpers/create-individual-reserva
 import type { PreparedCargoItemInput } from "./helpers/types";
 import { normalizeCargoItems, validateScheduledAt } from "./helpers/validate-common-input";
 import { quotePreparedReservation } from "./quote-service";
-import { getVehicle } from "../vehicles/service";
 import { enqueueOutboxEvent } from "../../messaging/outbox";
 import { OUTBOX_EVENT_TYPES } from "../../messaging/events";
 
@@ -503,6 +503,13 @@ function calculateTotalCargoSize(items: CargoItemModel[]): number {
   return items.reduce((sum, item) => sum + cargoSizeToUnits(item.size), 0);
 }
 
+async function getVehicleById(id: string) {
+  const vehicle = await VehicleReadModel.findByPk(id, {
+    attributes: ["id", "status", "capacity"],
+  });
+  return vehicle;
+}
+
 const SCHEDULE_CONFLICT_WINDOW_MS = 2 * 60 * 60 * 1000; // ±2 hours
 
 export async function assignReservation(
@@ -523,7 +530,7 @@ export async function assignReservation(
     );
   }
 
-  const vehicle = await getVehicle(dto.vehicleId);
+  const vehicle = await getVehicleById(dto.vehicleId);
   if (!vehicle) {
     throw new HttpError(404, "Vehicle not found", "vehicle_not_found");
   }

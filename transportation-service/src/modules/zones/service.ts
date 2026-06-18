@@ -14,7 +14,6 @@ function mapZone(zone: ZoneModel): ZoneDTO {
   };
 }
 
-// F9 – gestión de zonas
 export async function listZones(type?: string): Promise<ZoneDTO[]> {
   const where = type !== undefined ? { type } : {};
   const zones = await ZoneModel.findAll({ where, order: [["name", "ASC"]] });

@@ -1,29 +1,9 @@
-import { randomUUID } from "crypto";
-import type {
-  AuthAuditDecision,
-  AuthAuditEventType,
-  AuthAuditLogDTO,
-  ClientType,
-  ListAuthAuditLogsQueryDTO,
-  PaginatedResult,
-  UserRole,
-} from "@move/shared";
-import { type RequestContext } from "@move/shared";
+import type { AuthAuditLogDTO, ListAuthAuditLogsQueryDTO, PaginatedResult } from "@move/shared";
+import { AuthAuditLogModel, recordAuthAuditLog } from "@move/shared";
 import { Op, type WhereOptions } from "sequelize";
-import { AuthAuditLogModel } from "../../db/models";
 
-export interface RecordAuditLogInput extends Partial<RequestContext> {
-  eventType: AuthAuditEventType;
-  decision: AuthAuditDecision;
-  userId?: string | null | undefined;
-  authSubject?: string | null | undefined;
-  email?: string | null | undefined;
-  role?: UserRole | null | undefined;
-  clientType?: ClientType | null | undefined;
-  statusCode?: number | null | undefined;
-  reason?: string | null | undefined;
-  metadata?: Record<string, unknown>;
-}
+export { recordAuthAuditLog, recordAuthAuditLog as recordAuditLog };
+export type { RecordAuditLogInput } from "@move/shared";
 
 function toIsoString(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value;
@@ -49,27 +29,6 @@ function mapAuditLog(row: AuthAuditLogModel): AuthAuditLogDTO {
     reason: row.reason,
     metadata: row.metadata,
   };
-}
-
-export async function recordAuditLog(input: RecordAuditLogInput): Promise<void> {
-  await AuthAuditLogModel.create({
-    id: randomUUID(),
-    eventType: input.eventType,
-    decision: input.decision,
-    userId: input.userId ?? null,
-    authSubject: input.authSubject ?? null,
-    email: input.email?.toLowerCase() ?? null,
-    role: input.role ?? null,
-    clientType: input.clientType ?? null,
-    method: input.method ?? null,
-    path: input.path ?? null,
-    statusCode: input.statusCode ?? null,
-    ipAddress: input.ipAddress ?? null,
-    userAgent: input.userAgent ?? null,
-    correlationId: input.correlationId ?? null,
-    reason: input.reason ?? null,
-    metadata: input.metadata ?? {},
-  });
 }
 
 export async function listAuditLogs(
