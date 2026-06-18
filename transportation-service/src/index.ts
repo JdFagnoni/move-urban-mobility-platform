@@ -1,12 +1,13 @@
 import "dotenv/config";
 import express from "express";
-import { getMetricsSnapshot, requestMetrics } from "@move/shared";
+import { requestMetrics } from "@move/shared";
 import { tripsRouter } from "./modules/trips/router";
 import { gpsRouter } from "./modules/gps/router";
 import { alertsRouter } from "./modules/alerts/router";
 import { operatorRouter } from "./modules/operator/router";
 import { vehiclesRouter } from "./modules/vehicles/router";
 import { zonesRouter } from "./modules/zones/router";
+import { metricsRouter } from "./modules/metrics/router";
 import { initDb } from "./db/init";
 import { initializeSequelize } from "./db/sequelize";
 import { warmAlertCache } from "./modules/alerts/service";
@@ -22,9 +23,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "transportations" });
 });
 
-app.get("/metrics", (_req, res) => {
-  res.json(getMetricsSnapshot());
-});
+app.use("/metrics", metricsRouter);
 
 app.use("/trips", tripsRouter);
 app.use("/gps", gpsRouter);
