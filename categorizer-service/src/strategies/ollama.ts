@@ -1,3 +1,5 @@
+import { recordExternalCall } from "@move/shared";
+
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
 let availableModelsCache: Promise<Set<string>> | null = null;
 const resolvedModelCache = new Map<string, Promise<string>>();
@@ -17,7 +19,15 @@ export function getOllamaBaseUrl(): string {
 }
 
 export async function fetchOllamaResponse(path: string, init: RequestInit): Promise<Response> {
-  return fetch(`${getOllamaBaseUrl()}${path}`, init);
+  const start = Date.now();
+  try {
+    const response = await fetch(`${getOllamaBaseUrl()}${path}`, init);
+    recordExternalCall("ollama", response.ok ? "success" : "error", Date.now() - start);
+    return response;
+  } catch (error) {
+    recordExternalCall("ollama", "error", Date.now() - start);
+    throw error;
+  }
 }
 
 export async function buildOllamaHttpError(response: Response): Promise<string> {
