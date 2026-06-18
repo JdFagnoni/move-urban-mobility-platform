@@ -1,10 +1,5 @@
 import { randomUUID } from "crypto";
-import type {
-  AuthAuditDecision,
-  AuthAuditEventType,
-  ClientType,
-  UserRole,
-} from "../types";
+import type { AuthAuditDecision, AuthAuditEventType, ClientType, UserRole } from "../types";
 import type { RequestContext } from "../http/request-context";
 import { AuthAuditLogModel } from "./audit-model";
 

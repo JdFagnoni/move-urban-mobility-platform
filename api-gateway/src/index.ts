@@ -2,7 +2,6 @@ import "dotenv/config";
 import express from "express";
 import { requestLogger } from "./middleware/logging";
 import { rateLimiter } from "./middleware/rate-limit";
-import { authenticate } from "./middleware/auth";
 import {
   reservationsRouter,
   validateReservationsProxyConfiguration,

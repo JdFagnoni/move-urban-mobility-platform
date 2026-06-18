@@ -16,7 +16,7 @@ import {
   createdAt: "created_at",
   updatedAt: "updated_at",
 })
-export class VehicleModel extends Model {
+export class VehicleReadModel extends Model {
   @PrimaryKey
   @Column({ type: DataType.UUID, allowNull: false })
   declare id: string;

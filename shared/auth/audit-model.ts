@@ -1,13 +1,5 @@
 import type { AuthAuditDecision, AuthAuditEventType, ClientType, UserRole } from "../types";
-import {
-  BelongsTo,
-  Column,
-  CreatedAt,
-  DataType,
-  Model,
-  PrimaryKey,
-  Table,
-} from "sequelize-typescript";
+import { Column, CreatedAt, DataType, Model, PrimaryKey, Table } from "sequelize-typescript";
 
 const AUTH_AUDIT_EVENT_TYPES: readonly AuthAuditEventType[] = [
   "registration_success",

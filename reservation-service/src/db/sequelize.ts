@@ -12,8 +12,7 @@ import {
   ReservationModel,
   SentEmailModel,
   UserModel,
-  ZoneModel,
-  VehicleModel,
+  VehicleReadModel,
 } from "./models";
 
 const connectionString =
@@ -31,8 +30,7 @@ export const sequelize = new Sequelize(connectionString, {
     CargoItemModel,
     CompanyProductModel,
     CompanyLocationModel,
-    ZoneModel,
-    VehicleModel,
+    VehicleReadModel,
     OutboxEventModel,
     SentEmailModel,
   ],

@@ -1,8 +1,4 @@
-import type {
-  AuthAuditLogDTO,
-  ListAuthAuditLogsQueryDTO,
-  PaginatedResult,
-} from "@move/shared";
+import type { AuthAuditLogDTO, ListAuthAuditLogsQueryDTO, PaginatedResult } from "@move/shared";
 import { AuthAuditLogModel, recordAuthAuditLog } from "@move/shared";
 import { Op, type WhereOptions } from "sequelize";
 

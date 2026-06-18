@@ -75,7 +75,8 @@ function rowToUserDTO(row: UserRow): UserDTO {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
-  if (row.client_type !== null) dto.clientType = row.client_type as NonNullable<UserDTO["clientType"]>;
+  if (row.client_type !== null)
+    dto.clientType = row.client_type as NonNullable<UserDTO["clientType"]>;
   if (row.phone !== null) dto.phone = row.phone;
   if (row.document_type !== null) dto.documentType = row.document_type;
   if (row.document_number !== null) dto.documentNumber = row.document_number;
@@ -86,10 +87,9 @@ function rowToUserDTO(row: UserRow): UserDTO {
 }
 
 async function getUserByAuthSubject(authSubject: string): Promise<UserDTO | null> {
-  const result = await query<UserRow>(
-    "SELECT * FROM users WHERE auth_subject = $1 LIMIT 1",
-    [authSubject]
-  );
+  const result = await query<UserRow>("SELECT * FROM users WHERE auth_subject = $1 LIMIT 1", [
+    authSubject,
+  ]);
   const row = result.rows[0];
   return row ? rowToUserDTO(row) : null;
 }

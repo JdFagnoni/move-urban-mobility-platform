@@ -8,8 +8,6 @@ import { authRouter } from "./modules/auth/router";
 import { reservationsRouter } from "./modules/reservations/router";
 import { categoriesRouter } from "./modules/categories/router";
 import { preregistrationsRouter } from "./modules/preregistrations/router";
-import { zonesRouter } from "./modules/zones/router";
-import { vehiclesRouter } from "./modules/vehicles/router";
 import { usersRouter } from "./modules/users/router";
 import { paymentsRouter } from "./modules/payments/router";
 import { startReservationMessaging } from "./messaging";
@@ -36,8 +34,6 @@ app.use("/webhooks", paymentsRouter);
 app.use("/reservations", reservationsRouter);
 app.use("/categories", categoriesRouter);
 app.use("/preregistrations", preregistrationsRouter);
-app.use("/zones", zonesRouter);
-app.use("/vehicles", vehiclesRouter);
 app.use("/users", usersRouter);
 
 async function start(): Promise<void> {

@@ -10,7 +10,6 @@ import type {
   ReservationStatus,
   UserRole,
   UserStatus,
-  ZoneType,
 } from "@move/shared";
 
 export const AUTH_PROVIDERS: readonly AuthProvider[] = ["auth0"];
@@ -47,7 +46,6 @@ export const AUTH_AUDIT_DECISIONS: readonly AuthAuditDecision[] = [
   "failed",
   "success",
 ];
-export const ZONE_TYPES: readonly ZoneType[] = ["red", "preferred"];
 
 export type OutboxEventStatus = "pending" | "published";
 export const OUTBOX_EVENT_STATUSES: readonly OutboxEventStatus[] = ["pending", "published"];
