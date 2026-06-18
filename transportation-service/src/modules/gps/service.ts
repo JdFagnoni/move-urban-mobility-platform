@@ -7,6 +7,7 @@ import {
   query,
   redisClient,
 } from "@move/shared";
+import { VehicleModel } from "../../db/models";
 import type { GpsSignalDTO, GeoPoint } from "@move/shared";
 
 interface GpsRow {
@@ -72,8 +73,8 @@ export function validateSignalRange(signal: GpsSignalDTO): boolean {
 }
 
 async function vehicleExists(vehicleId: string): Promise<boolean> {
-  const result = await query<{ id: string }>("SELECT id FROM vehicles WHERE id = $1", [vehicleId]);
-  return (result.rowCount ?? 0) > 0;
+  const vehicle = await VehicleModel.findByPk(vehicleId, { attributes: ["id"] });
+  return vehicle !== null;
 }
 
 export async function ingestSignal(signal: GpsSignalDTO): Promise<void> {

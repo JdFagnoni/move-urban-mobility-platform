@@ -1,6 +1,7 @@
 import type { GeoPoint, TripStatus, VehicleDTO } from "@move/shared";
 import { HttpError, query, redisClient } from "@move/shared";
 import type { TripDTO } from "@move/shared";
+import { VehicleModel } from "../../db/models";
 
 export interface ActiveTripFilters {
   vehicleId?: string;
@@ -185,5 +186,13 @@ export async function reassignVehicle(
 
 // F19 – vehículos disponibles para reasignación
 export async function getAvailableVehicles(): Promise<VehicleDTO[]> {
-  return [];
+  const vehicles = await VehicleModel.findAll({ where: { status: "available" } });
+  return vehicles.map((v) => ({
+    id: v.id,
+    plate: v.plate,
+    type: v.type,
+    capacity: v.capacity,
+    status: v.status,
+    customFeatures: v.customFeatures,
+  }));
 }

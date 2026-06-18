@@ -1,14 +1,7 @@
 import type { GpsSignalDTO } from "@move/shared";
-import { query } from "@move/shared";
 import type { ISignalFilter } from "../filter.interface";
 import { acquireAlertLock, createAlert } from "../../service";
-
-interface ZoneRow {
-  id: string;
-  name: string;
-  type: string;
-  polygon: { type: "Polygon"; coordinates: number[][][] };
-}
+import { ZoneModel } from "../../../../db/models";
 
 function pointInPolygon(point: [number, number], ring: number[][]): boolean {
   const [px, py] = point;
@@ -28,11 +21,12 @@ export class GeofenceFilter implements ISignalFilter {
   readonly name = "geofence";
 
   async apply(signal: GpsSignalDTO): Promise<void> {
-    const zones = await query<ZoneRow>(
-      "SELECT id, name, type, polygon FROM zones WHERE type = 'red' AND active = true"
-    );
+    const zones = await ZoneModel.findAll({
+      where: { type: "red", active: true },
+      attributes: ["id", "name", "type", "polygon"],
+    });
 
-    for (const zone of zones.rows) {
+    for (const zone of zones) {
       const ring = zone.polygon.coordinates[0];
       if (!ring) continue;
       const inside = pointInPolygon(signal.location.coordinates, ring);
