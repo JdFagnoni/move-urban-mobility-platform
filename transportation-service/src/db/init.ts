@@ -45,7 +45,7 @@ export async function initDb(): Promise<void> {
       updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
-    CREATE INDEX IF NOT EXISTS idx_trips_reservation ON trips (reservation_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_trips_reservation ON trips (reservation_id);
     CREATE INDEX IF NOT EXISTS idx_trips_driver      ON trips (driver_id);
     CREATE INDEX IF NOT EXISTS idx_trips_vehicle     ON trips (vehicle_id);
     CREATE INDEX IF NOT EXISTS idx_trips_status      ON trips (status);

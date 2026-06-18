@@ -5,5 +5,5 @@
     "outDir": "dist",
     "declaration": true
   },
-  "include": ["index.ts", "types", "db", "http"]
+  "include": ["index.ts", "types", "db", "http", "messaging"]
 }

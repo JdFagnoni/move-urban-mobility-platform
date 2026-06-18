@@ -1,0 +1,186 @@
+{
+  "info": {
+    "_postman_id": "rabbitmq-observability",
+    "name": "MOVE - RabbitMQ Observabilidad y Demo",
+    "description": "Consultas a la API de management de RabbitMQ (:15672) para observar la topologia, la profundidad de las colas de trabajo y el contenido de las DLQ.\n\nApoya R4 (metricas) y la demo de R5/R7:\n- Mostrar que gps.detection absorbe la rafaga (profundidad de cola).\n- Mostrar reintentos y mensajes parqueados en las DLQ.\n- Inspeccionar el outbox (via reservation-service) y la recuperacion ante caidas.\n\nAuth: basic move/move_secret (coincide con docker-compose).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "rabbitmq_mgmt_url", "value": "http://localhost:15672" },
+    { "key": "rabbitmq_user", "value": "move" },
+    { "key": "rabbitmq_password", "value": "move_secret" }
+  ],
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{rabbitmq_user}}", "type": "string" },
+      { "key": "password", "value": "{{rabbitmq_password}}", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "Overview del broker",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('reporta totales de mensajes', () => pm.expect(body.queue_totals).to.be.an('object'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{rabbitmq_mgmt_url}}/api/overview",
+          "host": ["{{rabbitmq_mgmt_url}}"],
+          "path": ["api", "overview"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Listar colas con profundidad",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('data is array', () => pm.expect(body).to.be.an('array'));",
+              "body.forEach(q => console.log(`${q.name}: listos=${q.messages_ready} sin_ack=${q.messages_unacknowledged}`));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{rabbitmq_mgmt_url}}/api/queues/%2F?columns=name,messages_ready,messages_unacknowledged,messages",
+          "host": ["{{rabbitmq_mgmt_url}}"],
+          "path": ["api", "queues", "%2F"],
+          "query": [
+            { "key": "columns", "value": "name,messages_ready,messages_unacknowledged,messages" }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Cola gps.detection (rafaga R8)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const q = pm.response.json();",
+              "console.log(`gps.detection -> listos=${q.messages_ready} sin_ack=${q.messages_unacknowledged}`);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{rabbitmq_mgmt_url}}/api/queues/%2F/gps.detection",
+          "host": ["{{rabbitmq_mgmt_url}}"],
+          "path": ["api", "queues", "%2F", "gps.detection"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "DLQ gps.detection.dlq (parqueados)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const q = pm.response.json();",
+              "console.log(`gps.detection.dlq -> parqueados=${q.messages_ready}`);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{rabbitmq_mgmt_url}}/api/queues/%2F/gps.detection.dlq",
+          "host": ["{{rabbitmq_mgmt_url}}"],
+          "path": ["api", "queues", "%2F", "gps.detection.dlq"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Cola trip.creation (F12)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{rabbitmq_mgmt_url}}/api/queues/%2F/trip.creation",
+          "host": ["{{rabbitmq_mgmt_url}}"],
+          "path": ["api", "queues", "%2F", "trip.creation"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Cola notifications.email (F19)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{rabbitmq_mgmt_url}}/api/queues/%2F/notifications.email",
+          "host": ["{{rabbitmq_mgmt_url}}"],
+          "path": ["api", "queues", "%2F", "notifications.email"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Inspeccionar mensajes parqueados en una DLQ",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "console.log(`Mensajes inspeccionados: ${body.length}`);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"count\": 10,\n  \"ackmode\": \"ack_requeue_true\",\n  \"encoding\": \"auto\"\n}"
+        },
+        "url": {
+          "raw": "{{rabbitmq_mgmt_url}}/api/queues/%2F/gps.detection.dlq/get",
+          "host": ["{{rabbitmq_mgmt_url}}"],
+          "path": ["api", "queues", "%2F", "gps.detection.dlq", "get"]
+        }
+      },
+      "response": []
+    }
+  ]
+}

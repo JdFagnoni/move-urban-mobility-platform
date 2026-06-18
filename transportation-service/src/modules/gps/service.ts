@@ -1,6 +1,13 @@
-import { query, redisClient } from "@move/shared";
+import {
+  EXCHANGES,
+  ROUTING_KEYS,
+  describeError,
+  logMessaging,
+  publish,
+  query,
+  redisClient,
+} from "@move/shared";
 import type { GpsSignalDTO, GeoPoint } from "@move/shared";
-import { detectAndAlert } from "../alerts/service";
 
 interface GpsRow {
   vehicle_id: string;
@@ -91,17 +98,24 @@ export async function ingestSignal(signal: GpsSignalDTO): Promise<void> {
     ]
   );
 
-  // Awaited (but best-effort) so detection below sees this signal already cached.
-  // Postgres already guarantees durability, so a Redis failure here is non-fatal (R7).
+  // Awaited (but best-effort) so the consumer that picks up the message below
+  // sees this signal already cached. Postgres already guarantees durability,
+  // so a Redis failure here is non-fatal (R7).
   try {
     await cacheSignal(signal);
   } catch (err) {
     console.error("[gps] redis cache error:", err);
   }
 
-  // Non-blocking: detect geofence and stop situations after persisting
-  detectAndAlert(signal).catch((err: unknown) => {
-    console.error("[gps] alert detection error:", err);
+  publishSignalForDetection(signal);
+}
+
+function publishSignalForDetection(signal: GpsSignalDTO): void {
+  publish(EXCHANGES.gps, ROUTING_KEYS.gpsSignalIngested, signal).catch((error: unknown) => {
+    logMessaging("error", "gps_signal_publish_failed", {
+      vehicleId: signal.vehicleId,
+      error: describeError(error),
+    });
   });
 }
 

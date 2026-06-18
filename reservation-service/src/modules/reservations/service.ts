@@ -1,4 +1,4 @@
-import { HttpError } from "@move/shared";
+import { HttpError, ROUTING_KEYS } from "@move/shared";
 import type {
   AssignReservationDTO,
   CargoItemDTO,
@@ -30,9 +30,8 @@ import type { PreparedCargoItemInput } from "./helpers/types";
 import { normalizeCargoItems, validateScheduledAt } from "./helpers/validate-common-input";
 import { quotePreparedReservation } from "./quote-service";
 import { getVehicle } from "../vehicles/service";
-import { reservationEmailProvider } from "./runtime";
-
-const TRANSPORTATIONS_URL = process.env["TRANSPORTATIONS_URL"] ?? "http://localhost:3002";
+import { enqueueOutboxEvent } from "../../messaging/outbox";
+import { OUTBOX_EVENT_TYPES } from "../../messaging/events";
 
 function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
   return {
@@ -408,6 +407,8 @@ export async function rejectReservation(
 
   ensurePendingClassification(reservation);
 
+  const client = await getUser(reservation.clientId);
+
   await sequelize.transaction(async (transaction) => {
     reservation.status = "rejected";
     reservation.quotedPrice = null;
@@ -417,17 +418,26 @@ export async function rejectReservation(
 
     await reservation.save({ transaction });
     await acknowledgeNotification(reservation.id, operatorUser.id, transaction);
+
+    if (client) {
+      await enqueueOutboxEvent(
+        {
+          aggregateId: reservation.id,
+          type: OUTBOX_EVENT_TYPES.reservationUnsupported,
+          routingKey: ROUTING_KEYS.reservationUnsupported,
+          payload: {
+            reservationId: reservation.id,
+            recipientEmail: client.email,
+            recipientName: client.name,
+            rejectionReason: dto.reason,
+          },
+        },
+        transaction
+      );
+    }
   });
 
-  const client = await getUser(reservation.clientId);
-  if (client) {
-    await sendUnsupportedReservationEmailSafely({
-      reservationId: reservation.id,
-      recipientEmail: client.email,
-      recipientName: client.name,
-      rejectionReason: dto.reason,
-    });
-  } else {
+  if (!client) {
     console.error(
       JSON.stringify({
         level: "error",
@@ -588,9 +598,17 @@ export async function assignReservation(
     reservation.driverId = dto.driverId;
     reservation.status = "assigned";
     await reservation.save({ transaction: t });
-  });
 
-  await createTripForReservation(reservationId, dto.vehicleId, dto.driverId);
+    await enqueueOutboxEvent(
+      {
+        aggregateId: reservationId,
+        type: OUTBOX_EVENT_TYPES.reservationAssigned,
+        routingKey: ROUTING_KEYS.reservationAssigned,
+        payload: { reservationId, vehicleId: dto.vehicleId, driverId: dto.driverId },
+      },
+      t
+    );
+  });
 
   const updated = await loadReservationWithRelations(reservationId);
   if (!updated) {
@@ -598,21 +616,6 @@ export async function assignReservation(
   }
   const sortedItems = sortCargoItemsByCreatedAt(updated.cargoItems ?? []);
   return mapReservationModelToDTO(updated, sortedItems);
-}
-
-async function createTripForReservation(
-  reservationId: string,
-  vehicleId: string,
-  driverId: string
-): Promise<void> {
-  const response = await fetch(`${TRANSPORTATIONS_URL}/trips`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reservationId, vehicleId, driverId }),
-  });
-  if (!response.ok) {
-    throw new HttpError(502, "Failed to create trip record", "trip_creation_failed");
-  }
 }
 
 async function createClassificationNotification(
@@ -688,37 +691,4 @@ function mapCargoItemModelToPreparedCargoItem(cargoItem: CargoItemModel): Prepar
     size: cargoItem.size,
     categoryId: cargoItem.categoryId,
   };
-}
-
-async function sendUnsupportedReservationEmailSafely(input: {
-  reservationId: string;
-  recipientEmail: string;
-  recipientName: string;
-  rejectionReason: string;
-}): Promise<void> {
-  try {
-    await reservationEmailProvider.sendUnsupportedReservationEmail(input);
-  } catch (error) {
-    console.error(
-      JSON.stringify({
-        level: "error",
-        event: "unsupported_reservation_email_failed",
-        reservationId: input.reservationId,
-        recipientEmail: input.recipientEmail,
-        error: serializeError(error),
-      })
-    );
-  }
-}
-
-function serializeError(error: unknown): Record<string, unknown> {
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-    };
-  }
-
-  return { value: String(error) };
 }

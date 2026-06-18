@@ -1,4 +1,11 @@
-import type { CreateTripDTO, GeoPoint, PaginatedResult, TripDTO, TripStatus } from "@move/shared";
+import type {
+  CreateTripDTO,
+  GeoPoint,
+  PaginatedResult,
+  ReservationAssignedEvent,
+  TripDTO,
+  TripStatus,
+} from "@move/shared";
 import { HttpError, query } from "@move/shared";
 
 interface TripRow {
@@ -35,6 +42,15 @@ export async function createTrip(dto: CreateTripDTO): Promise<TripDTO> {
     [dto.reservationId, dto.vehicleId, dto.driverId]
   );
   return rowToDTO(result.rows[0]!);
+}
+
+export async function ensureTripForReservation(event: ReservationAssignedEvent): Promise<void> {
+  await query(
+    `INSERT INTO trips (reservation_id, vehicle_id, driver_id)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (reservation_id) DO NOTHING`,
+    [event.reservationId, event.vehicleId, event.driverId]
+  );
 }
 
 export async function listTrips(page: number, pageSize: number): Promise<PaginatedResult<TripDTO>> {
