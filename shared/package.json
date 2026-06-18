@@ -19,9 +19,15 @@
     "reflect-metadata": "^0.2.0"
   },
   "peerDependenciesMeta": {
-    "sequelize": { "optional": true },
-    "sequelize-typescript": { "optional": true },
-    "reflect-metadata": { "optional": true }
+    "sequelize": {
+      "optional": true
+    },
+    "sequelize-typescript": {
+      "optional": true
+    },
+    "reflect-metadata": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.5",
