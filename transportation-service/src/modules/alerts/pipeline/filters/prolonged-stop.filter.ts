@@ -24,8 +24,7 @@ export class ProlongedStopFilter implements ISignalFilter {
     const [latest, previous] = result.rows;
     if (!latest || !previous || latest.speed > 0 || previous.speed > 0) return;
 
-    const elapsed =
-      new Date(signal.timestamp).getTime() - new Date(previous.timestamp).getTime();
+    const elapsed = new Date(signal.timestamp).getTime() - new Date(previous.timestamp).getTime();
     if (elapsed >= STOP_THRESHOLD_MS) {
       const alreadyAlerted = await hasActiveAlert(signal.vehicleId, "delay");
       if (!alreadyAlerted) {

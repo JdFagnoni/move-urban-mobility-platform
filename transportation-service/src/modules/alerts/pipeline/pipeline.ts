@@ -10,17 +10,12 @@ export class SignalPipeline {
   }
 
   async execute(signal: GpsSignalDTO): Promise<void> {
-    const results = await Promise.allSettled(
-      this.filters.map((filter) => filter.apply(signal))
-    );
+    const results = await Promise.allSettled(this.filters.map((filter) => filter.apply(signal)));
 
     for (let i = 0; i < results.length; i++) {
       const result = results[i]!;
       if (result.status === "rejected") {
-        console.error(
-          `[pipeline] Filter "${this.filters[i]!.name}" failed:`,
-          result.reason
-        );
+        console.error(`[pipeline] Filter "${this.filters[i]!.name}" failed:`, result.reason);
       }
     }
   }

@@ -21,8 +21,6 @@ export class SpeedingFilter implements ISignalFilter {
       location: signal.location,
     });
 
-    console.warn(
-      `[alerts] speeding alert for vehicle ${signal.vehicleId}: ${signal.speed} km/h`
-    );
+    console.warn(`[alerts] speeding alert for vehicle ${signal.vehicleId}: ${signal.speed} km/h`);
   }
 }
