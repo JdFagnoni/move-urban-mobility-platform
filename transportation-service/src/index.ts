@@ -5,6 +5,7 @@ import { gpsRouter } from "./modules/gps/router";
 import { alertsRouter } from "./modules/alerts/router";
 import { operatorRouter } from "./modules/operator/router";
 import { initDb } from "./db/init";
+import { initializeSequelize } from "./db/sequelize";
 import { warmAlertCache } from "./modules/alerts/service";
 import { startTransportationMessaging } from "./messaging";
 
@@ -22,7 +23,8 @@ app.use("/gps", gpsRouter);
 app.use("/alerts", alertsRouter);
 app.use("/operator", operatorRouter);
 
-initDb()
+initializeSequelize()
+  .then(() => initDb())
   .then(() => warmAlertCache())
   .then(() => {
     startTransportationMessaging();
