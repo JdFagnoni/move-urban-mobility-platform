@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MOVE — Monitor de Traslados</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        background: #1a1a2e;
+        color: #eee;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        padding: 12px 16px;
+        background: #16213e;
+        border-bottom: 1px solid #0f3460;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      header h1 {
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+      #last-update {
+        font-size: 0.75rem;
+        color: #aaa;
+      }
+      .legend {
+        padding: 8px 16px;
+        background: #16213e;
+        font-size: 0.8rem;
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        display: inline-block;
+      }
+      .emoji {
+        font-size: 1rem;
+      }
+      #map {
+        flex: 1;
+        min-height: 400px;
+      }
+      footer {
+        padding: 8px 16px;
+        background: #16213e;
+        font-size: 0.75rem;
+        color: #aaa;
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🚛 MOVE — Monitor de Traslados</h1>
+      <span id="last-update">Iniciando...</span>
+    </header>
+    <div class="legend">
+      <span class="legend-item"><span class="dot" style="background: #e74c3c"></span> Zona Roja</span>
+      <span class="legend-item"
+        ><span class="dot" style="background: #2ecc71"></span> Zona Preferente</span
+      >
+      <span class="legend-item"><span class="emoji">🟢</span> Disponible</span>
+      <span class="legend-item"><span class="emoji">🔵</span> En traslado</span>
+      <span class="legend-item"><span class="emoji">🟡</span> Mantenimiento</span>
+      <span class="legend-item"><span class="emoji">🔴</span> Con alerta</span>
+    </div>
+    <div id="map"></div>
+    <footer>
+      <span id="status-time">—</span>
+      <span id="status-vehicles">—</span>
+      <span id="status-alerts">—</span>
+    </footer>
+    <script>
+      "use strict";
+
+      const MONTEVIDEO = [-34.9011, -56.1645];
+      const POLL_INTERVAL_MS = 3000;
+
+      const map = L.map("map").setView(MONTEVIDEO, 13);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(map);
+
+      // GeoJSON stores coordinates as [lon, lat]; Leaflet expects [lat, lon].
+      function toLatLng(coordinates) {
+        return [coordinates[1], coordinates[0]];
+      }
+
+      let vehicles = [];
+      const vehicleMarkers = {}; // vehicleId -> L.marker
+
+      async function loadZones() {
+        const res = await fetch("/transportations/zones");
+        const { data: zones } = await res.json();
+        zones.forEach((zone) => {
+          if (!zone.active) return;
+          const color = zone.type === "red" ? "#e74c3c" : "#2ecc71";
+          const rings = zone.polygon.coordinates.map((ring) => ring.map(toLatLng));
+          L.polygon(rings, {
+            color,
+            fillColor: color,
+            fillOpacity: 0.2,
+            weight: 2,
+          })
+            .addTo(map)
+            .bindPopup(`<b>${zone.name}</b><br>Tipo: ${zone.type}`);
+        });
+      }
+
+      async function loadVehicles() {
+        const res = await fetch("/transportations/vehicles");
+        const { data } = await res.json();
+        vehicles = data;
+      }
+
+      function statusEmoji(vehicle, activeAlerts) {
+        const hasAlert = activeAlerts.some((a) => a.vehicleId === vehicle.id);
+        if (hasAlert) return "🔴";
+        switch (vehicle.status) {
+          case "available":
+            return "🟢";
+          case "busy":
+            return "🔵";
+          case "maintenance":
+            return "🟡";
+          default:
+            return "⚫";
+        }
+      }
+
+      function buildPopup(vehicle, gps, vehicleAlerts) {
+        const alertHtml =
+          vehicleAlerts.length > 0
+            ? `<br><b style="color:#e74c3c">⚠ ${vehicleAlerts.length} alerta(s):</b><ul>${vehicleAlerts
+                .map((a) => `<li>${a.message}</li>`)
+                .join("")}</ul>`
+            : '<br><span style="color:#2ecc71">Sin alertas activas</span>';
+        return `
+          <b>${vehicle.plate}</b> (${vehicle.type})<br>
+          Estado: ${vehicle.status}<br>
+          Velocidad: ${Math.round(gps.speed)} km/h<br>
+          Heading: ${Math.round(gps.heading)}°
+          ${alertHtml}
+        `;
+      }
+
+      async function fetchActiveAlerts() {
+        try {
+          const res = await fetch("/transportations/alerts?resolved=false");
+          if (!res.ok) return [];
+          const { data } = await res.json();
+          return Array.isArray(data) ? data : [];
+        } catch (_) {
+          return [];
+        }
+      }
+
+      async function updatePositions() {
+        const activeAlerts = await fetchActiveAlerts();
+
+        let updatedCount = 0;
+        for (const vehicle of vehicles) {
+          try {
+            const res = await fetch(`/transportations/gps/vehicle/${vehicle.id}/latest`);
+            if (!res.ok) continue; // no GPS signal yet
+            const { data: gps } = await res.json();
+
+            const latLng = toLatLng(gps.location.coordinates);
+            const emoji = statusEmoji(vehicle, activeAlerts);
+            const icon = L.divIcon({
+              html: `<div style="font-size:1.4rem;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))">${emoji}</div>`,
+              className: "",
+              iconSize: [24, 24],
+              iconAnchor: [12, 12],
+            });
+
+            const vehicleAlerts = activeAlerts.filter((a) => a.vehicleId === vehicle.id);
+            const popupContent = buildPopup(vehicle, gps, vehicleAlerts);
+
+            const existing = vehicleMarkers[vehicle.id];
+            if (existing) {
+              existing.setLatLng(latLng);
+              existing.setIcon(icon);
+              existing.getPopup().setContent(popupContent);
+            } else {
+              vehicleMarkers[vehicle.id] = L.marker(latLng, { icon })
+                .addTo(map)
+                .bindPopup(popupContent);
+            }
+            updatedCount++;
+          } catch (_) {
+            // vehicle without GPS signal yet, skip it
+          }
+        }
+
+        const now = new Date().toLocaleTimeString("es-UY");
+        document.getElementById("last-update").textContent = `Actualizado: ${now}`;
+        document.getElementById("status-time").textContent = `Última actualización: ${now}`;
+        document.getElementById("status-vehicles").textContent = `${updatedCount} vehículo(s) con GPS`;
+        document.getElementById("status-alerts").textContent =
+          `${activeAlerts.length} alerta(s) activa(s)`;
+      }
+
+      async function init() {
+        await loadZones();
+        await loadVehicles();
+        await updatePositions();
+        setInterval(updatePositions, POLL_INTERVAL_MS);
+      }
+
+      init().catch((err) => {
+        console.error("Error inicializando mapa:", err);
+        document.getElementById("last-update").textContent = "Error al cargar datos";
+      });
+    </script>
+  </body>
+</html>
