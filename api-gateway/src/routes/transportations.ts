@@ -112,7 +112,8 @@ function mountProtectedRoute(path: string): void {
   );
 }
 
-// Vehicles — all authenticated
+// Vehicles — GET list is public for the geo monitoring UI (F15), write operations require auth
+transportationsRouter.get("/vehicles", transportationsProxy());
 mountProtectedRoute("/vehicles");
 
 // Zones — GET is public, write operations require auth
@@ -136,6 +137,11 @@ transportationsRouter.delete(
   authenticate,
   transportationsProxy({ forwardIdentity: true })
 );
+
+// Monitoring read endpoints — public for the geo monitoring UI (F15)
+transportationsRouter.get("/gps/vehicle/:vehicleId/latest", transportationsProxy());
+transportationsRouter.get("/alerts", transportationsProxy());
+transportationsRouter.get("/trips", transportationsProxy());
 
 // Catch-all for existing routes (trips, gps, alerts, operator)
 mountProtectedRoute("/");
