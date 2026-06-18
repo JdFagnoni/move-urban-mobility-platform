@@ -10,7 +10,7 @@ import {
   UpdatedAt,
 } from "sequelize-typescript";
 import { AUTH_PROVIDERS, CLIENT_TYPES, USER_ROLES, USER_STATUSES } from "../constants";
-import { AuthAuditLogModel } from "./auth-audit-log";
+import { AuthAuditLogModel } from "@move/shared";
 import { CompanyLocationModel } from "./company-location";
 import { CompanyProductModel } from "./company-product";
 import { PaymentModel } from "./payment";

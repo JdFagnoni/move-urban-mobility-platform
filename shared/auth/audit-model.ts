@@ -1,4 +1,4 @@
-import type { AuthAuditDecision, AuthAuditEventType, ClientType, UserRole } from "@move/shared";
+import type { AuthAuditDecision, AuthAuditEventType, ClientType, UserRole } from "../types";
 import {
   BelongsTo,
   Column,
@@ -8,13 +8,26 @@ import {
   PrimaryKey,
   Table,
 } from "sequelize-typescript";
-import {
-  AUTH_AUDIT_DECISIONS,
-  AUTH_AUDIT_EVENT_TYPES,
-  CLIENT_TYPES,
-  USER_ROLES,
-} from "../constants";
-import { UserModel } from "./user";
+
+const AUTH_AUDIT_EVENT_TYPES: readonly AuthAuditEventType[] = [
+  "registration_success",
+  "registration_failure",
+  "token_accepted",
+  "token_rejected",
+  "access_denied",
+  "status_changed",
+  "profile_updated",
+];
+
+const AUTH_AUDIT_DECISIONS: readonly AuthAuditDecision[] = [
+  "authorized",
+  "denied",
+  "failed",
+  "success",
+];
+
+const USER_ROLES: readonly UserRole[] = ["admin", "operator", "client", "driver"];
+const CLIENT_TYPES: readonly ClientType[] = ["individual", "company"];
 
 @Table({
   tableName: "auth_audit_logs",
@@ -75,7 +88,4 @@ export class AuthAuditLogModel extends Model {
 
   @CreatedAt
   declare occurredAt: Date;
-
-  @BelongsTo(() => UserModel, { foreignKey: "userId", as: "user" })
-  declare user?: UserModel | null;
 }

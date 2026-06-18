@@ -13,8 +13,22 @@
     "amqplib": "^0.10.4",
     "ioredis": "^5.4.1"
   },
+  "peerDependencies": {
+    "sequelize": "^6.37.0",
+    "sequelize-typescript": "^2.1.6",
+    "reflect-metadata": "^0.2.0"
+  },
+  "peerDependenciesMeta": {
+    "sequelize": { "optional": true },
+    "sequelize-typescript": { "optional": true },
+    "reflect-metadata": { "optional": true }
+  },
   "devDependencies": {
     "@types/amqplib": "^0.10.5",
+    "@types/express": "^4.17.21",
+    "sequelize": "^6.37.0",
+    "sequelize-typescript": "^2.1.6",
+    "reflect-metadata": "^0.2.0",
     "typescript": "^5.4.5"
   }
 }

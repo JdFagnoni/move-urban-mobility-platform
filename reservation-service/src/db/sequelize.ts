@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { Sequelize } from "sequelize-typescript";
+import { AuthAuditLogModel } from "@move/shared";
 import {
-  AuthAuditLogModel,
   CargoItemModel,
   CategoryModel,
   CompanyLocationModel,
