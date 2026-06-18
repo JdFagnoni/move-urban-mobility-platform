@@ -1,4 +1,4 @@
-import { query } from "@move/shared";
+import { query, redisClient } from "@move/shared";
 import type { AlertDTO, AlertType, AlertSeverity, GeoPoint, GpsSignalDTO } from "@move/shared";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -55,6 +55,12 @@ async function getActiveTripId(vehicleId: string): Promise<string | null> {
 
 // ─── Deduplication ───────────────────────────────────────────────────────────
 
+const ALERT_LOCK_TTL_SECONDS = 24 * 60 * 60;
+
+function alertLockKey(vehicleId: string, type: AlertType): string {
+  return `alerts:active:${vehicleId}:${type}`;
+}
+
 async function hasActiveAlert(vehicleId: string, type: AlertType): Promise<boolean> {
   const result = await query<{ id: string }>(
     `SELECT id FROM alerts
@@ -62,6 +68,52 @@ async function hasActiveAlert(vehicleId: string, type: AlertType): Promise<boole
     [vehicleId, type]
   );
   return (result.rowCount ?? 0) > 0;
+}
+
+// Atomically marks (vehicleId, type) as alerted. Returns true only when no alert
+// was already active, which avoids the race between two instances both reading
+// "no active alert" before either has inserted one.
+async function acquireAlertLock(vehicleId: string, type: AlertType): Promise<boolean> {
+  try {
+    const result = await redisClient.set(
+      alertLockKey(vehicleId, type),
+      "1",
+      "EX",
+      ALERT_LOCK_TTL_SECONDS,
+      "NX"
+    );
+    return result === "OK";
+  } catch (err) {
+    console.error("[alerts] redis lock error:", err);
+    const alreadyAlerted = await hasActiveAlert(vehicleId, type);
+    return !alreadyAlerted;
+  }
+}
+
+async function releaseAlertLock(vehicleId: string, type: AlertType): Promise<void> {
+  try {
+    await redisClient.del(alertLockKey(vehicleId, type));
+  } catch (err) {
+    console.error("[alerts] redis unlock error:", err);
+  }
+}
+
+// Rebuilds Redis dedup locks from the currently unresolved alerts in Postgres.
+// Called once on service startup so a Redis restart can't make the system forget
+// alerts that are still active according to the source of truth.
+export async function warmAlertCache(): Promise<void> {
+  try {
+    const result = await query<{ vehicle_id: string; type: AlertType }>(
+      "SELECT vehicle_id, type FROM alerts WHERE resolved_at IS NULL"
+    );
+    await Promise.all(
+      result.rows.map((row) =>
+        redisClient.set(alertLockKey(row.vehicle_id, row.type), "1", "EX", ALERT_LOCK_TTL_SECONDS)
+      )
+    );
+  } catch (err) {
+    console.error("[alerts] redis warm-up error:", err);
+  }
 }
 
 // ─── Core persistence ─────────────────────────────────────────────────────────
@@ -95,28 +147,55 @@ export async function createAlert(params: {
 
 // ─── Detection logic (F15) ────────────────────────────────────────────────────
 
-async function checkGeofence(signal: GpsSignalDTO): Promise<void> {
-  const zones = await query<ZoneRow>(
+const RED_ZONES_CACHE_KEY = "zones:red";
+const RED_ZONES_TTL_SECONDS = 30;
+
+async function getRedZones(): Promise<ZoneRow[]> {
+  try {
+    const cached = await redisClient.get(RED_ZONES_CACHE_KEY);
+    if (cached) return JSON.parse(cached) as ZoneRow[];
+  } catch (err) {
+    console.error("[alerts] redis read error:", err);
+  }
+
+  const result = await query<ZoneRow>(
     "SELECT id, name, type, polygon FROM zones WHERE type = 'red' AND active = true"
   );
 
-  for (const zone of zones.rows) {
+  redisClient
+    .set(RED_ZONES_CACHE_KEY, JSON.stringify(result.rows), "EX", RED_ZONES_TTL_SECONDS)
+    .catch((err: unknown) => {
+      console.error("[alerts] redis write error:", err);
+    });
+
+  return result.rows;
+}
+
+async function checkGeofence(signal: GpsSignalDTO): Promise<void> {
+  const zones = await getRedZones();
+
+  for (const zone of zones) {
     const ring = zone.polygon.coordinates[0];
     if (!ring) continue;
     const inside = pointInPolygon(signal.location.coordinates, ring);
     if (inside) {
-      const alreadyAlerted = await hasActiveAlert(signal.vehicleId, "geofence_exit");
-      if (!alreadyAlerted) {
-        await createAlert({
-          vehicleId: signal.vehicleId,
-          type: "geofence_exit",
-          severity: "critical",
-          message: `Vehicle entered red zone "${zone.name}"`,
-          location: signal.location,
-        });
-        console.warn(
-          `[alerts] geofence alert for vehicle ${signal.vehicleId} in zone "${zone.name}"`
-        );
+      const acquired = await acquireAlertLock(signal.vehicleId, "geofence_exit");
+      if (acquired) {
+        try {
+          await createAlert({
+            vehicleId: signal.vehicleId,
+            type: "geofence_exit",
+            severity: "critical",
+            message: `Vehicle entered red zone "${zone.name}"`,
+            location: signal.location,
+          });
+          console.warn(
+            `[alerts] geofence alert for vehicle ${signal.vehicleId} in zone "${zone.name}"`
+          );
+        } catch (err) {
+          await releaseAlertLock(signal.vehicleId, "geofence_exit");
+          throw err;
+        }
       }
       return;
     }
@@ -125,34 +204,60 @@ async function checkGeofence(signal: GpsSignalDTO): Promise<void> {
 
 const STOP_THRESHOLD_MS = 60_000; // 60 seconds stopped = alert
 
-async function checkProlongedStop(signal: GpsSignalDTO): Promise<void> {
-  if (signal.speed > 0) return;
+interface RecentSignalSample {
+  speed: number;
+  timestamp: string;
+}
 
-  const result = await query<{ speed: number; timestamp: string }>(
+// Reads the last 2 signals from the same gps:recent:{vehicleId} list that
+// gps/service.ts populates on ingest. Falls back to Postgres on a cache miss
+// (cold start, TTL expiry) or Redis error.
+async function getRecentSpeedSamples(vehicleId: string): Promise<RecentSignalSample[]> {
+  try {
+    const raw = await redisClient.lrange(`gps:recent:${vehicleId}`, 0, 1);
+    if (raw.length >= 2) {
+      return raw.map((item) => JSON.parse(item) as RecentSignalSample);
+    }
+  } catch (err) {
+    console.error("[alerts] redis read error:", err);
+  }
+
+  const result = await query<RecentSignalSample>(
     `SELECT speed, timestamp FROM gps_signals
      WHERE vehicle_id = $1
      ORDER BY timestamp DESC
      LIMIT 2`,
-    [signal.vehicleId]
+    [vehicleId]
   );
+  return result.rows;
+}
 
-  if (result.rows.length < 2) return;
+async function checkProlongedStop(signal: GpsSignalDTO): Promise<void> {
+  if (signal.speed > 0) return;
 
-  const [latest, previous] = result.rows;
+  const samples = await getRecentSpeedSamples(signal.vehicleId);
+  if (samples.length < 2) return;
+
+  const [latest, previous] = samples;
   if (!latest || !previous || latest.speed > 0 || previous.speed > 0) return;
 
   const elapsed = new Date(signal.timestamp).getTime() - new Date(previous.timestamp).getTime();
   if (elapsed >= STOP_THRESHOLD_MS) {
-    const alreadyAlerted = await hasActiveAlert(signal.vehicleId, "delay");
-    if (!alreadyAlerted) {
-      await createAlert({
-        vehicleId: signal.vehicleId,
-        type: "delay",
-        severity: "warning",
-        message: `Vehicle has been stopped for over ${Math.round(elapsed / 1000)}s`,
-        location: signal.location,
-      });
-      console.warn(`[alerts] stop alert for vehicle ${signal.vehicleId}`);
+    const acquired = await acquireAlertLock(signal.vehicleId, "delay");
+    if (acquired) {
+      try {
+        await createAlert({
+          vehicleId: signal.vehicleId,
+          type: "delay",
+          severity: "warning",
+          message: `Vehicle has been stopped for over ${Math.round(elapsed / 1000)}s`,
+          location: signal.location,
+        });
+        console.warn(`[alerts] stop alert for vehicle ${signal.vehicleId}`);
+      } catch (err) {
+        await releaseAlertLock(signal.vehicleId, "delay");
+        throw err;
+      }
     }
   }
 }
@@ -202,7 +307,9 @@ export async function resolveAlert(id: string): Promise<AlertDTO | null> {
     [id]
   );
   const row = result.rows[0];
-  return row ? mapAlert(row) : null;
+  if (!row) return null;
+  await releaseAlertLock(row.vehicle_id, row.type);
+  return mapAlert(row);
 }
 
 // ─── Mapper ───────────────────────────────────────────────────────────────────

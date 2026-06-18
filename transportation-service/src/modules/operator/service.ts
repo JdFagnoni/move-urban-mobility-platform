@@ -1,5 +1,5 @@
 import type { GeoPoint, TripStatus, VehicleDTO } from "@move/shared";
-import { HttpError, query } from "@move/shared";
+import { HttpError, query, redisClient } from "@move/shared";
 import type { TripDTO } from "@move/shared";
 
 export interface ActiveTripFilters {
@@ -67,6 +67,20 @@ function rowToActiveDTO(row: ActiveTripRow): ActiveTripDTO {
   };
 }
 
+const ACTIVE_TRIPS_TTL_SECONDS = 3;
+
+function activeTripsCacheKey(filters: ActiveTripFilters): string {
+  const hasAlertsPart =
+    filters.hasActiveAlerts === undefined ? "-" : String(filters.hasActiveAlerts);
+  return [
+    "trips:active",
+    filters.vehicleId ?? "-",
+    filters.driverId ?? "-",
+    filters.categoryId ?? "-",
+    hasAlertsPart,
+  ].join(":");
+}
+
 // F18 – panel del operador: traslados en curso (no finalizados)
 export async function getActiveTrips(
   callerAuthSubject: string,
@@ -78,6 +92,14 @@ export async function getActiveTrips(
   );
   if (userResult.rows[0] === undefined) {
     throw new HttpError(403, "Caller is not a registered operator", "caller_not_operator");
+  }
+
+  const cacheKey = activeTripsCacheKey(filters);
+  try {
+    const cached = await redisClient.get(cacheKey);
+    if (cached) return JSON.parse(cached) as ActiveTripDTO[];
+  } catch (err) {
+    console.error("[operator] redis read error:", err);
   }
 
   const conditions: string[] = ["t.status NOT IN ('completed', 'cancelled')"];
@@ -140,7 +162,15 @@ export async function getActiveTrips(
     params
   );
 
-  return result.rows.map(rowToActiveDTO);
+  const data = result.rows.map(rowToActiveDTO);
+
+  redisClient
+    .set(cacheKey, JSON.stringify(data), "EX", ACTIVE_TRIPS_TTL_SECONDS)
+    .catch((err: unknown) => {
+      console.error("[operator] redis write error:", err);
+    });
+
+  return data;
 }
 
 // F19 – reasignar vehículo en traslado activo
