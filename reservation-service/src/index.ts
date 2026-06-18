@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import type { Request } from "express";
-import { getMetricsSnapshot, requestMetrics } from "@move/shared";
+import { requestMetrics } from "@move/shared";
 import { initializeDatabase } from "./db/sequelize";
 import { seedBootstrapAdmin, seedDefaultCategories } from "./db/seed";
 import { withRetry } from "./db/startup";
@@ -11,6 +11,7 @@ import { categoriesRouter } from "./modules/categories/router";
 import { preregistrationsRouter } from "./modules/preregistrations/router";
 import { usersRouter } from "./modules/users/router";
 import { paymentsRouter } from "./modules/payments/router";
+import { metricsRouter } from "./modules/metrics/router";
 import { startReservationMessaging } from "./messaging";
 
 const app = express();
@@ -32,9 +33,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "reservations" });
 });
 
-app.get("/metrics", (_req, res) => {
-  res.json(getMetricsSnapshot());
-});
+app.use("/metrics", metricsRouter);
 
 app.use("/auth", authRouter);
 app.use("/webhooks", paymentsRouter);
