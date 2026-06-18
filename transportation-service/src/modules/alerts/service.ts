@@ -1,5 +1,6 @@
 import { query } from "@move/shared";
 import type { AlertDTO, AlertType, AlertSeverity, GeoPoint, GpsSignalDTO } from "@move/shared";
+import { signalPipeline } from "./pipeline/setup";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -15,31 +16,7 @@ interface AlertRow {
   resolved_at: string | null;
 }
 
-interface ZoneRow {
-  id: string;
-  name: string;
-  type: string;
-  polygon: { type: "Polygon"; coordinates: number[][][] };
-}
-
-// ─── Geometry ────────────────────────────────────────────────────────────────
-
-// Ray-casting point-in-polygon (exterior ring only)
-function pointInPolygon(point: [number, number], ring: number[][]): boolean {
-  const [px, py] = point;
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = ring[i]![0]!;
-    const yi = ring[i]![1]!;
-    const xj = ring[j]![0]!;
-    const yj = ring[j]![1]!;
-    const intersect = yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi;
-    if (intersect) inside = !inside;
-  }
-  return inside;
-}
-
-// ─── Trip lookup (stub — connects once trips table exists) ───────────────────
+// ─── Trip lookup ─────────────────────────────────────────────────────────────
 
 async function getActiveTripId(vehicleId: string): Promise<string | null> {
   try {
@@ -55,7 +32,7 @@ async function getActiveTripId(vehicleId: string): Promise<string | null> {
 
 // ─── Deduplication ───────────────────────────────────────────────────────────
 
-async function hasActiveAlert(vehicleId: string, type: AlertType): Promise<boolean> {
+export async function hasActiveAlert(vehicleId: string, type: AlertType): Promise<boolean> {
   const result = await query<{ id: string }>(
     `SELECT id FROM alerts
      WHERE vehicle_id = $1 AND type = $2 AND resolved_at IS NULL`,
@@ -93,72 +70,10 @@ export async function createAlert(params: {
   return mapAlert(row);
 }
 
-// ─── Detection logic (F15) ────────────────────────────────────────────────────
-
-async function checkGeofence(signal: GpsSignalDTO): Promise<void> {
-  const zones = await query<ZoneRow>(
-    "SELECT id, name, type, polygon FROM zones WHERE type = 'red' AND active = true"
-  );
-
-  for (const zone of zones.rows) {
-    const ring = zone.polygon.coordinates[0];
-    if (!ring) continue;
-    const inside = pointInPolygon(signal.location.coordinates, ring);
-    if (inside) {
-      const alreadyAlerted = await hasActiveAlert(signal.vehicleId, "geofence_exit");
-      if (!alreadyAlerted) {
-        await createAlert({
-          vehicleId: signal.vehicleId,
-          type: "geofence_exit",
-          severity: "critical",
-          message: `Vehicle entered red zone "${zone.name}"`,
-          location: signal.location,
-        });
-        console.warn(
-          `[alerts] geofence alert for vehicle ${signal.vehicleId} in zone "${zone.name}"`
-        );
-      }
-      return;
-    }
-  }
-}
-
-const STOP_THRESHOLD_MS = 60_000; // 60 seconds stopped = alert
-
-async function checkProlongedStop(signal: GpsSignalDTO): Promise<void> {
-  if (signal.speed > 0) return;
-
-  const result = await query<{ speed: number; timestamp: string }>(
-    `SELECT speed, timestamp FROM gps_signals
-     WHERE vehicle_id = $1
-     ORDER BY timestamp DESC
-     LIMIT 2`,
-    [signal.vehicleId]
-  );
-
-  if (result.rows.length < 2) return;
-
-  const [latest, previous] = result.rows;
-  if (!latest || !previous || latest.speed > 0 || previous.speed > 0) return;
-
-  const elapsed = new Date(signal.timestamp).getTime() - new Date(previous.timestamp).getTime();
-  if (elapsed >= STOP_THRESHOLD_MS) {
-    const alreadyAlerted = await hasActiveAlert(signal.vehicleId, "delay");
-    if (!alreadyAlerted) {
-      await createAlert({
-        vehicleId: signal.vehicleId,
-        type: "delay",
-        severity: "warning",
-        message: `Vehicle has been stopped for over ${Math.round(elapsed / 1000)}s`,
-        location: signal.location,
-      });
-      console.warn(`[alerts] stop alert for vehicle ${signal.vehicleId}`);
-    }
-  }
-}
+// ─── Pipes & Filters pipeline (F15) ──────────────────────────────────────────
 
 export async function detectAndAlert(signal: GpsSignalDTO): Promise<void> {
-  await Promise.all([checkGeofence(signal), checkProlongedStop(signal)]);
+  await signalPipeline.execute(signal);
 }
 
 // ─── Queries (F16) ────────────────────────────────────────────────────────────
