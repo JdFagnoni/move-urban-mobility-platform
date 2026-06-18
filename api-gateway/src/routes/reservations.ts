@@ -93,14 +93,6 @@ reservationsRouter.delete(
   reservationsProxy({ forwardIdentity: true })
 );
 mountProtectedRoute("/preregistrations");
-// GET /zones is public so F15 geofencing can consume it without auth
-reservationsRouter.get("/zones", reservationsProxy());
-reservationsRouter.get("/zones/:id", reservationsProxy());
-reservationsRouter.post("/zones", authenticate, reservationsProxy({ forwardIdentity: true }));
-reservationsRouter.patch("/zones/:id", authenticate, reservationsProxy({ forwardIdentity: true }));
-reservationsRouter.delete("/zones/:id", authenticate, reservationsProxy({ forwardIdentity: true }));
-mountProtectedRoute("/vehicles");
-reservationsRouter.use("/zones", reservationsProxy());
 mountProtectedRoute("/auth/me");
 mountProtectedRoute("/auth/audit-logs");
 mountProtectedRoute("/users");

@@ -25,7 +25,7 @@ app.get("/health", (_req, res) => {
 app.use("/webhooks", webhooksRouter);
 app.use(express.json());
 app.use("/reservations", reservationsRouter);
-app.use("/transportations", authenticate, transportationsRouter);
+app.use("/transportations", transportationsRouter);
 
 validateReservationsProxyConfiguration();
 
