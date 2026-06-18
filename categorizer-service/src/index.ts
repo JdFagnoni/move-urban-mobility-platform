@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import { getMetricsSnapshot, requestMetrics } from "@move/shared";
 import { categorizerRouter } from "./router";
 import {
   getSemanticSearchCacheStatus,
@@ -10,6 +11,7 @@ const app = express();
 const PORT = process.env["PORT"] ?? "3003";
 
 app.use(express.json());
+app.use(requestMetrics);
 
 app.get("/health", (_req, res) => {
   res.json({
@@ -17,6 +19,10 @@ app.get("/health", (_req, res) => {
     service: "categorizer-service",
     semanticSearchCache: getSemanticSearchCacheStatus(),
   });
+});
+
+app.get("/metrics", (_req, res) => {
+  res.json(getMetricsSnapshot());
 });
 
 app.use("/categorize", categorizerRouter);

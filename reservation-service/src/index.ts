@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import type { Request } from "express";
+import { getMetricsSnapshot, requestMetrics } from "@move/shared";
 import { initializeDatabase } from "./db/sequelize";
 import { seedBootstrapAdmin, seedDefaultCategories } from "./db/seed";
 import { withRetry } from "./db/startup";
@@ -25,8 +26,14 @@ app.use(
   })
 );
 
+app.use(requestMetrics);
+
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "reservations" });
+});
+
+app.get("/metrics", (_req, res) => {
+  res.json(getMetricsSnapshot());
 });
 
 app.use("/auth", authRouter);

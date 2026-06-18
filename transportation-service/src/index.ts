@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import { getMetricsSnapshot, requestMetrics } from "@move/shared";
 import { tripsRouter } from "./modules/trips/router";
 import { gpsRouter } from "./modules/gps/router";
 import { alertsRouter } from "./modules/alerts/router";
@@ -15,9 +16,14 @@ const app = express();
 const PORT = process.env["PORT"] ?? "3002";
 
 app.use(express.json());
+app.use(requestMetrics);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "transportations" });
+});
+
+app.get("/metrics", (_req, res) => {
+  res.json(getMetricsSnapshot());
 });
 
 app.use("/trips", tripsRouter);
