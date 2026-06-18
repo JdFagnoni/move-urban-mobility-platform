@@ -5,6 +5,7 @@ import { gpsRouter } from "./modules/gps/router";
 import { alertsRouter } from "./modules/alerts/router";
 import { operatorRouter } from "./modules/operator/router";
 import { initDb } from "./db/init";
+import { warmAlertCache } from "./modules/alerts/service";
 import { startTransportationMessaging } from "./messaging";
 
 const app = express();
@@ -22,6 +23,7 @@ app.use("/alerts", alertsRouter);
 app.use("/operator", operatorRouter);
 
 initDb()
+  .then(() => warmAlertCache())
   .then(() => {
     startTransportationMessaging();
     app.listen(Number(PORT), () => {

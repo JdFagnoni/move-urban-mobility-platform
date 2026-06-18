@@ -1,4 +1,12 @@
-import { EXCHANGES, ROUTING_KEYS, describeError, logMessaging, publish, query } from "@move/shared";
+import {
+  EXCHANGES,
+  ROUTING_KEYS,
+  describeError,
+  logMessaging,
+  publish,
+  query,
+  redisClient,
+} from "@move/shared";
 import type { GpsSignalDTO, GeoPoint } from "@move/shared";
 
 interface GpsRow {
@@ -7,6 +15,53 @@ interface GpsRow {
   speed: number;
   heading: number;
   timestamp: string;
+}
+
+const GPS_LATEST_TTL_SECONDS = 6 * 60 * 60;
+const GPS_RECENT_TTL_SECONDS = 60 * 60;
+const GPS_RECENT_MAX_ENTRIES = 5;
+
+function latestKey(vehicleId: string): string {
+  return `gps:latest:${vehicleId}`;
+}
+
+function recentKey(vehicleId: string): string {
+  return `gps:recent:${vehicleId}`;
+}
+
+async function cacheSignal(signal: GpsSignalDTO): Promise<void> {
+  const [lon, lat] = signal.location.coordinates;
+  await Promise.all([
+    redisClient
+      .multi()
+      .hset(latestKey(signal.vehicleId), {
+        lon: String(lon),
+        lat: String(lat),
+        speed: String(signal.speed),
+        heading: String(signal.heading),
+        timestamp: signal.timestamp,
+      })
+      .expire(latestKey(signal.vehicleId), GPS_LATEST_TTL_SECONDS)
+      .exec(),
+    redisClient
+      .multi()
+      .lpush(recentKey(signal.vehicleId), JSON.stringify(signal))
+      .ltrim(recentKey(signal.vehicleId), 0, GPS_RECENT_MAX_ENTRIES - 1)
+      .expire(recentKey(signal.vehicleId), GPS_RECENT_TTL_SECONDS)
+      .exec(),
+  ]);
+}
+
+async function getLatestSignalFromCache(vehicleId: string): Promise<GpsSignalDTO | null> {
+  const data = await redisClient.hgetall(latestKey(vehicleId));
+  if (!data["timestamp"]) return null;
+  return {
+    vehicleId,
+    location: { type: "Point", coordinates: [Number(data["lon"]), Number(data["lat"])] },
+    speed: Number(data["speed"]),
+    heading: Number(data["heading"]),
+    timestamp: data["timestamp"],
+  };
 }
 
 export function validateSignalRange(signal: GpsSignalDTO): boolean {
@@ -43,6 +98,15 @@ export async function ingestSignal(signal: GpsSignalDTO): Promise<void> {
     ]
   );
 
+  // Awaited (but best-effort) so the consumer that picks up the message below
+  // sees this signal already cached. Postgres already guarantees durability,
+  // so a Redis failure here is non-fatal (R7).
+  try {
+    await cacheSignal(signal);
+  } catch (err) {
+    console.error("[gps] redis cache error:", err);
+  }
+
   publishSignalForDetection(signal);
 }
 
@@ -56,6 +120,13 @@ function publishSignalForDetection(signal: GpsSignalDTO): void {
 }
 
 export async function getLatestSignal(vehicleId: string): Promise<GpsSignalDTO | null> {
+  try {
+    const cached = await getLatestSignalFromCache(vehicleId);
+    if (cached) return cached;
+  } catch (err) {
+    console.error("[gps] redis read error:", err);
+  }
+
   const result = await query<GpsRow>(
     `SELECT vehicle_id, location, speed, heading, timestamp
      FROM gps_signals

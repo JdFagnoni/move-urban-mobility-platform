@@ -1,7 +1,7 @@
 import type { GpsSignalDTO } from "@move/shared";
 import { query } from "@move/shared";
 import type { ISignalFilter } from "../filter.interface";
-import { createAlert, hasActiveAlert } from "../../service";
+import { acquireAlertLock, createAlert } from "../../service";
 
 const STOP_THRESHOLD_MS = 60_000;
 
@@ -26,8 +26,8 @@ export class ProlongedStopFilter implements ISignalFilter {
 
     const elapsed = new Date(signal.timestamp).getTime() - new Date(previous.timestamp).getTime();
     if (elapsed >= STOP_THRESHOLD_MS) {
-      const alreadyAlerted = await hasActiveAlert(signal.vehicleId, "delay");
-      if (!alreadyAlerted) {
+      const lockAcquired = await acquireAlertLock(signal.vehicleId, "delay");
+      if (lockAcquired) {
         await createAlert({
           vehicleId: signal.vehicleId,
           type: "delay",

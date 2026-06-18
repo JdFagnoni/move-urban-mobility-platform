@@ -1,6 +1,6 @@
 import type { GpsSignalDTO } from "@move/shared";
 import type { ISignalFilter } from "../filter.interface";
-import { createAlert, hasActiveAlert } from "../../service";
+import { acquireAlertLock, createAlert } from "../../service";
 
 const SPEED_LIMIT_KMH = 120;
 
@@ -10,8 +10,8 @@ export class SpeedingFilter implements ISignalFilter {
   async apply(signal: GpsSignalDTO): Promise<void> {
     if (signal.speed <= SPEED_LIMIT_KMH) return;
 
-    const alreadyAlerted = await hasActiveAlert(signal.vehicleId, "speeding");
-    if (alreadyAlerted) return;
+    const lockAcquired = await acquireAlertLock(signal.vehicleId, "speeding");
+    if (!lockAcquired) return;
 
     await createAlert({
       vehicleId: signal.vehicleId,

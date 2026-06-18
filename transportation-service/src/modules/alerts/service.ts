@@ -1,4 +1,4 @@
-import { query } from "@move/shared";
+import { query, redisClient } from "@move/shared";
 import type { AlertDTO, AlertType, AlertSeverity, GeoPoint, GpsSignalDTO } from "@move/shared";
 import { signalPipeline } from "./pipeline/setup";
 
@@ -32,6 +32,12 @@ async function getActiveTripId(vehicleId: string): Promise<string | null> {
 
 // ─── Deduplication ───────────────────────────────────────────────────────────
 
+const ALERT_LOCK_TTL_SECONDS = 24 * 60 * 60;
+
+function alertLockKey(vehicleId: string, type: AlertType): string {
+  return `alerts:active:${vehicleId}:${type}`;
+}
+
 export async function hasActiveAlert(vehicleId: string, type: AlertType): Promise<boolean> {
   const result = await query<{ id: string }>(
     `SELECT id FROM alerts
@@ -39,6 +45,52 @@ export async function hasActiveAlert(vehicleId: string, type: AlertType): Promis
     [vehicleId, type]
   );
   return (result.rowCount ?? 0) > 0;
+}
+
+// Atomically marks (vehicleId, type) as alerted. Returns true only when no alert
+// was already active, which avoids the race between two instances both reading
+// "no active alert" before either has inserted one.
+export async function acquireAlertLock(vehicleId: string, type: AlertType): Promise<boolean> {
+  try {
+    const result = await redisClient.set(
+      alertLockKey(vehicleId, type),
+      "1",
+      "EX",
+      ALERT_LOCK_TTL_SECONDS,
+      "NX"
+    );
+    return result === "OK";
+  } catch (err) {
+    console.error("[alerts] redis lock error:", err);
+    const alreadyAlerted = await hasActiveAlert(vehicleId, type);
+    return !alreadyAlerted;
+  }
+}
+
+async function releaseAlertLock(vehicleId: string, type: AlertType): Promise<void> {
+  try {
+    await redisClient.del(alertLockKey(vehicleId, type));
+  } catch (err) {
+    console.error("[alerts] redis unlock error:", err);
+  }
+}
+
+// Rebuilds Redis dedup locks from the currently unresolved alerts in Postgres.
+// Called once on service startup so a Redis restart can't make the system forget
+// alerts that are still active according to the source of truth.
+export async function warmAlertCache(): Promise<void> {
+  try {
+    const result = await query<{ vehicle_id: string; type: AlertType }>(
+      "SELECT vehicle_id, type FROM alerts WHERE resolved_at IS NULL"
+    );
+    await Promise.all(
+      result.rows.map((row) =>
+        redisClient.set(alertLockKey(row.vehicle_id, row.type), "1", "EX", ALERT_LOCK_TTL_SECONDS)
+      )
+    );
+  } catch (err) {
+    console.error("[alerts] redis warm-up error:", err);
+  }
 }
 
 // ─── Core persistence ─────────────────────────────────────────────────────────
@@ -117,7 +169,9 @@ export async function resolveAlert(id: string): Promise<AlertDTO | null> {
     [id]
   );
   const row = result.rows[0];
-  return row ? mapAlert(row) : null;
+  if (!row) return null;
+  await releaseAlertLock(row.vehicle_id, row.type);
+  return mapAlert(row);
 }
 
 // ─── Mapper ───────────────────────────────────────────────────────────────────

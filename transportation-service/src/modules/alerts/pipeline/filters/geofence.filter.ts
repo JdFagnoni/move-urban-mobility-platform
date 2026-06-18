@@ -1,7 +1,7 @@
 import type { GpsSignalDTO } from "@move/shared";
 import { query } from "@move/shared";
 import type { ISignalFilter } from "../filter.interface";
-import { createAlert, hasActiveAlert } from "../../service";
+import { acquireAlertLock, createAlert } from "../../service";
 
 interface ZoneRow {
   id: string;
@@ -37,8 +37,8 @@ export class GeofenceFilter implements ISignalFilter {
       if (!ring) continue;
       const inside = pointInPolygon(signal.location.coordinates, ring);
       if (inside) {
-        const alreadyAlerted = await hasActiveAlert(signal.vehicleId, "geofence_exit");
-        if (!alreadyAlerted) {
+        const lockAcquired = await acquireAlertLock(signal.vehicleId, "geofence_exit");
+        if (lockAcquired) {
           await createAlert({
             vehicleId: signal.vehicleId,
             type: "geofence_exit",
