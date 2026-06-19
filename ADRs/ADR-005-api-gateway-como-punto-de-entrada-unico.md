@@ -22,6 +22,14 @@ La alternativa de exponer cada microservicio directamente a clientes externos fu
 
 **Suposición**: Se asume que la red interna entre el gateway y los servicios es de confianza controlada, y que los headers internos propagados por el gateway no serán aceptados desde fuentes no confiables. También se asume que el gateway operará como componente crítico de borde y contará con la configuración necesaria para distinguir correctamente rutas públicas, protegidas y de integración externa.
 
+## Enmienda: detalle de implementación del rate limiting (R8)
+
+El rate limiting mencionado entre las responsabilidades del gateway se concreta con la biblioteca `express-rate-limit`, aplicada como middleware global (`app.use(rateLimiter)`) sobre todas las solicitudes entrantes. La configuración vigente utiliza una ventana de 1 minuto con un máximo de 300 solicitudes por ventana, devuelve `429 Too Many Requests` ante exceso y expone los headers estándar de límite (`standardHeaders`) para que los clientes puedan adaptar su ritmo.
+
+Es importante delimitar el rol de este mecanismo respecto del requisito R8 (soportar picos de hasta 50 veces la carga normal). El rate limiter del gateway **no** es el componente que absorbe la ráfaga de R8; su función es actuar como techo de protección contra abuso y tráfico anómalo en el borde, evitando que un cliente individual sature el sistema. La capacidad de absorber picos de carga legítima se resuelve aguas adentro mediante el desacople asíncrono y el buffering de colas de RabbitMQ (ADR-010), que sacan el trabajo pesado del path de request y amortiguan las ráfagas, y mediante el fast-path en caché para los flujos de baja latencia (ADR-012). El límite global se eligió como valor de protección de borde y se considera un parámetro ajustable con evidencia de las pruebas de carga y stress (K6), no como una garantía por sí mismo del cumplimiento de R8.
+
+Se consideró y descartó, por ahora, un rate limiting distribuido respaldado en Redis (que permitiría un límite coherente entre múltiples instancias del gateway) por no estar justificado para el despliegue actual de instancia única; se señala como evolución futura si el gateway se escala horizontalmente. También se descartó delegar el rate limiting a un componente de infraestructura externo (por ejemplo, Nginx o un API management), por mantener la política de borde dentro del gateway, coherente con el resto de las responsabilidades transversales ya centralizadas en él.
+
 ## Estado
 
 Aceptado
