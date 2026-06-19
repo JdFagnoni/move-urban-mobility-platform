@@ -1,4 +1,5 @@
 import "dotenv/config";
+import path from "path";
 import express from "express";
 import { requestLogger } from "./middleware/logging";
 import { rateLimiter } from "./middleware/rate-limit";
@@ -12,6 +13,7 @@ import { transportationsRouter } from "./routes/transportations";
 const app = express();
 const PORT = process.env["PORT"] ?? "3000";
 
+app.use(express.static(path.join(__dirname, "../public")));
 app.use(requestLogger);
 app.use(rateLimiter);
 
