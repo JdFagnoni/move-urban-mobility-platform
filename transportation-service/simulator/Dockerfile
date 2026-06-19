@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM node:20-alpine AS base
 WORKDIR /app
+COPY tsconfig.base.json /tsconfig.base.json
 COPY transportation-service/simulator/package*.json ./
 RUN npm install --ignore-scripts
 
