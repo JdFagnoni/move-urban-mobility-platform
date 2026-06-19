@@ -48,7 +48,7 @@ propio `/metrics` y `/health` sin agregación central es consistente con el dise
 `/health` y con el acceso directo a la UI de management de RabbitMQ en el puerto `15672`, en lugar
 de proxearla a través del gateway.
 
-El registro en memoria, sin persistencia, fue preferido porque `R4` exige poder *visualizar* el
+El registro en memoria, sin persistencia, fue preferido porque `R4` exige poder _visualizar_ el
 estado del sistema, no mantener un histórico durable de métricas; agregar persistencia hubiera
 introducido complejidad sin un requerimiento que la justifique. Instrumentar los adaptadores de
 Stripe y Auth0 envolviendo sus métodos públicos, sin modificar la lógica de timeouts ya existente,
