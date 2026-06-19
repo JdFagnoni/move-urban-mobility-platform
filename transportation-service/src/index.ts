@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { requestMetrics } from "@move/shared";
+import { isConnected, query, redisClient, requestMetrics } from "@move/shared";
 import { tripsRouter } from "./modules/trips/router";
 import { gpsRouter } from "./modules/gps/router";
 import { alertsRouter } from "./modules/alerts/router";
@@ -19,9 +19,26 @@ const PORT = process.env["PORT"] ?? "3002";
 app.use(express.json());
 app.use(requestMetrics);
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", service: "transportations" });
+app.get("/health", async (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "transportations",
+    dependencies: {
+      postgres: (await isPostgresUp()) ? "up" : "down",
+      redis: redisClient.status === "ready" ? "up" : "down",
+      rabbitmq: isConnected() ? "up" : "down",
+    },
+  });
 });
+
+async function isPostgresUp(): Promise<boolean> {
+  try {
+    await query("SELECT 1");
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 app.use("/metrics", metricsRouter);
 

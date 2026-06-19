@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import type { Request } from "express";
-import { requestMetrics } from "@move/shared";
+import { isConnected, query, requestMetrics } from "@move/shared";
 import { initializeDatabase } from "./db/sequelize";
 import { seedBootstrapAdmin, seedDefaultCategories } from "./db/seed";
 import { withRetry } from "./db/startup";
@@ -29,9 +29,25 @@ app.use(
 
 app.use(requestMetrics);
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", service: "reservations" });
+app.get("/health", async (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "reservations",
+    dependencies: {
+      postgres: (await isPostgresUp()) ? "up" : "down",
+      rabbitmq: isConnected() ? "up" : "down",
+    },
+  });
 });
+
+async function isPostgresUp(): Promise<boolean> {
+  try {
+    await query("SELECT 1");
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 app.use("/metrics", metricsRouter);
 

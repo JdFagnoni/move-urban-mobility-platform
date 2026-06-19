@@ -6,6 +6,7 @@ import {
   getSemanticSearchCacheStatus,
   warmSemanticSearchCache as warmSemanticSearchCacheService,
 } from "./modules/semantic-search/service";
+import { fetchOllamaResponse } from "./strategies/ollama";
 
 const app = express();
 const PORT = process.env["PORT"] ?? "3003";
@@ -13,17 +14,36 @@ const PORT = process.env["PORT"] ?? "3003";
 app.use(express.json());
 app.use(requestMetrics);
 
-app.get("/health", (_req, res) => {
+app.get("/health", async (_req, res) => {
   res.json({
     status: "ok",
     service: "categorizer-service",
     semanticSearchCache: getSemanticSearchCacheStatus(),
+    dependencies: {
+      ollama: (await isOllamaUp()) ? "up" : "down",
+    },
   });
 });
 
 app.get("/metrics", (_req, res) => {
   res.json(getMetricsSnapshot());
 });
+
+async function isOllamaUp(): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1_500);
+  try {
+    const response = await fetchOllamaResponse("/api/tags", {
+      method: "GET",
+      signal: controller.signal,
+    });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 app.use("/categorize", categorizerRouter);
 
