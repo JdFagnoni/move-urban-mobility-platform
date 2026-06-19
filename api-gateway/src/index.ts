@@ -1,4 +1,16 @@
 import "dotenv/config";
+
+process.on("uncaughtException", (err: Error) => {
+  process.stderr.write(`[api-gateway] uncaughtException: ${err.message}\n${err.stack ?? ""}\n`);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason: unknown) => {
+  const message = reason instanceof Error ? reason.message : String(reason);
+  process.stderr.write(`[api-gateway] unhandledRejection: ${message}\n`);
+});
+
+import path from "path";
 import express from "express";
 import { getMetricsSnapshot, requestMetrics } from "@move/shared";
 import { requestLogger } from "./middleware/logging";
@@ -13,6 +25,7 @@ import { transportationsRouter } from "./routes/transportations";
 const app = express();
 const PORT = process.env["PORT"] ?? "3000";
 
+app.use(express.static(path.join(__dirname, "../public")));
 app.use(requestLogger);
 app.use(requestMetrics);
 app.use(rateLimiter);

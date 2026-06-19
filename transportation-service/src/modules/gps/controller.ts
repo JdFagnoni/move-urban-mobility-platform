@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { ingestSignal, getLatestSignal } from "./service";
+import { ingestSignal, getLatestSignal, getAllLatestSignals } from "./service";
 import type { GpsSignalDTO } from "@move/shared";
 
 export async function ingestHandler(req: Request, res: Response): Promise<void> {
@@ -19,4 +19,9 @@ export async function latestHandler(req: Request, res: Response): Promise<void> 
     return;
   }
   res.json({ success: true, data: result });
+}
+
+export async function allLatestHandler(_req: Request, res: Response): Promise<void> {
+  const signals = await getAllLatestSignals();
+  res.json({ success: true, data: signals });
 }

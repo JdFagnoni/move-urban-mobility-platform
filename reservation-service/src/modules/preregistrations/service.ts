@@ -13,6 +13,10 @@ import { HttpError } from "@move/shared";
 import { Op, UniqueConstraintError } from "sequelize";
 import { CategoryModel, CompanyLocationModel, CompanyProductModel } from "../../db/models";
 import { recordAuditLog } from "../auth/audit";
+import {
+  refreshCompanyLocationCacheForClient,
+  refreshCompanyProductCacheForClient,
+} from "../reservations/fast-path-cache";
 import { mapCompanyLocation, mapCompanyProduct } from "./mapper";
 
 interface CompanyScopedInput {
@@ -78,6 +82,7 @@ export async function createCompanyProductForHttp(
       categoryId: input.dto.categoryId.trim(),
     });
 
+    await refreshCompanyProductCacheForClient(currentUser.id);
     return mapCompanyProduct(row);
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -115,6 +120,7 @@ export async function updateCompanyProductForHttp(
 
   try {
     await row.save();
+    await refreshCompanyProductCacheForClient(currentUser.id);
     return mapCompanyProduct(row);
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -128,6 +134,7 @@ export async function deleteCompanyProductForHttp(input: CompanyProductTargetInp
   const currentUser = await requireCompanyClient(input.currentUser, input.context);
   const row = await requireCompanyProduct(input.id, currentUser.id);
   await row.destroy();
+  await refreshCompanyProductCacheForClient(currentUser.id);
 }
 
 export async function listCompanyLocationsForHttp(
@@ -158,6 +165,7 @@ export async function createCompanyLocationForHttp(
       location: input.dto.location,
     });
 
+    await refreshCompanyLocationCacheForClient(currentUser.id);
     return mapCompanyLocation(row);
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -189,6 +197,7 @@ export async function updateCompanyLocationForHttp(
 
   try {
     await row.save();
+    await refreshCompanyLocationCacheForClient(currentUser.id);
     return mapCompanyLocation(row);
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -204,6 +213,7 @@ export async function deleteCompanyLocationForHttp(
   const currentUser = await requireCompanyClient(input.currentUser, input.context);
   const row = await requireCompanyLocation(input.id, currentUser.id);
   await row.destroy();
+  await refreshCompanyLocationCacheForClient(currentUser.id);
 }
 
 function normalizeRequiredText(value: string, field: string, code: string): string {

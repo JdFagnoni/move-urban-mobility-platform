@@ -5,12 +5,36 @@ const INTERVAL_MS = Number(process.env["GPS_SIMULATOR_INTERVAL_MS"] ?? 10_000);
 
 // Vehicle IDs must match real UUIDs in the DB.
 // Override via env: SIMULATED_VEHICLE_IDS=uuid1,uuid2,...
+// If not set, the simulator will auto-discover vehicles from the service at startup.
 const RAW_IDS = process.env["SIMULATED_VEHICLE_IDS"] ?? "";
 const VEHICLE_IDS: string[] = RAW_IDS
   ? RAW_IDS.split(",")
       .map((s) => s.trim())
       .filter(Boolean)
   : [];
+
+interface VehicleListItem {
+  id: string;
+}
+
+async function discoverVehicleIds(retries = 5, delayMs = 3000): Promise<string[]> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${TRANSPORTATIONS_URL}/vehicles`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = (await res.json()) as { success: boolean; data?: VehicleListItem[] };
+      const ids = (body.data ?? []).map((v) => v.id).filter(Boolean);
+      if (ids.length > 0) return ids;
+      throw new Error("empty vehicle list");
+    } catch (err) {
+      console.warn(
+        `[simulator] vehicle discovery attempt ${attempt}/${retries} failed: ${(err as Error).message}`
+      );
+      if (attempt < retries) await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  return [];
+}
 
 // ─── Route definitions (Montevideo waypoints) ─────────────────────────────────
 // Each route is a closed loop of [lon, lat] waypoints the vehicle follows.
@@ -171,26 +195,33 @@ async function sendSignal(state: VehicleState): Promise<void> {
 
 // ─── Main loop ────────────────────────────────────────────────────────────────
 
-if (VEHICLE_IDS.length === 0) {
-  console.warn("[simulator] No vehicle IDs configured. Set SIMULATED_VEHICLE_IDS=uuid1,uuid2,...");
-  console.warn(
-    "[simulator] Running in demo mode with placeholder IDs (signals will be rejected by service)."
+async function main(): Promise<void> {
+  if (VEHICLE_IDS.length === 0) {
+    console.log("[simulator] No SIMULATED_VEHICLE_IDS set — discovering vehicles from service...");
+    const discovered = await discoverVehicleIds();
+    if (discovered.length === 0) {
+      console.error("[simulator] Could not discover any vehicles. Exiting.");
+      process.exit(1);
+    }
+    VEHICLE_IDS.push(...discovered);
+    console.log(`[simulator] Discovered ${discovered.length} vehicle(s).`);
+  }
+
+  const states = initStates();
+
+  console.log(
+    `[simulator] starting — ${states.length} vehicle(s), interval ${INTERVAL_MS}ms → ${TRANSPORTATIONS_URL}`
   );
-  VEHICLE_IDS.push("00000000-0000-0000-0000-000000000001");
+  states.forEach((s) => console.log(`  • ${s.vehicleId} on route "${s.route.name}"`));
+
+  setInterval(() => {
+    void Promise.all(
+      states.map(async (state, i) => {
+        await sendSignal(state);
+        states[i] = advanceState(state);
+      })
+    );
+  }, INTERVAL_MS);
 }
 
-const states = initStates();
-
-console.log(
-  `[simulator] starting — ${states.length} vehicle(s), interval ${INTERVAL_MS}ms → ${TRANSPORTATIONS_URL}`
-);
-states.forEach((s) => console.log(`  • ${s.vehicleId} on route "${s.route.name}"`));
-
-setInterval(() => {
-  void Promise.all(
-    states.map(async (state, i) => {
-      await sendSignal(state);
-      states[i] = advanceState(state);
-    })
-  );
-}, INTERVAL_MS);
+void main();

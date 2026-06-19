@@ -26,6 +26,12 @@ Al evaluar los requisitos no funcionales de pico de carga (R8: soportar picos de
 
 La detección pasa entonces a un esquema basado en cola: el endpoint `POST /gps/signal` sigue validando y persistiendo la señal y respondiendo `202 Accepted` en tiempo acotado, pero en lugar de invocar la detección en proceso publica un evento `gps.signal.ingested` en el exchange `move.gps`. La cola `gps.detection` actúa como buffer ante ráfagas (R8) y otorga durabilidad y reintento controlado al trabajo de detección (R3, R7). La lógica de detección y su idempotencia (deduplicación vía `hasActiveAlert`) se conservan sin cambios; solo cambia el mecanismo de invocación. Los detalles de la topología, garantías de entrega y resiliencia se documentan en ADR-010.
 
+## Enmienda: patrón Pipes & Filters para la detección
+
+La lógica interna de detección, invocada por el consumidor de la cola `gps.detection`, se implementa siguiendo el patrón arquitectónico **Pipes & Filters**. Cada regla de detección es un filtro independiente que cumple la interfaz `ISignalFilter` (`name` y `apply(signal)`): `GeofenceFilter` (punto-en-polígono contra zonas rojas), `SpeedingFilter` (umbral de velocidad), `BreakdownFilter` (vehículo detenido durante un viaje activo) y `ProlongedStopFilter` (detención prolongada). Un orquestador `SignalPipeline` registra los filtros y, al recibir una señal, los ejecuta de forma concurrente con `Promise.allSettled`, de modo que el rechazo de un filtro se loguea y aísla sin abortar a los demás.
+
+Este patrón fue elegido frente a una función monolítica de detección porque cada regla es independiente, no comparte estado y produce a lo sumo una alerta. Aislar cada regla como filtro favorece la **modificabilidad** (agregar una nueva regla de detección consiste en registrar un nuevo filtro sin tocar los existentes ni el orquestador), la **testabilidad** (cada filtro se prueba en aislamiento) y la **resiliencia** (`Promise.allSettled` evita que el error de un filtro impida la evaluación del resto). La idempotencia de cada filtro se preserva mediante el lock atómico de deduplicación en Redis (`acquireAlertLock`, ver ADR-012), consistente con la garantía at-least-once de la cola.
+
 ## Consecuencias
 
 1. El endpoint de ingesta responde siempre en tiempo acotado, independientemente de la carga de detección.

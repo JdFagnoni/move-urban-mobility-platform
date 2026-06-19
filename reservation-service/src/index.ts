@@ -1,4 +1,15 @@
 import "dotenv/config";
+
+process.on("uncaughtException", (err: Error) => {
+  process.stderr.write(`[reservations] uncaughtException: ${err.message}\n${err.stack ?? ""}\n`);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason: unknown) => {
+  const message = reason instanceof Error ? reason.message : String(reason);
+  process.stderr.write(`[reservations] unhandledRejection: ${message}\n`);
+});
+
 import express from "express";
 import type { Request } from "express";
 import { isConnected, query, requestMetrics } from "@move/shared";
@@ -13,6 +24,7 @@ import { usersRouter } from "./modules/users/router";
 import { paymentsRouter } from "./modules/payments/router";
 import { metricsRouter } from "./modules/metrics/router";
 import { startReservationMessaging } from "./messaging";
+import { startFrequentClientRankingRefresh } from "./modules/reservations/fast-path-cache";
 
 const app = express();
 const PORT = process.env["PORT"] ?? "3001";
@@ -62,6 +74,7 @@ async function start(): Promise<void> {
   await withRetry(initializeDatabase, { attempts: 10, delayMs: 3000 });
   await seedDefaultCategories();
   await seedBootstrapAdmin();
+  await startFrequentClientRankingRefresh();
   startReservationMessaging();
   app.listen(Number(PORT), () => {
     process.stdout.write(`reservations running on port ${PORT}\n`);

@@ -6,10 +6,8 @@ const authenticate = createAuthenticate();
 
 export const vehiclesRouter = Router();
 
-vehiclesRouter.use(authenticate);
-
 vehiclesRouter.get("/", listHandler);
 vehiclesRouter.get("/:id", getHandler);
-vehiclesRouter.post("/", requireRole("admin"), createHandler);
-vehiclesRouter.patch("/:id", requireRole("admin"), updateHandler);
-vehiclesRouter.delete("/:id", requireRole("admin"), deleteHandler);
+vehiclesRouter.post("/", authenticate, requireRole("admin"), createHandler);
+vehiclesRouter.patch("/:id", authenticate, requireRole("admin"), updateHandler);
+vehiclesRouter.delete("/:id", authenticate, requireRole("admin"), deleteHandler);

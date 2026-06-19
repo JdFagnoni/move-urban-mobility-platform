@@ -1,4 +1,15 @@
 import "dotenv/config";
+
+process.on("uncaughtException", (err: Error) => {
+  process.stderr.write(`[categorizer] uncaughtException: ${err.message}\n${err.stack ?? ""}\n`);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason: unknown) => {
+  const message = reason instanceof Error ? reason.message : String(reason);
+  process.stderr.write(`[categorizer] unhandledRejection: ${message}\n`);
+});
+
 import express from "express";
 import { getMetricsSnapshot, requestMetrics } from "@move/shared";
 import { categorizerRouter } from "./router";
