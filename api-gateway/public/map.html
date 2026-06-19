@@ -114,7 +114,6 @@
         return [coordinates[1], coordinates[0]];
       }
 
-      let vehicles = [];
       const vehicleMarkers = {}; // vehicleId -> L.marker
 
       async function loadZones() {
@@ -138,7 +137,7 @@
       async function loadVehicles() {
         const res = await fetch("/transportations/vehicles");
         const { data } = await res.json();
-        vehicles = data;
+        vehicleIndex = Object.fromEntries(data.map((v) => [v.id, v]));
       }
 
       function statusEmoji(vehicle, activeAlerts) {
@@ -183,42 +182,54 @@
         }
       }
 
+      async function fetchAllPositions() {
+        try {
+          const res = await fetch("/transportations/gps/latest-positions");
+          if (!res.ok) return [];
+          const { data } = await res.json();
+          return Array.isArray(data) ? data : [];
+        } catch (_) {
+          return [];
+        }
+      }
+
+      // vehicleId -> vehicle metadata (built from the vehicles list)
+      let vehicleIndex = {};
+
       async function updatePositions() {
-        const activeAlerts = await fetchActiveAlerts();
+        const [activeAlerts, allPositions] = await Promise.all([
+          fetchActiveAlerts(),
+          fetchAllPositions(),
+        ]);
 
         let updatedCount = 0;
-        for (const vehicle of vehicles) {
-          try {
-            const res = await fetch(`/transportations/gps/vehicle/${vehicle.id}/latest`);
-            if (!res.ok) continue; // no GPS signal yet
-            const { data: gps } = await res.json();
+        for (const gps of allPositions) {
+          const vehicle = vehicleIndex[gps.vehicleId];
+          if (!vehicle) continue;
 
-            const latLng = toLatLng(gps.location.coordinates);
-            const emoji = statusEmoji(vehicle, activeAlerts);
-            const icon = L.divIcon({
-              html: `<div style="font-size:1.4rem;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))">${emoji}</div>`,
-              className: "",
-              iconSize: [24, 24],
-              iconAnchor: [12, 12],
-            });
+          const latLng = toLatLng(gps.location.coordinates);
+          const emoji = statusEmoji(vehicle, activeAlerts);
+          const icon = L.divIcon({
+            html: `<div style="font-size:1.4rem;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))">${emoji}</div>`,
+            className: "",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+          });
 
-            const vehicleAlerts = activeAlerts.filter((a) => a.vehicleId === vehicle.id);
-            const popupContent = buildPopup(vehicle, gps, vehicleAlerts);
+          const vehicleAlerts = activeAlerts.filter((a) => a.vehicleId === vehicle.id);
+          const popupContent = buildPopup(vehicle, gps, vehicleAlerts);
 
-            const existing = vehicleMarkers[vehicle.id];
-            if (existing) {
-              existing.setLatLng(latLng);
-              existing.setIcon(icon);
-              existing.getPopup().setContent(popupContent);
-            } else {
-              vehicleMarkers[vehicle.id] = L.marker(latLng, { icon })
-                .addTo(map)
-                .bindPopup(popupContent);
-            }
-            updatedCount++;
-          } catch (_) {
-            // vehicle without GPS signal yet, skip it
+          const existing = vehicleMarkers[vehicle.id];
+          if (existing) {
+            existing.setLatLng(latLng);
+            existing.setIcon(icon);
+            existing.getPopup().setContent(popupContent);
+          } else {
+            vehicleMarkers[vehicle.id] = L.marker(latLng, { icon })
+              .addTo(map)
+              .bindPopup(popupContent);
           }
+          updatedCount++;
         }
 
         const now = new Date().toLocaleTimeString("es-UY");
