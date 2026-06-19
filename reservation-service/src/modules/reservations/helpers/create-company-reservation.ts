@@ -7,6 +7,7 @@ interface CreateCompanyReservationInput {
   dto: CreateReservationDTO;
   clientUser: UserDTO;
   cargoItems: NormalizedCargoItemInput[];
+  preferCache?: boolean;
 }
 
 export async function createCompanyReservation(
@@ -15,16 +16,22 @@ export async function createCompanyReservation(
   const origin = await resolveCompanyLocation({
     clientId: input.clientUser.id,
     expectedKind: "origin",
+    ...(input.preferCache !== undefined ? { preferCache: input.preferCache } : {}),
     ...(input.dto.originLocationId ? { locationId: input.dto.originLocationId } : {}),
     ...(input.dto.origin ? { location: input.dto.origin } : {}),
   });
   const destination = await resolveCompanyLocation({
     clientId: input.clientUser.id,
     expectedKind: "destination",
+    ...(input.preferCache !== undefined ? { preferCache: input.preferCache } : {}),
     ...(input.dto.destinationLocationId ? { locationId: input.dto.destinationLocationId } : {}),
     ...(input.dto.destination ? { location: input.dto.destination } : {}),
   });
-  const preparedCargoItems = await resolveCompanyProducts(input.clientUser.id, input.cargoItems);
+  const preparedCargoItems = await resolveCompanyProducts(
+    input.clientUser.id,
+    input.cargoItems,
+    input.preferCache !== undefined ? { preferCache: input.preferCache } : undefined
+  );
 
   return {
     origin,

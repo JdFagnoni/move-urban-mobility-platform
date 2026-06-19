@@ -22,6 +22,11 @@ import { UserModel } from "./user";
   underscored: true,
   createdAt: "created_at",
   updatedAt: "updated_at",
+  indexes: [
+    {
+      fields: ["client_id", "created_at"],
+    },
+  ],
 })
 export class ReservationModel extends Model {
   @PrimaryKey

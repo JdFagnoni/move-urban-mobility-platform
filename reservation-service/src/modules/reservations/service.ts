@@ -32,6 +32,7 @@ import { normalizeCargoItems, validateScheduledAt } from "./helpers/validate-com
 import { quotePreparedReservation } from "./quote-service";
 import { enqueueOutboxEvent } from "../../messaging/outbox";
 import { OUTBOX_EVENT_TYPES } from "../../messaging/events";
+import { isFrequentCompanyClient } from "./fast-path-cache";
 
 function modelToCargoItemDTO(row: CargoItemModel): CargoItemDTO {
   return {
@@ -145,9 +146,16 @@ export async function createReservation(
   const scheduledAt = validateScheduledAt(dto.scheduledAt);
   const normalizedCargoItems = normalizeCargoItems(dto.cargoItems);
   const reservationId = crypto.randomUUID();
+  const preferCache =
+    clientUser.clientType === "company" ? await isFrequentCompanyClient(clientUser.id) : false;
   const preparedReservation =
     clientUser.clientType === "company"
-      ? await createCompanyReservation({ dto, clientUser, cargoItems: normalizedCargoItems })
+      ? await createCompanyReservation({
+          dto,
+          clientUser,
+          cargoItems: normalizedCargoItems,
+          preferCache,
+        })
       : clientUser.clientType === "individual"
         ? await createIndividualReservation({ dto, cargoItems: normalizedCargoItems })
         : (() => {
@@ -159,11 +167,16 @@ export async function createReservation(
           })();
   const quote =
     preparedReservation.status === "pending_quote"
-      ? await quotePreparedReservation({
-          origin: preparedReservation.origin,
-          destination: preparedReservation.destination,
-          cargoItems: preparedReservation.cargoItems,
-        })
+      ? await quotePreparedReservation(
+          {
+            origin: preparedReservation.origin,
+            destination: preparedReservation.destination,
+            cargoItems: preparedReservation.cargoItems,
+          },
+          {
+            preferCache,
+          }
+        )
       : null;
   const finalStatus: ReservationStatus =
     quote !== null ? "pending_confirmation" : preparedReservation.status;
