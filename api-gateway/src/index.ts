@@ -1,4 +1,15 @@
 import "dotenv/config";
+
+process.on("uncaughtException", (err: Error) => {
+  process.stderr.write(`[api-gateway] uncaughtException: ${err.message}\n${err.stack ?? ""}\n`);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason: unknown) => {
+  const message = reason instanceof Error ? reason.message : String(reason);
+  process.stderr.write(`[api-gateway] unhandledRejection: ${message}\n`);
+});
+
 import path from "path";
 import express from "express";
 import { requestLogger } from "./middleware/logging";
