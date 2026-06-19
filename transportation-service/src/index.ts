@@ -11,12 +11,14 @@ process.on("unhandledRejection", (reason: unknown) => {
 });
 
 import express from "express";
+import { isConnected, query, redisClient, requestMetrics } from "@move/shared";
 import { tripsRouter } from "./modules/trips/router";
 import { gpsRouter } from "./modules/gps/router";
 import { alertsRouter } from "./modules/alerts/router";
 import { operatorRouter } from "./modules/operator/router";
 import { vehiclesRouter } from "./modules/vehicles/router";
 import { zonesRouter } from "./modules/zones/router";
+import { metricsRouter } from "./modules/metrics/router";
 import { initDb } from "./db/init";
 import { initializeSequelize } from "./db/sequelize";
 import { warmAlertCache } from "./modules/alerts/service";
@@ -26,10 +28,30 @@ const app = express();
 const PORT = process.env["PORT"] ?? "3002";
 
 app.use(express.json());
+app.use(requestMetrics);
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", service: "transportations" });
+app.get("/health", async (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "transportations",
+    dependencies: {
+      postgres: (await isPostgresUp()) ? "up" : "down",
+      redis: redisClient.status === "ready" ? "up" : "down",
+      rabbitmq: isConnected() ? "up" : "down",
+    },
+  });
 });
+
+async function isPostgresUp(): Promise<boolean> {
+  try {
+    await query("SELECT 1");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+app.use("/metrics", metricsRouter);
 
 app.use("/trips", tripsRouter);
 app.use("/gps", gpsRouter);

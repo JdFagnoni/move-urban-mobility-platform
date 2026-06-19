@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import { HttpError } from "@move/shared";
+import { HttpError, recordExternalCall } from "@move/shared";
 import type {
   InitiatedPayment,
   InitiatePaymentInput,
@@ -39,6 +39,22 @@ const STRIPE_TIMEOUT_MS = 5_000;
 
 export class StripePaymentProviderAdapter implements PaymentProviderPort {
   public async initiatePayment(input: InitiatePaymentInput): Promise<InitiatedPayment> {
+    const start = Date.now();
+    try {
+      const result = await this.doInitiatePayment(input);
+      recordExternalCall("stripe", "success", Date.now() - start);
+      return result;
+    } catch (error) {
+      const outcome =
+        error instanceof HttpError && error.code === "payment_provider_timeout"
+          ? "timeout"
+          : "error";
+      recordExternalCall("stripe", outcome, Date.now() - start);
+      throw error;
+    }
+  }
+
+  private async doInitiatePayment(input: InitiatePaymentInput): Promise<InitiatedPayment> {
     if (getSimulationMode() === "unavailable") {
       throw new HttpError(503, "Payment provider unavailable", "payment_provider_unavailable");
     }

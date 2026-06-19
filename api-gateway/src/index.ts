@@ -12,6 +12,7 @@ process.on("unhandledRejection", (reason: unknown) => {
 
 import path from "path";
 import express from "express";
+import { getMetricsSnapshot, requestMetrics } from "@move/shared";
 import { requestLogger } from "./middleware/logging";
 import { rateLimiter } from "./middleware/rate-limit";
 import {
@@ -26,10 +27,15 @@ const PORT = process.env["PORT"] ?? "3000";
 
 app.use(express.static(path.join(__dirname, "../public")));
 app.use(requestLogger);
+app.use(requestMetrics);
 app.use(rateLimiter);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "api-gateway" });
+});
+
+app.get("/metrics", (_req, res) => {
+  res.json(getMetricsSnapshot());
 });
 
 // Stripe signatures require the original request body, so webhooks must be proxied

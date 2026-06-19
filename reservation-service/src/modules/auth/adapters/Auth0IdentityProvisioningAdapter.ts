@@ -1,5 +1,5 @@
 import type { RegisterClientDTO } from "@move/shared";
-import { HttpError } from "@move/shared";
+import { HttpError, recordExternalCall } from "@move/shared";
 import type {
   AuthIdentityProvisioningPort,
   ProvisionedClientIdentity,
@@ -28,6 +28,20 @@ let cachedManagementToken: { token: string; expiresAt: number } | null = null;
 
 export class Auth0IdentityProvisioningAdapter implements AuthIdentityProvisioningPort {
   public async createClientIdentity(dto: RegisterClientDTO): Promise<ProvisionedClientIdentity> {
+    const start = Date.now();
+    try {
+      const result = await this.doCreateClientIdentity(dto);
+      recordExternalCall("auth0", "success", Date.now() - start);
+      return result;
+    } catch (error) {
+      const outcome =
+        error instanceof HttpError && error.code === "auth0_request_timeout" ? "timeout" : "error";
+      recordExternalCall("auth0", outcome, Date.now() - start);
+      throw error;
+    }
+  }
+
+  private async doCreateClientIdentity(dto: RegisterClientDTO): Promise<ProvisionedClientIdentity> {
     const config = loadAuth0Config();
     const token = await this.getManagementToken(config);
     const response = await fetchWithTimeout(
