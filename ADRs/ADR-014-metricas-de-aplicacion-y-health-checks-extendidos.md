@@ -1,4 +1,4 @@
-# ADR 012: Métricas de aplicación en memoria y health checks extendidos por servicio
+# ADR 014: Métricas de aplicación en memoria y health checks extendidos por servicio
 
 El obligatorio exige en `R4` que el sistema registre eventos, errores e interacciones con
 servicios externos, y que permita visualizar métricas mediante un dashboard o endpoint,
