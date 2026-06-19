@@ -10,7 +10,6 @@
     { "key": "rabbitmq_user", "value": "move" },
     { "key": "rabbitmq_password", "value": "move_secret" },
     { "key": "api_gateway_url", "value": "http://localhost:3000" },
-    { "key": "reservations_url", "value": "http://localhost:3001" },
     { "key": "transportations_url", "value": "http://localhost:3002" },
     { "key": "categorizer_url", "value": "http://localhost:3003" }
   ],
@@ -209,9 +208,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{reservations_url}}/metrics",
-              "host": ["{{reservations_url}}"],
-              "path": ["metrics"]
+              "raw": "{{api_gateway_url}}/reservations/metrics",
+              "host": ["{{api_gateway_url}}"],
+              "path": ["reservations", "metrics"]
             }
           },
           "response": []
@@ -274,9 +273,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{reservations_url}}/health",
-              "host": ["{{reservations_url}}"],
-              "path": ["health"]
+              "raw": "{{api_gateway_url}}/reservations/health",
+              "host": ["{{api_gateway_url}}"],
+              "path": ["reservations", "health"]
             }
           },
           "response": []

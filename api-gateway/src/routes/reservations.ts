@@ -70,6 +70,7 @@ function mountProtectedRoute(path: string): void {
 }
 
 reservationsRouter.get("/health", reservationsProxy());
+reservationsRouter.get("/metrics", reservationsProxy());
 reservationsRouter.post("/auth/register", reservationsProxy());
 mountProtectedRoute("/reservations");
 reservationsRouter.get("/categories", reservationsProxy());
