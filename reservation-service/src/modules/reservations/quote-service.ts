@@ -1,6 +1,7 @@
 import { HttpError, type CategoryDTO, type GeoPoint } from "@move/shared";
 import { Op } from "sequelize";
 import { CategoryModel } from "../../db/models";
+import { getCachedCategoriesForQuote, refreshCategoryQuoteCache } from "./fast-path-cache";
 import {
   normalizeCategoryBehaviorConfig,
   normalizeCategoryPricingConfig,
@@ -13,12 +14,17 @@ interface QuotePreparedReservationInput {
   cargoItems: PreparedCargoItemInput[];
 }
 
+interface QuotePreparedReservationOptions {
+  preferCache?: boolean;
+}
+
 interface QuoteResult {
   quotedPrice: number;
 }
 
 export async function quotePreparedReservation(
-  input: QuotePreparedReservationInput
+  input: QuotePreparedReservationInput,
+  options?: QuotePreparedReservationOptions
 ): Promise<QuoteResult> {
   const categoryIds = input.cargoItems.map((cargoItem) => cargoItem.categoryId);
 
@@ -30,27 +36,49 @@ export async function quotePreparedReservation(
     );
   }
 
-  const categories = await CategoryModel.findAll({
-    where: {
-      id: {
-        [Op.in]: [...new Set(categoryIds)],
-      },
-    },
-  });
+  const uniqueCategoryIds = [...new Set(categoryIds)] as string[];
+  let categoryDTOs: CategoryDTO[] | null = null;
 
-  if (categories.length !== new Set(categoryIds).size) {
-    throw new HttpError(404, "Category not found", "category_not_found");
+  if (options?.preferCache) {
+    const cachedCategories = await getCachedCategoriesForQuote(uniqueCategoryIds);
+    if (cachedCategories) {
+      categoryDTOs = uniqueCategoryIds.map((categoryId) => {
+        const category = cachedCategories.get(categoryId);
+        if (!category) {
+          throw new HttpError(404, "Category not found", "category_not_found");
+        }
+        return category;
+      });
+    }
   }
 
-  const categoryDTOs: CategoryDTO[] = categories.map((category) => ({
-    id: category.id,
-    name: category.name,
-    spanishName: category.spanishName ?? category.name,
-    descriptions: category.descriptions,
-    pricing: normalizeCategoryPricingConfig(category.pricing),
-    behavior: normalizeCategoryBehaviorConfig(category.behavior),
-    active: category.active,
-  }));
+  if (!categoryDTOs) {
+    const categories = await CategoryModel.findAll({
+      where: {
+        id: {
+          [Op.in]: uniqueCategoryIds,
+        },
+      },
+    });
+
+    if (categories.length !== uniqueCategoryIds.length) {
+      throw new HttpError(404, "Category not found", "category_not_found");
+    }
+
+    categoryDTOs = categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      spanishName: category.spanishName ?? category.name,
+      descriptions: category.descriptions,
+      pricing: normalizeCategoryPricingConfig(category.pricing),
+      behavior: normalizeCategoryBehaviorConfig(category.behavior),
+      active: category.active,
+    }));
+
+    if (options?.preferCache) {
+      void refreshCategoryQuoteCache();
+    }
+  }
 
   const distanceKm = calculateDistanceKm(input.origin, input.destination);
   const appliedCategory = selectAppliedCategory(categoryDTOs, distanceKm);

@@ -1,6 +1,7 @@
 import type { CategoryDTO, CreateCategoryDTO, UpdateCategoryDTO } from "@move/shared";
 import { HttpError } from "@move/shared";
 import { CargoItemModel, CategoryModel, CompanyProductModel } from "../../db/models";
+import { refreshCategoryQuoteCache } from "../reservations/fast-path-cache";
 import {
   normalizeCategoryBehaviorConfig,
   normalizeCategoryDescriptions,
@@ -59,6 +60,7 @@ export async function createCategory(dto: CreateCategoryDTO): Promise<CategoryDT
     pricing: normalizeCategoryPricingConfig(dto.pricing),
     behavior: normalizeCategoryBehaviorConfig(dto.behavior),
   });
+  await refreshCategoryQuoteCache();
   return mapCategory(category);
 }
 
@@ -101,6 +103,7 @@ export async function updateCategory(id: string, dto: UpdateCategoryDTO): Promis
   }
 
   await category.save();
+  await refreshCategoryQuoteCache();
   return mapCategory(category);
 }
 
@@ -112,6 +115,7 @@ export async function deleteCategory(id: string): Promise<void> {
 
   await ensureCategoryIsNotInUse(category.id);
   await category.destroy();
+  await refreshCategoryQuoteCache();
 }
 
 async function ensureCategoryIsNotInUse(categoryId: string): Promise<void> {

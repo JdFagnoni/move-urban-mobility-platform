@@ -11,6 +11,7 @@ import { preregistrationsRouter } from "./modules/preregistrations/router";
 import { usersRouter } from "./modules/users/router";
 import { paymentsRouter } from "./modules/payments/router";
 import { startReservationMessaging } from "./messaging";
+import { startFrequentClientRankingRefresh } from "./modules/reservations/fast-path-cache";
 
 const app = express();
 const PORT = process.env["PORT"] ?? "3001";
@@ -40,6 +41,7 @@ async function start(): Promise<void> {
   await withRetry(initializeDatabase, { attempts: 10, delayMs: 3000 });
   await seedDefaultCategories();
   await seedBootstrapAdmin();
+  await startFrequentClientRankingRefresh();
   startReservationMessaging();
   app.listen(Number(PORT), () => {
     process.stdout.write(`reservations running on port ${PORT}\n`);

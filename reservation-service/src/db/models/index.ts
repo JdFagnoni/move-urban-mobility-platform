@@ -2,6 +2,7 @@ export { CargoItemModel } from "./cargo-item";
 export { CategoryModel } from "./category";
 export { CompanyLocationModel } from "./company-location";
 export { CompanyProductModel } from "./company-product";
+export { FrequentClientRankingModel } from "./frequent-client-ranking";
 export { NotificationModel } from "./notification";
 export { OutboxEventModel } from "./outbox-event";
 export { PaymentModel } from "./payment";
