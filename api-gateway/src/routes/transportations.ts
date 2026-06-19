@@ -139,6 +139,7 @@ transportationsRouter.delete(
 );
 
 // Monitoring read endpoints — public for the geo monitoring UI (F15)
+transportationsRouter.get("/gps/latest-positions", transportationsProxy());
 transportationsRouter.get("/gps/vehicle/:vehicleId/latest", transportationsProxy());
 transportationsRouter.get("/alerts", transportationsProxy());
 transportationsRouter.get("/trips", transportationsProxy());

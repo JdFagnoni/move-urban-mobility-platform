@@ -148,6 +148,38 @@ export async function getLatestSignal(vehicleId: string): Promise<GpsSignalDTO |
   };
 }
 
+export async function getAllLatestSignals(): Promise<GpsSignalDTO[]> {
+  try {
+    const keys = await redisClient.keys("gps:latest:*");
+    if (keys.length > 0) {
+      const results = await Promise.all(
+        keys.map(async (key) => {
+          const vehicleId = key.replace("gps:latest:", "");
+          return getLatestSignalFromCache(vehicleId);
+        })
+      );
+      const signals = results.filter((s): s is GpsSignalDTO => s !== null);
+      if (signals.length > 0) return signals;
+    }
+  } catch (err) {
+    console.error("[gps] redis batch read error:", err);
+  }
+
+  const result = await query<GpsRow>(
+    `SELECT DISTINCT ON (vehicle_id) vehicle_id, location, speed, heading, timestamp
+     FROM gps_signals
+     ORDER BY vehicle_id, timestamp DESC`
+  );
+  return result.rows.map((row) => ({
+    vehicleId: row.vehicle_id,
+    location: row.location,
+    speed: row.speed,
+    heading: row.heading,
+    timestamp:
+      typeof row.timestamp === "string" ? row.timestamp : new Date(row.timestamp).toISOString(),
+  }));
+}
+
 export async function getRecentSignals(vehicleId: string, limit = 5): Promise<GpsSignalDTO[]> {
   const result = await query<GpsRow>(
     `SELECT vehicle_id, location, speed, heading, timestamp
