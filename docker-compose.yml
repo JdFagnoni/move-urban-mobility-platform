@@ -77,6 +77,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-notifications@move.local}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-MOVE}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://move:move_secret@rabbitmq:5672}
       PORT: "3001"
     depends_on:
@@ -85,6 +86,8 @@ services:
       categorizer-service:
         condition: service_started
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   transportations:
