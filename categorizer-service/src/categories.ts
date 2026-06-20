@@ -19,7 +19,11 @@ export async function loadActiveCategories(): Promise<CategoryDTO[]> {
 
   try {
     response = await fetch(`${getReservationsBaseUrl()}/categories`);
-    recordExternalCall("reservation-service", response.ok ? "success" : "error", Date.now() - start);
+    recordExternalCall(
+      "reservation-service",
+      response.ok ? "success" : "error",
+      Date.now() - start
+    );
   } catch (error) {
     recordExternalCall("reservation-service", "error", Date.now() - start);
     throw new Error(
@@ -28,9 +32,7 @@ export async function loadActiveCategories(): Promise<CategoryDTO[]> {
   }
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to fetch categories from reservation-service: HTTP ${response.status}`
-    );
+    throw new Error(`Failed to fetch categories from reservation-service: HTTP ${response.status}`);
   }
 
   const body = (await response.json()) as CategoriesResponse;
