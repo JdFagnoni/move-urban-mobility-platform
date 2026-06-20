@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **MOVE Platform** is a microservices-based transportation reservation and management system. Five services are deployed via Docker:
 
 - **api-gateway** (port 3000): Entry point handling authentication, rate limiting, and request routing
-- **reservation-service** (port 3001): Manages reservations, users, vehicles, zones, and categories
-- **transportation-service** (port 3002): Handles trips, GPS tracking, alerts, and operational tasks
+- **reservation-service** (port 3001): Manages reservations, users, and categories
+- **transportation-service** (port 3002): Handles trips, GPS tracking, alerts, operational tasks, vehicles, and zones
 - **categorizer-service** (port 3003): AI-powered cargo categorization via Ollama
 - **shared**: Internal npm workspace with shared types, database utilities, and HTTP error handling
 
@@ -24,7 +24,7 @@ The system follows a domain-driven microservices architecture (ADR-001). Each se
 
 2. **Authentication** (ADR-002): Auth0 handles identity. Downstream services receive the `sub` claim and apply authorization rules locally. Services don't store credentials.
 
-3. **Data Persistence** (ADR-003): PostgreSQL with Sequelize-TypeScript ORM in `reservation-service`. `transportation-service` and `categorizer-service` use raw `pg` queries.
+3. **Data Persistence** (ADR-003): PostgreSQL with Sequelize-TypeScript ORM in `reservation-service` and `transportation-service` (vehicles, zones). `categorizer-service` uses raw `pg` queries.
 
 4. **Shared Code** (ADR-004): `@move/shared` workspace centralizes type definitions (`reservation.ts`, `trip.ts`, `category.ts`, `user-auth.ts`, `gps.ts`, `zone.ts`, `vehicle.ts`, `alert.ts`), a PostgreSQL connection pool, and HTTP utilities.
 
@@ -37,9 +37,9 @@ The system follows a domain-driven microservices architecture (ADR-001). Each se
 
 ### Service Module Structure
 
-**reservation-service/src/modules/**: `auth/`, `reservations/`, `categories/`, `vehicles/`, `zones/`, `users/`
+**reservation-service/src/modules/**: `auth/`, `reservations/`, `categories/`, `users/`
 
-**transportation-service/src/modules/**: `trips/`, `gps/`, `alerts/`, `operator/`
+**transportation-service/src/modules/**: `trips/`, `gps/`, `alerts/`, `operator/`, `vehicles/`, `zones/`
 
 ### Database Initialization
 

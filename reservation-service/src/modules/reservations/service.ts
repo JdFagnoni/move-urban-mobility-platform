@@ -613,6 +613,14 @@ export async function assignReservation(
     );
   }
 
+  const categoryIds = [
+    ...new Set(
+      cargoItems
+        .map((cargoItem) => cargoItem.categoryId)
+        .filter((categoryId): categoryId is string => categoryId !== null)
+    ),
+  ];
+
   await sequelize.transaction(async (t) => {
     reservation.vehicleId = dto.vehicleId;
     reservation.driverId = dto.driverId;
@@ -624,7 +632,16 @@ export async function assignReservation(
         aggregateId: reservationId,
         type: OUTBOX_EVENT_TYPES.reservationAssigned,
         routingKey: ROUTING_KEYS.reservationAssigned,
-        payload: { reservationId, vehicleId: dto.vehicleId, driverId: dto.driverId },
+        payload: {
+          reservationId,
+          vehicleId: dto.vehicleId,
+          driverId: dto.driverId,
+          origin: reservation.origin,
+          destination: reservation.destination,
+          driverName: driver.name,
+          driverEmail: driver.email,
+          categoryIds,
+        },
       },
       t
     );

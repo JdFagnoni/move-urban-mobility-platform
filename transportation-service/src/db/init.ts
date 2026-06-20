@@ -41,9 +41,24 @@ export async function initDb(): Promise<void> {
       started_at     TIMESTAMPTZ,
       completed_at   TIMESTAMPTZ,
       route          JSONB       NOT NULL DEFAULT '[]',
+      origin         JSONB,
+      destination    JSONB,
+      driver_name    TEXT,
+      driver_email   TEXT,
+      category_ids   UUID[],
       created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    -- Datos desnormalizados (propagados desde reservation-service vía eventos) para
+    -- que el panel del operador no consulte tablas de otros servicios. Nullable porque
+    -- se rellenan hacia adelante con cada evento ReservationAssigned; viajes previos
+    -- a este cambio pueden no tenerlos.
+    ALTER TABLE trips ADD COLUMN IF NOT EXISTS origin       JSONB;
+    ALTER TABLE trips ADD COLUMN IF NOT EXISTS destination  JSONB;
+    ALTER TABLE trips ADD COLUMN IF NOT EXISTS driver_name  TEXT;
+    ALTER TABLE trips ADD COLUMN IF NOT EXISTS driver_email TEXT;
+    ALTER TABLE trips ADD COLUMN IF NOT EXISTS category_ids UUID[];
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_trips_reservation ON trips (reservation_id);
     CREATE INDEX IF NOT EXISTS idx_trips_driver      ON trips (driver_id);
