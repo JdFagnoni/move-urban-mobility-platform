@@ -48,14 +48,15 @@ export function getAdminToken(): string {
 
 // POST /auth/register es publico y no tiene endpoint de reset/seed: 409
 // (usuario ya existente) es el camino esperado en corridas repetidas con
-// emails fijos, por eso se tolera junto con 201.
+// emails fijos, por eso se tolera junto con 201. Devuelve el UserDTO creado
+// cuando el registro es nuevo (201), o null si el usuario ya existia (409).
 export function registerClient(
   email: string,
   password: string,
   name: string,
   clientType: ClientType,
   extra?: Record<string, string>
-): void {
+): { id: string; role: string } | null {
   const res = http.post(
     `${BASE_URL}/reservations/auth/register`,
     JSON.stringify({ email, password, name, clientType, ...extra }),
@@ -65,6 +66,12 @@ export function registerClient(
   if (res.status !== 201 && res.status !== 409) {
     throw new Error(`Register failed for ${email}: ${res.status} ${res.body}`);
   }
+
+  if (res.status === 409) {
+    return null;
+  }
+
+  return (res.json() as { data: { id: string; role: string } }).data;
 }
 
 export function registerAndLogin(
@@ -100,4 +107,26 @@ export function promoteUser(adminToken: string, userId: string, role: Promotable
   if (res.status !== 200) {
     throw new Error(`Promote to ${role} failed for ${userId}: ${res.status} ${res.body}`);
   }
+}
+
+// Registra (o reutiliza, si ya existe) un usuario y lo deja con el rol
+// pedido. No hay forma de auto-registrarse como operator/driver, por eso
+// hace falta el paso de promocion con token admin. Usado para crear el
+// operador de R2 y cada conductor de los traslados activos de R2.
+export function ensurePromotedUser(
+  adminToken: string,
+  email: string,
+  password: string,
+  name: string,
+  role: PromotableRole
+): { token: string; id: string } {
+  registerClient(email, password, name, "individual");
+  const token = getAuth0Token(email, password);
+  const profile = getCurrentUser(token);
+
+  if (profile.role !== role) {
+    promoteUser(adminToken, profile.id, role);
+  }
+
+  return { token, id: profile.id };
 }

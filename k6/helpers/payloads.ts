@@ -72,6 +72,10 @@ export function companyReservationPayload(companyProductId: string, seed: number
   });
 }
 
+export function montevideoPoint(seed: number): Point {
+  return pick(MONTEVIDEO_POINTS, seed);
+}
+
 export function gpsSignalPayload(
   vehicleId: string,
   coordinates: Point,
