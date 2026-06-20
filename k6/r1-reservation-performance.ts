@@ -19,6 +19,14 @@
 //
 // Sin ese paso previo el script igual corre (registra los 3 clientes on the
 // fly), pero "empresa_frecuente" no estara realmente en el top 20.
+//
+// HALLAZGO (confirmado con smoke test contra el stack real): api-gateway
+// aplica un rate limiter global de 300 req/min por IP sobre TODAS sus rutas
+// (api-gateway/src/middleware/rate-limit.ts, valor fijo, sin variable de
+// entorno). Para no contaminar la medicion de latencia con 429s rapidos que
+// se confundirian con exito, los tres scenarios usan constant-arrival-rate
+// con una tasa baja y fija (no "20-50 VUs" sueltos), de forma que la suma de
+// los tres se mantenga muy por debajo de 5 req/s.
 
 import http from "k6/http";
 import { check } from "k6";
@@ -30,10 +38,10 @@ import {
   INDIVIDUAL_CLIENT_EMAIL,
   INDIVIDUAL_CLIENT_PASSWORD,
   BASE_URL,
-} from "./helpers/config";
-import { registerAndLogin } from "./helpers/auth";
-import { ensureCompanyProduct } from "./helpers/companies";
-import { companyReservationPayload, individualReservationPayload } from "./helpers/payloads";
+} from "./helpers/config.ts";
+import { registerAndLogin } from "./helpers/auth.ts";
+import { ensureCompanyProduct } from "./helpers/companies.ts";
+import { companyReservationPayload, individualReservationPayload } from "./helpers/payloads.ts";
 
 interface SetupData {
   frequentToken: string;
@@ -43,24 +51,35 @@ interface SetupData {
   individualToken: string;
 }
 
+const DURATION = __ENV["DURATION"] ?? "1m";
+
 export const options = {
   scenarios: {
     empresa_frecuente: {
-      executor: "constant-vus",
-      vus: Number(__ENV["FREQUENT_VUS"] ?? 25),
-      duration: __ENV["DURATION"] ?? "1m",
+      executor: "constant-arrival-rate",
+      rate: Number(__ENV["FREQUENT_RATE"] ?? 2),
+      timeUnit: "1s",
+      duration: DURATION,
+      preAllocatedVUs: 5,
+      maxVUs: 15,
       exec: "empresaFrecuente",
     },
     empresa_no_frecuente: {
-      executor: "constant-vus",
-      vus: Number(__ENV["NONFREQUENT_VUS"] ?? 18),
-      duration: __ENV["DURATION"] ?? "1m",
+      executor: "constant-arrival-rate",
+      rate: Number(__ENV["NONFREQUENT_RATE"] ?? 1),
+      timeUnit: "1s",
+      duration: DURATION,
+      preAllocatedVUs: 5,
+      maxVUs: 15,
       exec: "empresaNoFrecuente",
     },
     particular: {
-      executor: "constant-vus",
-      vus: Number(__ENV["PARTICULAR_VUS"] ?? 8),
-      duration: __ENV["DURATION"] ?? "1m",
+      executor: "constant-arrival-rate",
+      rate: Number(__ENV["PARTICULAR_RATE"] ?? 1),
+      timeUnit: "4s",
+      duration: DURATION,
+      preAllocatedVUs: 5,
+      maxVUs: 10,
       exec: "particular",
     },
   },
@@ -68,7 +87,12 @@ export const options = {
     "http_req_duration{scenario:empresa_frecuente}": ["p(95)<600"],
     "http_req_duration{scenario:empresa_no_frecuente}": ["p(95)<1000"],
     "http_req_duration{scenario:particular}": ["p(95)<10000"],
-    http_req_failed: ["rate<0.01"],
+    // Acotado por scenario: las llamadas de setup() (registro de clientes,
+    // que tolera 409 si el usuario ya existe de una corrida anterior) no
+    // tienen tag de scenario y no deben contarse contra este threshold.
+    "http_req_failed{scenario:empresa_frecuente}": ["rate<0.01"],
+    "http_req_failed{scenario:empresa_no_frecuente}": ["rate<0.01"],
+    "http_req_failed{scenario:particular}": ["rate<0.01"],
   },
 };
 

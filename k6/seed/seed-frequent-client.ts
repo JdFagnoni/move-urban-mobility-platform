@@ -14,6 +14,12 @@
 //
 // Recien despues de eso tiene sentido correr k6/r1-reservation-performance.ts
 // y k6/r8-stress-test.ts con resultados representativos del fast-path Redis.
+//
+// HALLAZGO (confirmado con smoke test): api-gateway aplica un rate limiter
+// global de 300 req/min por IP sobre TODAS sus rutas
+// (api-gateway/src/middleware/rate-limit.ts, valor fijo, sin variable de
+// entorno). Por eso este script espacia las altas de reserva en vez de
+// dispararlas todas juntas.
 
 import http from "k6/http";
 import { sleep } from "k6";
@@ -23,10 +29,10 @@ import {
   NONFREQUENT_COMPANY_EMAIL,
   NONFREQUENT_COMPANY_PASSWORD,
   BASE_URL,
-} from "../helpers/config";
-import { registerAndLogin } from "../helpers/auth";
-import { ensureCompanyProduct } from "../helpers/companies";
-import { companyReservationPayload } from "../helpers/payloads";
+} from "../helpers/config.ts";
+import { registerAndLogin } from "../helpers/auth.ts";
+import { ensureCompanyProduct } from "../helpers/companies.ts";
+import { companyReservationPayload } from "../helpers/payloads.ts";
 
 // Umbral real: "top 20 por cantidad de reservas en los ultimos 7 dias". En
 // una base de pruebas sin mucha otra actividad, 30 reservas alcanzan
@@ -70,7 +76,7 @@ function seedCompany(
     if (res.status === 201) {
       created++;
     }
-    sleep(0.05);
+    sleep(0.35);
   }
 
   console.log(`[seed] ${label}: ${created}/${reservationCount} reservas creadas (${email})`);

@@ -18,10 +18,10 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 import { Trend } from "k6/metrics";
-import { BASE_URL, TRANSPORTATIONS_BASE_URL } from "./helpers/config";
-import { getAdminToken } from "./helpers/auth";
-import { createVehicle, createRedZone } from "./helpers/fleet";
-import { gpsSignalPayload, type Point } from "./helpers/payloads";
+import { BASE_URL, TRANSPORTATIONS_BASE_URL } from "./helpers/config.ts";
+import { getAdminToken } from "./helpers/auth.ts";
+import { createVehicle, createRedZone } from "./helpers/fleet.ts";
+import { gpsSignalPayload, type Point } from "./helpers/payloads.ts";
 
 interface SetupData {
   vehicleIds: string[];
@@ -63,7 +63,9 @@ export const options = {
   },
   thresholds: {
     alert_detection_latency: ["p(95)<5000"],
-    http_req_failed: ["rate<0.01"],
+    // Acotado por scenario: el setup() (alta de zona roja + vehiculos) no
+    // tiene tag de scenario y no debe contarse aca.
+    "http_req_failed{scenario:alert_latency}": ["rate<0.01"],
   },
 };
 

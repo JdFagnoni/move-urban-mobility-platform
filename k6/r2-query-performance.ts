@@ -19,14 +19,23 @@
 // exacto de filas de traslados. Los vehiculos restantes (hasta
 // GPS_VEHICLE_COUNT=50) solo emiten GPS, sin traslado asociado -- mandar GPS
 // no requiere conductor ni token (ver helpers/fleet.ts).
+//
+// HALLAZGO (confirmado con smoke test): api-gateway aplica un rate limiter
+// global de 300 req/min por IP sobre TODAS sus rutas
+// (api-gateway/src/middleware/rate-limit.ts, valor fijo, sin variable de
+// entorno). El scenario "gps" no lo sufre porque pega directo a
+// transportation-service (TRANSPORTATIONS_BASE_URL), pero "reservas",
+// "consultas_reservas" y "consultas_traslados" si pasan por el gateway, asi
+// que sus tasas estan calibradas para sumar bastante menos de 5 req/s entre
+// los tres (100/min + 1.5/s + 1/s ≈ 4.2 req/s).
 
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { BASE_URL, FREQUENT_COMPANY_EMAIL, FREQUENT_COMPANY_PASSWORD, TRANSPORTATIONS_BASE_URL } from "./helpers/config";
-import { getAdminToken, registerAndLogin, ensurePromotedUser } from "./helpers/auth";
-import { ensureCompanyProduct } from "./helpers/companies";
-import { createVehicle, createTrip, startTrip } from "./helpers/fleet";
-import { companyReservationPayload, gpsSignalPayload, montevideoPoint } from "./helpers/payloads";
+import { BASE_URL, FREQUENT_COMPANY_EMAIL, FREQUENT_COMPANY_PASSWORD, TRANSPORTATIONS_BASE_URL } from "./helpers/config.ts";
+import { getAdminToken, registerAndLogin, ensurePromotedUser } from "./helpers/auth.ts";
+import { ensureCompanyProduct } from "./helpers/companies.ts";
+import { createVehicle, createTrip, startTrip } from "./helpers/fleet.ts";
+import { companyReservationPayload, gpsSignalPayload, montevideoPoint } from "./helpers/payloads.ts";
 
 interface SetupData {
   operatorToken: string;
@@ -58,22 +67,33 @@ export const options = {
       exec: "enviarGps",
     },
     consultas_reservas: {
-      executor: "constant-vus",
-      vus: 10,
+      // rate es entero en k6: 3 cada 2s equivale a 1.5 req/s.
+      executor: "constant-arrival-rate",
+      rate: Number(__ENV["CONSULTAS_RESERVAS_RATE"] ?? 3),
+      timeUnit: "2s",
       duration: DURATION,
+      preAllocatedVUs: 5,
+      maxVUs: 15,
       exec: "consultarReservas",
     },
     consultas_traslados: {
-      executor: "constant-vus",
-      vus: 10,
+      executor: "constant-arrival-rate",
+      rate: Number(__ENV["CONSULTAS_TRASLADOS_RATE"] ?? 1),
+      timeUnit: "1s",
       duration: DURATION,
+      preAllocatedVUs: 5,
+      maxVUs: 15,
       exec: "consultarTraslados",
     },
   },
   thresholds: {
     "http_req_duration{scenario:consultas_reservas}": ["p(95)<300"],
     "http_req_duration{scenario:consultas_traslados}": ["p(95)<500"],
-    http_req_failed: ["rate<0.01"],
+    // Acotado por scenario: el setup() (alta de conductores/vehiculos/
+    // traslados) no tiene tag de scenario y no debe contarse aca.
+    "http_req_failed{scenario:reservas}": ["rate<0.01"],
+    "http_req_failed{scenario:consultas_reservas}": ["rate<0.01"],
+    "http_req_failed{scenario:consultas_traslados}": ["rate<0.01"],
   },
 };
 
@@ -126,6 +146,11 @@ export function setup(): SetupData {
     startTrip(driver.token, tripId);
 
     vehicleIds.push(vehicleId);
+
+    // El setup tambien pasa por el rate limiter del gateway (300 req/min por
+    // IP, ver nota de cabecera); esta pausa evita que la rafaga de altas
+    // dispare 429 antes de que arranque la medicion real.
+    sleep(0.3);
   }
 
   for (let i = ACTIVE_TRIPS_COUNT; i < GPS_VEHICLE_COUNT; i++) {
@@ -167,7 +192,6 @@ export function consultarReservas(data: SetupData): void {
   });
 
   check(res, { "F7 consultar reservas 200": (r) => r.status === 200 });
-  sleep(1);
 }
 
 export function consultarTraslados(data: SetupData): void {
@@ -176,5 +200,4 @@ export function consultarTraslados(data: SetupData): void {
   });
 
   check(res, { "F18 consultar traslados en curso 200": (r) => r.status === 200 });
-  sleep(1);
 }

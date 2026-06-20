@@ -4,7 +4,7 @@
 // requisito del sistema, son el punto de partida elegido para medir el
 // escalamiento):
 //   BASELINE_VUS = 10   VUs concurrentes en operacion normal
-//   BASELINE_RPS = 20   requests/segundo en operacion normal
+//   BASELINE_RPS = 4    requests/segundo en operacion normal
 //
 // El endpoint monitoreado es el mas critico segun R1: crear reserva de
 // empresa frecuente (POST /reservations, fast-path Redis, SLA p95<600ms).
@@ -14,6 +14,15 @@
 // k6/seed/seed-frequent-client.ts) y reiniciado reservation-service, igual
 // que r1-reservation-performance.ts.
 //
+// HALLAZGO (confirmado con smoke test) que motiva BASELINE_RPS=4: api-gateway
+// aplica un rate limiter global de 300 req/min (=5 req/s) por IP sobre TODAS
+// sus rutas (api-gateway/src/middleware/rate-limit.ts, valor fijo, sin
+// variable de entorno). Eligiendo el baseline apenas por debajo de ese techo,
+// el escalon 1x corre limpio y la degradacion aparece de forma clara en 5x
+// (20 req/s, ya por encima del limite) en vez de ensuciar el propio baseline.
+// Si se sube BASELINE_RPS por encima de 5, el "techo" que se va a medir es el
+// del rate limiter del gateway, no la capacidad real de reservation-service.
+//
 // k6 no soporta thresholds por escalon, asi que cada request se etiqueta con
 // el escalon nominal vigente (tags.stage) para poder filtrar el resultado
 // (k6 run ... --out json=result.json) por escalon y ver en cual aparece la
@@ -21,13 +30,13 @@
 
 import http from "k6/http";
 import { check } from "k6";
-import { BASE_URL, FREQUENT_COMPANY_EMAIL, FREQUENT_COMPANY_PASSWORD } from "./helpers/config";
-import { registerAndLogin } from "./helpers/auth";
-import { ensureCompanyProduct } from "./helpers/companies";
-import { companyReservationPayload } from "./helpers/payloads";
+import { BASE_URL, FREQUENT_COMPANY_EMAIL, FREQUENT_COMPANY_PASSWORD } from "./helpers/config.ts";
+import { registerAndLogin } from "./helpers/auth.ts";
+import { ensureCompanyProduct } from "./helpers/companies.ts";
+import { companyReservationPayload } from "./helpers/payloads.ts";
 
 const BASELINE_VUS = 10; // referencia documental, ver comentario de cabecera
-const BASELINE_RPS = Number(__ENV["BASELINE_RPS"] ?? 20);
+const BASELINE_RPS = Number(__ENV["BASELINE_RPS"] ?? 4);
 const MULTIPLIERS = [1, 5, 10, 25, 50];
 const RAMP_TIME_S = Number(__ENV["RAMP_TIME_S"] ?? 10);
 const STAGE_HOLD_S = Number(__ENV["STAGE_HOLD_S"] ?? 30);
@@ -91,8 +100,9 @@ export const options = {
   thresholds: {
     // SLA de R1 para este mismo endpoint (empresa frecuente). Se espera que
     // falle en algun escalon alto: eso es justamente lo que R8 pide documentar.
-    http_req_duration: ["p(95)<600"],
-    http_req_failed: ["rate<0.01"],
+    // Acotado por scenario para no contar el registro del cliente en setup().
+    "http_req_duration{scenario:stress}": ["p(95)<600"],
+    "http_req_failed{scenario:stress}": ["rate<0.01"],
   },
 };
 
