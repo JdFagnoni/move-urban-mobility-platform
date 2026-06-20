@@ -2,6 +2,7 @@ import type { GeoPoint, TripStatus, VehicleDTO } from "@move/shared";
 import { HttpError, query, redisClient } from "@move/shared";
 import type { TripDTO } from "@move/shared";
 import { VehicleModel } from "../../db/models";
+import { resolveUserByAuthSubject } from "../../clients/reservation-service";
 
 export interface ActiveTripFilters {
   vehicleId?: string;
@@ -12,8 +13,8 @@ export interface ActiveTripFilters {
 
 export interface ActiveTripDTO {
   id: string;
-  origin: GeoPoint;
-  destination: GeoPoint;
+  origin: GeoPoint | null;
+  destination: GeoPoint | null;
   status: TripStatus;
   vehicle: {
     id: string;
@@ -33,16 +34,16 @@ export interface ActiveTripDTO {
 interface ActiveTripRow {
   id: string;
   status: string;
-  origin: GeoPoint;
-  destination: GeoPoint;
+  origin: GeoPoint | null;
+  destination: GeoPoint | null;
   vehicle_id: string;
   vehicle_plate: string;
   vehicle_type: string;
   vehicle_capacity: number;
   vehicle_status: string;
   driver_id: string;
-  driver_name: string;
-  driver_email: string;
+  driver_name: string | null;
+  driver_email: string | null;
   has_active_alerts: boolean;
 }
 
@@ -61,8 +62,8 @@ function rowToActiveDTO(row: ActiveTripRow): ActiveTripDTO {
     },
     driver: {
       id: row.driver_id,
-      name: row.driver_name,
-      email: row.driver_email,
+      name: row.driver_name ?? "",
+      email: row.driver_email ?? "",
     },
     hasActiveAlerts: row.has_active_alerts,
   };
@@ -87,11 +88,8 @@ export async function getActiveTrips(
   callerAuthSubject: string,
   filters: ActiveTripFilters
 ): Promise<ActiveTripDTO[]> {
-  const userResult = await query<{ id: string }>(
-    "SELECT id FROM users WHERE auth_subject = $1 AND role = 'operator'",
-    [callerAuthSubject]
-  );
-  if (userResult.rows[0] === undefined) {
+  const caller = await resolveUserByAuthSubject(callerAuthSubject);
+  if (!caller || caller.role !== "operator") {
     throw new HttpError(403, "Caller is not a registered operator", "caller_not_operator");
   }
 
@@ -103,6 +101,9 @@ export async function getActiveTrips(
     console.error("[operator] redis read error:", err);
   }
 
+  // Todos los datos del traslado (origin/destination/conductor/categorias) estan
+  // desnormalizados en la tabla trips, por lo que esta consulta solo toca tablas
+  // propias de transportation-service (trips, vehicles, alerts).
   const conditions: string[] = ["t.status NOT IN ('completed', 'cancelled')"];
   const params: unknown[] = [];
   let paramIdx = 1;
@@ -118,9 +119,7 @@ export async function getActiveTrips(
   }
 
   if (filters.categoryId !== undefined) {
-    conditions.push(
-      `EXISTS (SELECT 1 FROM goods g WHERE g.reservation_id = t.reservation_id AND g.category_id = $${paramIdx++})`
-    );
+    conditions.push(`$${paramIdx++} = ANY(t.category_ids)`);
     params.push(filters.categoryId);
   }
 
@@ -140,24 +139,22 @@ export async function getActiveTrips(
     `SELECT
        t.id,
        t.status,
-       r.origin,
-       r.destination,
-       v.id       AS vehicle_id,
-       v.plate    AS vehicle_plate,
-       v.type     AS vehicle_type,
-       v.capacity AS vehicle_capacity,
-       v.status   AS vehicle_status,
-       u.id       AS driver_id,
-       u.name     AS driver_name,
-       u.email    AS driver_email,
+       t.origin,
+       t.destination,
+       v.id          AS vehicle_id,
+       v.plate       AS vehicle_plate,
+       v.type        AS vehicle_type,
+       v.capacity    AS vehicle_capacity,
+       v.status      AS vehicle_status,
+       t.driver_id   AS driver_id,
+       t.driver_name AS driver_name,
+       t.driver_email AS driver_email,
        EXISTS (
          SELECT 1 FROM alerts a
          WHERE a.trip_id = t.id AND a.resolved_at IS NULL
        ) AS has_active_alerts
      FROM trips t
-     JOIN reservations r ON r.id = t.reservation_id
-     JOIN vehicles     v ON v.id = t.vehicle_id
-     JOIN users        u ON u.id = t.driver_id
+     JOIN vehicles v ON v.id = t.vehicle_id
      WHERE ${whereClause}
      ORDER BY t.created_at DESC`,
     params
