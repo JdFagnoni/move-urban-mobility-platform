@@ -7,7 +7,7 @@ import { logger } from "../middleware/logging";
 
 const TRANSPORTATIONS_URL = process.env["TRANSPORTATIONS_URL"] ?? "http://localhost:3002";
 const INTERNAL_GATEWAY_SECRET_ENV = "INTERNAL_GATEWAY_SECRET";
-const TRANSPORTATIONS_PREFIX = "/transportations";
+const TRANSPORTATIONS_PREFIX = "/transportations-service";
 
 export const transportationsRouter = Router();
 

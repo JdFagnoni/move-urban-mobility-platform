@@ -11,7 +11,7 @@ const RESERVATIONS_SERVICE_UNAVAILABLE_ERROR = "Reservations service unavailable
 
 export const reservationsRouter = Router();
 export const webhooksRouter = Router();
-const RESERVATIONS_PREFIX = "/reservations";
+const RESERVATIONS_PREFIX = "/reservations-service";
 
 class ReservationsProxyError extends Error {
   public readonly statusCode: number;

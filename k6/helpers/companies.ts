@@ -6,7 +6,7 @@ import http from "k6/http";
 import { BASE_URL } from "./config.ts";
 
 export function firstCategoryId(token: string): string {
-  const res = http.get(`${BASE_URL}/reservations/categories`, {
+  const res = http.get(`${BASE_URL}/reservations-service/categories`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -23,7 +23,7 @@ export function firstCategoryId(token: string): string {
 }
 
 function findExistingProductId(token: string, productName: string): string | null {
-  const res = http.get(`${BASE_URL}/reservations/preregistrations/products`, {
+  const res = http.get(`${BASE_URL}/reservations-service/preregistrations/products`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -37,7 +37,7 @@ function findExistingProductId(token: string, productName: string): string | nul
 
 export function createCompanyProduct(token: string, categoryId: string, label: string): string {
   const res = http.post(
-    `${BASE_URL}/reservations/preregistrations/products`,
+    `${BASE_URL}/reservations-service/preregistrations/products`,
     JSON.stringify({ productName: `Seed Product ${label}`, categoryId }),
     { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
   );

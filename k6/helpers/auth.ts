@@ -67,10 +67,10 @@ export function registerClient(
   const body = JSON.stringify({ email, password, name, clientType, ...extra });
   const headers = { "Content-Type": "application/json" };
 
-  let res = http.post(`${BASE_URL}/reservations/auth/register`, body, { headers });
+  let res = http.post(`${BASE_URL}/reservations-service/auth/register`, body, { headers });
   if (res.status === 503) {
     sleep(1);
-    res = http.post(`${BASE_URL}/reservations/auth/register`, body, { headers });
+    res = http.post(`${BASE_URL}/reservations-service/auth/register`, body, { headers });
   }
 
   if (res.status !== 201 && res.status !== 409) {
@@ -96,7 +96,7 @@ export function registerAndLogin(
 }
 
 export function getCurrentUser(token: string): { id: string; role: string } {
-  const res = http.get(`${BASE_URL}/reservations/auth/me`, {
+  const res = http.get(`${BASE_URL}/reservations-service/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -109,9 +109,13 @@ export function getCurrentUser(token: string): { id: string; role: string } {
 }
 
 export function promoteUser(adminToken: string, userId: string, role: PromotableRole): void {
-  const res = http.patch(`${BASE_URL}/reservations/users/${userId}`, JSON.stringify({ role }), {
-    headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" },
-  });
+  const res = http.patch(
+    `${BASE_URL}/reservations-service/users/${userId}`,
+    JSON.stringify({ role }),
+    {
+      headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" },
+    }
+  );
 
   if (res.status !== 200) {
     throw new Error(`Promote to ${role} failed for ${userId}: ${res.status} ${res.body}`);

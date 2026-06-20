@@ -103,9 +103,9 @@
               "raw": "{\n  \"email\": \"{{individual_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA Auth Individual {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/register",
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "auth", "register"]
+              "path": ["reservations-service", "auth", "register"]
             }
           }
         },
@@ -123,9 +123,9 @@
               "raw": "{\n  \"email\": \"{{company_email}}\",\n  \"password\": \"{{company_password}}\",\n  \"name\": \"QA Auth Company {{run_id}}\",\n  \"clientType\": \"company\",\n  \"companyName\": \"MOVE QA {{run_id}}\",\n  \"taxId\": \"RUT-{{run_id}}\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/register",
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "auth", "register"]
+              "path": ["reservations-service", "auth", "register"]
             }
           }
         },
@@ -143,9 +143,9 @@
               "raw": "{\n  \"email\": \"{{default_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA Auth Default {{run_id}}\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/register",
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "auth", "register"]
+              "path": ["reservations-service", "auth", "register"]
             }
           }
         },
@@ -163,9 +163,9 @@
               "raw": "{\n  \"email\": \"{{invalid_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA Auth Invalid {{run_id}}\",\n  \"clientType\": \"vip\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/register",
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "auth", "register"]
+              "path": ["reservations-service", "auth", "register"]
             }
           }
         },
@@ -183,9 +183,9 @@
               "raw": "{\n  \"email\": \"{{individual_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA Auth Individual {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/register",
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "auth", "register"]
+              "path": ["reservations-service", "auth", "register"]
             }
           }
         }
@@ -248,9 +248,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/me",
+              "raw": "{{gateway_url}}/reservations-service/auth/me",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "auth", "me"]
+              "path": ["reservations-service", "auth", "me"]
             }
           }
         },
@@ -295,9 +295,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer invalid-token" }],
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/me",
+              "raw": "{{gateway_url}}/reservations-service/auth/me",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "auth", "me"]
+              "path": ["reservations-service", "auth", "me"]
             }
           }
         },
@@ -311,9 +311,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/audit-logs",
+              "raw": "{{gateway_url}}/reservations-service/auth/audit-logs",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "auth", "audit-logs"]
+              "path": ["reservations-service", "auth", "audit-logs"]
             }
           }
         }
@@ -332,9 +332,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
             "url": {
-              "raw": "{{gateway_url}}/reservations/users?page=1&pageSize=20",
+              "raw": "{{gateway_url}}/reservations-service/users?page=1&pageSize=20",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "users"],
+              "path": ["reservations-service", "users"],
               "query": [
                 { "key": "page", "value": "1" },
                 { "key": "pageSize", "value": "20" }
@@ -352,9 +352,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
-              "raw": "{{gateway_url}}/reservations/users?page=1&pageSize=20",
+              "raw": "{{gateway_url}}/reservations-service/users?page=1&pageSize=20",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "users"],
+              "path": ["reservations-service", "users"],
               "query": [
                 { "key": "page", "value": "1" },
                 { "key": "pageSize", "value": "20" }

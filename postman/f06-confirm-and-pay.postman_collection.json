@@ -99,9 +99,9 @@
               "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA F6 Client {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/register",
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "auth", "register"]
+              "path": ["reservations-service", "auth", "register"]
             }
           }
         },
@@ -164,9 +164,9 @@
               "raw": "{\n  \"name\": \"F6 {{category_keyword}}\",\n  \"spanishName\": \"F6 {{category_keyword}} ES\",\n  \"descriptions\": [\"fragile {{category_keyword}}\"],\n  \"pricing\": {\n    \"baseFare\": 120,\n    \"pricePerKm\": 11,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 0\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/categories",
+              "raw": "{{gateway_url}}/reservations-service/categories",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "categories"]
+              "path": ["reservations-service", "categories"]
             }
           }
         }
@@ -204,9 +204,9 @@
               "raw": "{\n  \"scheduledAt\": \"{{future_date_one}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"fragile {{category_keyword}} accepted\",\n      \"estimatedValue\": 1500,\n      \"size\": \"medium\"\n    }\n  ]\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations",
+              "raw": "{{gateway_url}}/reservations-service/reservations",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "reservations"]
+              "path": ["reservations-service", "reservations"]
             }
           }
         },
@@ -240,9 +240,9 @@
               "raw": "{\n  \"paymentMethodId\": \"{{stripe_payment_method_id}}\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{accepted_reservation_id}}/confirm-payment",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{accepted_reservation_id}}/confirm-payment",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "reservations", "{{accepted_reservation_id}}", "confirm-payment"]
+              "path": ["reservations-service", "reservations", "{{accepted_reservation_id}}", "confirm-payment"]
             }
           }
         },
@@ -256,9 +256,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{accepted_reservation_id}}/payments",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{accepted_reservation_id}}/payments",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "reservations", "{{accepted_reservation_id}}", "payments"]
+              "path": ["reservations-service", "reservations", "{{accepted_reservation_id}}", "payments"]
             }
           }
         },
@@ -329,9 +329,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{accepted_reservation_id}}",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{accepted_reservation_id}}",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "reservations", "{{accepted_reservation_id}}"]
+              "path": ["reservations-service", "reservations", "{{accepted_reservation_id}}"]
             }
           }
         }
@@ -357,9 +357,9 @@
               "raw": "{\n  \"scheduledAt\": \"{{future_date_two}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1912, -34.8937]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1501, -34.9062]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"fragile {{category_keyword}} rejected\",\n      \"estimatedValue\": 900,\n      \"size\": \"small\"\n    }\n  ]\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations",
+              "raw": "{{gateway_url}}/reservations-service/reservations",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "reservations"]
+              "path": ["reservations-service", "reservations"]
             }
           }
         },
@@ -380,9 +380,9 @@
               "raw": "{\n  \"paymentMethodId\": \"{{stripe_payment_method_id}}\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{rejected_reservation_id}}/confirm-payment",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{rejected_reservation_id}}/confirm-payment",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "reservations", "{{rejected_reservation_id}}", "confirm-payment"]
+              "path": ["reservations-service", "reservations", "{{rejected_reservation_id}}", "confirm-payment"]
             }
           }
         },
@@ -457,9 +457,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{rejected_reservation_id}}/payments",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{rejected_reservation_id}}/payments",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "reservations", "{{rejected_reservation_id}}", "payments"]
+              "path": ["reservations-service", "reservations", "{{rejected_reservation_id}}", "payments"]
             }
           }
         },
@@ -473,9 +473,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{rejected_reservation_id}}",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{rejected_reservation_id}}",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "reservations", "{{rejected_reservation_id}}"]
+              "path": ["reservations-service", "reservations", "{{rejected_reservation_id}}"]
             }
           }
         }
@@ -498,9 +498,9 @@
           "raw": "{\n  \"paymentMethodId\": \"{{stripe_payment_method_id}}\"\n}"
         },
         "url": {
-          "raw": "{{gateway_url}}/reservations/reservations/{{rejected_reservation_id}}/confirm-payment",
+          "raw": "{{gateway_url}}/reservations-service/reservations/{{rejected_reservation_id}}/confirm-payment",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "reservations", "{{rejected_reservation_id}}", "confirm-payment"]
+          "path": ["reservations-service", "reservations", "{{rejected_reservation_id}}", "confirm-payment"]
         },
         "description": "Run this only after setting PAYMENT_SIMULATION_MODE=unavailable in reservation-service."
       }

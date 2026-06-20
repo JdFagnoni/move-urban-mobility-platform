@@ -4,6 +4,7 @@ import { resolve } from "path";
 
 export interface SeedCategoryRecord {
   id: string;
+  sourceId: string;
   name: string;
   spanishName: string;
   descriptions: string[];
@@ -55,6 +56,7 @@ export async function loadSeedCategories(): Promise<SeedCategoryRecord[]> {
 
     groupedRecords.set(id, {
       id,
+      sourceId,
       name,
       spanishName,
       descriptions: description ? [description] : [],
