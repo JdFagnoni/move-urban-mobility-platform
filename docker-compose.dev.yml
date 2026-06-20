@@ -170,10 +170,16 @@ services:
       TRANSFORMERSJS_ALLOW_REMOTE_MODELS: ${TRANSFORMERSJS_ALLOW_REMOTE_MODELS:-true}
       TRANSFORMERSJS_LOCAL_MODEL_PATH: ${TRANSFORMERSJS_LOCAL_MODEL_PATH:-}
       OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://move:move_secret@rabbitmq:5672}
     depends_on:
-      - postgres
-      - ollama
-      - redis
+      postgres:
+        condition: service_started
+      ollama:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   gps-simulator:
     build:

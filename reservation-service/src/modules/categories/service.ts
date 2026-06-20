@@ -1,5 +1,5 @@
 import type { CategoryDTO, CreateCategoryDTO, UpdateCategoryDTO } from "@move/shared";
-import { HttpError } from "@move/shared";
+import { EXCHANGES, HttpError, publish, ROUTING_KEYS } from "@move/shared";
 import { CargoItemModel, CategoryModel, CompanyProductModel } from "../../db/models";
 import { refreshCategoryQuoteCache } from "../reservations/fast-path-cache";
 import {
@@ -7,6 +7,18 @@ import {
   normalizeCategoryDescriptions,
   normalizeCategoryPricingConfig,
 } from "./config";
+
+function publishCategoryChanged(trigger: "created" | "updated" | "deleted"): void {
+  publish(EXCHANGES.categories, ROUTING_KEYS.categoryChanged, { trigger }).catch(
+    (error: unknown) => {
+      console.warn(
+        `[reservations] failed to publish category.changed (${trigger}): ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  );
+}
 
 function mapCategory(category: CategoryModel): CategoryDTO {
   return {
@@ -61,6 +73,7 @@ export async function createCategory(dto: CreateCategoryDTO): Promise<CategoryDT
     behavior: normalizeCategoryBehaviorConfig(dto.behavior),
   });
   await refreshCategoryQuoteCache();
+  publishCategoryChanged("created");
   return mapCategory(category);
 }
 
@@ -104,6 +117,7 @@ export async function updateCategory(id: string, dto: UpdateCategoryDTO): Promis
 
   await category.save();
   await refreshCategoryQuoteCache();
+  publishCategoryChanged("updated");
   return mapCategory(category);
 }
 
@@ -116,6 +130,7 @@ export async function deleteCategory(id: string): Promise<void> {
   await ensureCategoryIsNotInUse(category.id);
   await category.destroy();
   await refreshCategoryQuoteCache();
+  publishCategoryChanged("deleted");
 }
 
 async function ensureCategoryIsNotInUse(categoryId: string): Promise<void> {

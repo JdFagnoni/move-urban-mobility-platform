@@ -11,7 +11,14 @@ process.on("unhandledRejection", (reason: unknown) => {
 });
 
 import express from "express";
-import { getMetricsSnapshot, requestMetrics } from "@move/shared";
+import {
+  consume,
+  getMetricsSnapshot,
+  QUEUES,
+  requestMetrics,
+  startMessaging,
+  type CategoryChangedEvent,
+} from "@move/shared";
 import { categorizerRouter } from "./router";
 import {
   getSemanticSearchCacheStatus,
@@ -60,8 +67,21 @@ app.use("/categorize", categorizerRouter);
 
 app.listen(Number(PORT), () => {
   console.log(`categorizer-service running on port ${PORT}`);
+  startMessaging();
+  void registerConsumers();
   void warmSemanticSearchCacheOnStartup();
 });
+
+async function registerConsumers(): Promise<void> {
+  await consume<CategoryChangedEvent>(QUEUES.categorySync, async (event) => {
+    console.log(`[categorizer] received category.changed (${event.trigger}), refreshing cache`);
+    await warmSemanticSearchCacheService();
+    const status = getSemanticSearchCacheStatus();
+    console.log(
+      `[categorizer] cache refreshed: ${status.categoryCount} categories`
+    );
+  });
+}
 
 const WARMUP_RETRY_DELAY_MS = 5_000;
 
