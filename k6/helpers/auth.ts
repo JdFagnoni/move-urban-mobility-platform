@@ -5,6 +5,7 @@
 // postman/ del equipo.
 
 import http from "k6/http";
+import { sleep } from "k6";
 import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -14,7 +15,7 @@ import {
   AUTH0_DOMAIN,
   AUTH0_REALM,
   BASE_URL,
-} from "./config";
+} from "./config.ts";
 
 export type ClientType = "individual" | "company";
 export type PromotableRole = "operator" | "driver";
@@ -50,6 +51,12 @@ export function getAdminToken(): string {
 // (usuario ya existente) es el camino esperado en corridas repetidas con
 // emails fijos, por eso se tolera junto con 201. Devuelve el UserDTO creado
 // cuando el registro es nuevo (201), o null si el usuario ya existia (409).
+//
+// Registrar hace que reservation-service llame a la Management API de Auth0
+// para crear la identidad; se observaron fallos transitorios puntuales
+// ("fetch failed" -> 503) durante pruebas con muchos registros seguidos, que
+// se resuelven solos en un segundo intento. Por eso se reintenta una vez
+// sobre 503 antes de abortar el setup completo por un blip de red.
 export function registerClient(
   email: string,
   password: string,
@@ -57,11 +64,14 @@ export function registerClient(
   clientType: ClientType,
   extra?: Record<string, string>
 ): { id: string; role: string } | null {
-  const res = http.post(
-    `${BASE_URL}/reservations/auth/register`,
-    JSON.stringify({ email, password, name, clientType, ...extra }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+  const body = JSON.stringify({ email, password, name, clientType, ...extra });
+  const headers = { "Content-Type": "application/json" };
+
+  let res = http.post(`${BASE_URL}/reservations/auth/register`, body, { headers });
+  if (res.status === 503) {
+    sleep(1);
+    res = http.post(`${BASE_URL}/reservations/auth/register`, body, { headers });
+  }
 
   if (res.status !== 201 && res.status !== 409) {
     throw new Error(`Register failed for ${email}: ${res.status} ${res.body}`);
@@ -94,7 +104,8 @@ export function getCurrentUser(token: string): { id: string; role: string } {
     throw new Error(`auth/me failed: ${res.status} ${res.body}`);
   }
 
-  return (res.json() as { data: { id: string; role: string } }).data;
+  // La respuesta real anida el perfil bajo data.user (no data directamente).
+  return (res.json() as { data: { user: { id: string; role: string } } }).data.user;
 }
 
 export function promoteUser(adminToken: string, userId: string, role: PromotableRole): void {

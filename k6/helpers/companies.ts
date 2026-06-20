@@ -3,7 +3,7 @@
 // por el seed de clientes frecuentes y por los scripts de R1/R2/R8.
 
 import http from "k6/http";
-import { BASE_URL } from "./config";
+import { BASE_URL } from "./config.ts";
 
 export function firstCategoryId(token: string): string {
   const res = http.get(`${BASE_URL}/reservations/categories`, {
@@ -22,6 +22,19 @@ export function firstCategoryId(token: string): string {
   return (categories.find((c) => c.active !== false) ?? categories[0]).id;
 }
 
+function findExistingProductId(token: string, productName: string): string | null {
+  const res = http.get(`${BASE_URL}/reservations/preregistrations/products`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (res.status !== 200) {
+    throw new Error(`Could not list company products: ${res.status} ${res.body}`);
+  }
+
+  const products = (res.json() as { data: Array<{ id: string; productName: string }> }).data;
+  return products.find((p) => p.productName === productName)?.id ?? null;
+}
+
 export function createCompanyProduct(token: string, categoryId: string, label: string): string {
   const res = http.post(
     `${BASE_URL}/reservations/preregistrations/products`,
@@ -36,7 +49,17 @@ export function createCompanyProduct(token: string, categoryId: string, label: s
   return (res.json() as { data: { id: string } }).data.id;
 }
 
+// productName tiene que ser unico por cliente (POST devuelve 409 si ya
+// existe), y como estos scripts usan emails fijos entre corridas, el
+// producto de una corrida anterior sigue ahi: hay que reutilizarlo en vez de
+// asumir que siempre se puede crear uno nuevo.
 export function ensureCompanyProduct(token: string, label: string): string {
+  const productName = `Seed Product ${label}`;
+  const existingId = findExistingProductId(token, productName);
+  if (existingId !== null) {
+    return existingId;
+  }
+
   const categoryId = firstCategoryId(token);
   return createCompanyProduct(token, categoryId, label);
 }

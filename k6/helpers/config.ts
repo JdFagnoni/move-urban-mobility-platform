@@ -5,13 +5,17 @@
 
 export const BASE_URL = __ENV["BASE_URL"] ?? "http://localhost:3000";
 
-// El catch-all protegido del gateway (api-gateway/src/routes/transportations.ts)
-// exige JWT para cualquier ruta de transportations no explicitada como publica,
-// incluyendo POST /gps/signal -- que en transportation-service en si es publico
-// (pensado para dispositivos GPS sin login). k6/gps-burst.ts ya esquiva esto
-// pegandole directo al servicio; los scripts de R2/R3 hacen lo mismo para la
-// carga de fondo (envio de GPS, alta de vehiculos/zonas), y usan BASE_URL
-// (el gateway) solo para los endpoints que se miden de verdad.
+// Usado SOLO para POST /gps/signal (ver helpers/payloads.ts / r2 / r3): esa
+// ruta no tiene ningun middleware de auth en transportation-service, pero el
+// catch-all protegido del gateway (mountProtectedRoute("/") en
+// api-gateway/src/routes/transportations.ts) exige JWT para cualquier ruta de
+// transportations no explicitada como publica -- y /gps/signal no esta en esa
+// lista. k6/gps-burst.ts ya esquiva esto pegandole directo al servicio; estos
+// scripts hacen lo mismo solo para esa llamada puntual. El resto de las
+// llamadas a transportation-service (vehiculos, zonas, trips) SI van por
+// BASE_URL/el gateway: transportation-service usa createAuthenticate() de
+// @move/shared, que no valida ningun JWT por su cuenta, solo confia en los
+// headers que el gateway agrega al proxyear (ver helpers/fleet.ts).
 export const TRANSPORTATIONS_BASE_URL =
   __ENV["TRANSPORTATIONS_BASE_URL"] ?? "http://localhost:3002";
 
