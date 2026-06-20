@@ -131,6 +131,7 @@ services:
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
       INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
+      RESERVATIONS_URL: ${RESERVATIONS_URL:-http://reservations:3001}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://move:move_secret@rabbitmq:5672}
       PORT: "3002"
@@ -156,6 +157,7 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
+      RESERVATIONS_URL: ${RESERVATIONS_URL:-http://reservations:3001}
       PORT: "3003"
       EMBEDDINGS_PROVIDER: ${EMBEDDINGS_PROVIDER:-openai}
       SEMANTIC_SEARCH_DEBUG: ${SEMANTIC_SEARCH_DEBUG:-false}

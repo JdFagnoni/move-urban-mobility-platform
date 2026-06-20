@@ -101,6 +101,7 @@ services:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
       INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
+      RESERVATIONS_URL: ${RESERVATIONS_URL:-http://reservations:3001}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://move:move_secret@rabbitmq:5672}
       PORT: "3002"
@@ -124,6 +125,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
       PORT: "3003"
       OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      RESERVATIONS_URL: ${RESERVATIONS_URL:-http://reservations:3001}
     depends_on:
       - postgres
       - ollama
