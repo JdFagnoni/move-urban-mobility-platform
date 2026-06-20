@@ -238,9 +238,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{api_gateway_url}}/reservations/metrics",
+              "raw": "{{api_gateway_url}}/reservations-service/metrics",
               "host": ["{{api_gateway_url}}"],
-              "path": ["reservations", "metrics"]
+              "path": ["reservations-service", "metrics"]
             }
           },
           "response": []
@@ -303,9 +303,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{api_gateway_url}}/reservations/health",
+              "raw": "{{api_gateway_url}}/reservations-service/health",
               "host": ["{{api_gateway_url}}"],
-              "path": ["reservations", "health"]
+              "path": ["reservations-service", "health"]
             }
           },
           "response": []

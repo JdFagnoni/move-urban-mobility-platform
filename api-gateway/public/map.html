@@ -117,7 +117,7 @@
       const vehicleMarkers = {}; // vehicleId -> L.marker
 
       async function loadZones() {
-        const res = await fetch("/transportations/zones");
+        const res = await fetch("/transportations-service/zones");
         const { data: zones } = await res.json();
         zones.forEach((zone) => {
           if (!zone.active) return;
@@ -135,7 +135,7 @@
       }
 
       async function loadVehicles() {
-        const res = await fetch("/transportations/vehicles");
+        const res = await fetch("/transportations-service/vehicles");
         const { data } = await res.json();
         vehicleIndex = Object.fromEntries(data.map((v) => [v.id, v]));
       }
@@ -173,7 +173,7 @@
 
       async function fetchActiveAlerts() {
         try {
-          const res = await fetch("/transportations/alerts?resolved=false");
+          const res = await fetch("/transportations-service/alerts?resolved=false");
           if (!res.ok) return [];
           const { data } = await res.json();
           return Array.isArray(data) ? data : [];
@@ -184,7 +184,7 @@
 
       async function fetchAllPositions() {
         try {
-          const res = await fetch("/transportations/gps/latest-positions");
+          const res = await fetch("/transportations-service/gps/latest-positions");
           if (!res.ok) return [];
           const { data } = await res.json();
           return Array.isArray(data) ? data : [];

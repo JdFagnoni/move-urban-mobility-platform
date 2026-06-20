@@ -42,8 +42,8 @@ app.get("/metrics", (_req, res) => {
 // before the JSON parser touches the payload.
 app.use("/webhooks", webhooksRouter);
 app.use(express.json());
-app.use("/reservations", reservationsRouter);
-app.use("/transportations", transportationsRouter);
+app.use("/reservations-service", reservationsRouter);
+app.use("/transportations-service", transportationsRouter);
 
 validateReservationsProxyConfiguration();
 

@@ -106,9 +106,9 @@
               "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA F8 Client {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/register",
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "auth", "register"]
+              "path": ["reservations-service", "auth", "register"]
             }
           }
         },
@@ -171,9 +171,9 @@
               "raw": "{\n  \"name\": \"F8 {{category_keyword}}\",\n  \"spanishName\": \"F8 {{category_keyword}} ES\",\n  \"descriptions\": [\"goods {{category_keyword}}\"],\n  \"pricing\": {\n    \"baseFare\": 100,\n    \"pricePerKm\": 10,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 0\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": false,\n    \"generatesAlerts\": false\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/categories",
+              "raw": "{{gateway_url}}/reservations-service/categories",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "categories"]
+              "path": ["reservations-service", "categories"]
             }
           }
         }
@@ -205,9 +205,9 @@
           "raw": "{\n  \"name\": \"Forbidden F8\",\n  \"spanishName\": \"Forbidden F8 ES\"\n}"
         },
         "url": {
-          "raw": "{{gateway_url}}/reservations/categories",
+          "raw": "{{gateway_url}}/reservations-service/categories",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "categories"]
+          "path": ["reservations-service", "categories"]
         }
       }
     },
@@ -241,9 +241,9 @@
           "raw": "{\n  \"scheduledAt\": \"{{future_date_one}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"goods {{category_keyword}} base\",\n      \"estimatedValue\": 1000,\n      \"size\": \"medium\"\n    }\n  ]\n}"
         },
         "url": {
-          "raw": "{{gateway_url}}/reservations/reservations",
+          "raw": "{{gateway_url}}/reservations-service/reservations",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "reservations"]
+          "path": ["reservations-service", "reservations"]
         }
       }
     },
@@ -276,9 +276,9 @@
           "raw": "{\n  \"pricing\": {\n    \"baseFare\": 130,\n    \"pricePerKm\": 16,\n    \"surchargeType\": \"percentage\",\n    \"surchargeValue\": 25\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": true,\n    \"generatesAlerts\": true\n  }\n}"
         },
         "url": {
-          "raw": "{{gateway_url}}/reservations/categories/{{category_id}}",
+          "raw": "{{gateway_url}}/reservations-service/categories/{{category_id}}",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "categories", "{{category_id}}"]
+          "path": ["reservations-service", "categories", "{{category_id}}"]
         }
       }
     },
@@ -304,9 +304,9 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{gateway_url}}/reservations/categories/{{category_id}}",
+          "raw": "{{gateway_url}}/reservations-service/categories/{{category_id}}",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "categories", "{{category_id}}"]
+          "path": ["reservations-service", "categories", "{{category_id}}"]
         }
       }
     },
@@ -342,9 +342,9 @@
           "raw": "{\n  \"scheduledAt\": \"{{future_date_two}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"goods {{category_keyword}} updated\",\n      \"estimatedValue\": 1000,\n      \"size\": \"medium\"\n    }\n  ]\n}"
         },
         "url": {
-          "raw": "{{gateway_url}}/reservations/reservations",
+          "raw": "{{gateway_url}}/reservations-service/reservations",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "reservations"]
+          "path": ["reservations-service", "reservations"]
         }
       }
     },
@@ -367,9 +367,9 @@
         "method": "DELETE",
         "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
         "url": {
-          "raw": "{{gateway_url}}/reservations/categories/{{category_id}}",
+          "raw": "{{gateway_url}}/reservations-service/categories/{{category_id}}",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "categories", "{{category_id}}"]
+          "path": ["reservations-service", "categories", "{{category_id}}"]
         }
       }
     },
@@ -400,9 +400,9 @@
           "raw": "{\n  \"name\": \"F8 temporary {{run_id}}\",\n  \"spanishName\": \"F8 temporal {{run_id}}\"\n}"
         },
         "url": {
-          "raw": "{{gateway_url}}/reservations/categories",
+          "raw": "{{gateway_url}}/reservations-service/categories",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "categories"]
+          "path": ["reservations-service", "categories"]
         }
       }
     },
@@ -425,9 +425,9 @@
         "method": "DELETE",
         "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
         "url": {
-          "raw": "{{gateway_url}}/reservations/categories/{{temporary_category_id}}",
+          "raw": "{{gateway_url}}/reservations-service/categories/{{temporary_category_id}}",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "categories", "{{temporary_category_id}}"]
+          "path": ["reservations-service", "categories", "{{temporary_category_id}}"]
         }
       }
     }
