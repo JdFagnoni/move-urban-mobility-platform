@@ -1,7 +1,49 @@
 import type { VehicleDTO, VehicleStatus } from "@move/shared";
-import { HttpError, query } from "@move/shared";
+import { HttpError, recordExternalCall } from "@move/shared";
 import { UniqueConstraintError } from "sequelize";
 import { VehicleModel } from "../../db/models";
+
+function getReservationsBaseUrl(): string {
+  const url = process.env["RESERVATIONS_URL"]?.trim().replace(/\/+$/u, "");
+  if (!url) {
+    throw new Error("RESERVATIONS_URL is not configured");
+  }
+  return url;
+}
+
+function getInternalGatewaySecret(): string {
+  const secret = process.env["INTERNAL_GATEWAY_SECRET"]?.trim();
+  if (!secret) {
+    throw new Error("INTERNAL_GATEWAY_SECRET is not configured");
+  }
+  return secret;
+}
+
+async function hasActiveReservations(vehicleId: string): Promise<boolean> {
+  const start = Date.now();
+  let response: Response;
+
+  try {
+    response = await fetch(
+      `${getReservationsBaseUrl()}/internal/vehicles/${vehicleId}/active-reservation-count`,
+      { headers: { "x-internal-gateway-secret": getInternalGatewaySecret() } }
+    );
+  } catch (error) {
+    recordExternalCall("reservation-service", "error", Date.now() - start);
+    throw new Error(
+      `Failed to reach reservation-service: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  recordExternalCall("reservation-service", response.ok ? "success" : "error", Date.now() - start);
+
+  if (!response.ok) {
+    throw new Error(`reservation-service responded with HTTP ${response.status}`);
+  }
+
+  const body = (await response.json()) as { success: boolean; data: { count: number } };
+  return body.data.count > 0;
+}
 
 export interface ListVehiclesFilters {
   status?: VehicleStatus;
@@ -127,14 +169,7 @@ export async function deleteVehicle(id: string): Promise<void> {
     throw new HttpError(404, "Vehicle not found", "vehicle_not_found");
   }
 
-  const result = await query<{ count: string }>(
-    `SELECT COUNT(*)::text AS count FROM reservations
-     WHERE vehicle_id = $1 AND status NOT IN ('completed', 'cancelled')`,
-    [id]
-  );
-
-  const activeCount = parseInt(result.rows[0]?.count ?? "0", 10);
-  if (activeCount > 0) {
+  if (await hasActiveReservations(id)) {
     throw new HttpError(
       409,
       "Vehicle cannot be deleted because it has active reservations",
