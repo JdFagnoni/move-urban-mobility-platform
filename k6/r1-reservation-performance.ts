@@ -122,7 +122,13 @@ export function setup(): SetupData {
     "individual"
   );
 
-  return { frequentToken, frequentProductId, nonfrequentToken, nonfrequentProductId, individualToken };
+  return {
+    frequentToken,
+    frequentProductId,
+    nonfrequentToken,
+    nonfrequentProductId,
+    individualToken,
+  };
 }
 
 function createReservation(token: string, payload: string): void {

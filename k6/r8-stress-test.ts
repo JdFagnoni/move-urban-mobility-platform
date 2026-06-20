@@ -63,7 +63,11 @@ function buildStagesAndWindows(): { stages: K6Stage[]; windows: StageWindow[] } 
 
     if (index > 0) {
       stages.push({ target: rps, duration: `${RAMP_TIME_S}s` });
-      windows.push({ label: `${label}-ramp`, startMs: cursorMs, endMs: cursorMs + RAMP_TIME_S * 1000 });
+      windows.push({
+        label: `${label}-ramp`,
+        startMs: cursorMs,
+        endMs: cursorMs + RAMP_TIME_S * 1000,
+      });
       cursorMs += RAMP_TIME_S * 1000;
     }
 

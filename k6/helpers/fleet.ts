@@ -59,7 +59,9 @@ export function createTrip(
   );
 
   if (res.status !== 201) {
-    throw new Error(`Could not create trip for reservation ${reservationId}: ${res.status} ${res.body}`);
+    throw new Error(
+      `Could not create trip for reservation ${reservationId}: ${res.status} ${res.body}`
+    );
   }
 
   return (res.json() as { data: { id: string } }).data.id;

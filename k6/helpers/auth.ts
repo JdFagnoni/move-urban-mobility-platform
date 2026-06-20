@@ -109,11 +109,9 @@ export function getCurrentUser(token: string): { id: string; role: string } {
 }
 
 export function promoteUser(adminToken: string, userId: string, role: PromotableRole): void {
-  const res = http.patch(
-    `${BASE_URL}/reservations/users/${userId}`,
-    JSON.stringify({ role }),
-    { headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" } }
-  );
+  const res = http.patch(`${BASE_URL}/reservations/users/${userId}`, JSON.stringify({ role }), {
+    headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" },
+  });
 
   if (res.status !== 200) {
     throw new Error(`Promote to ${role} failed for ${userId}: ${res.status} ${res.body}`);

@@ -31,11 +31,20 @@
 
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { BASE_URL, FREQUENT_COMPANY_EMAIL, FREQUENT_COMPANY_PASSWORD, TRANSPORTATIONS_BASE_URL } from "./helpers/config.ts";
+import {
+  BASE_URL,
+  FREQUENT_COMPANY_EMAIL,
+  FREQUENT_COMPANY_PASSWORD,
+  TRANSPORTATIONS_BASE_URL,
+} from "./helpers/config.ts";
 import { getAdminToken, registerAndLogin, ensurePromotedUser } from "./helpers/auth.ts";
 import { ensureCompanyProduct } from "./helpers/companies.ts";
 import { createVehicle, createTrip, startTrip } from "./helpers/fleet.ts";
-import { companyReservationPayload, gpsSignalPayload, montevideoPoint } from "./helpers/payloads.ts";
+import {
+  companyReservationPayload,
+  gpsSignalPayload,
+  montevideoPoint,
+} from "./helpers/payloads.ts";
 
 interface SetupData {
   operatorToken: string;
@@ -168,7 +177,12 @@ export function crearReserva(data: SetupData): void {
   const res = http.post(
     `${BASE_URL}/reservations/reservations`,
     companyReservationPayload(data.frequentProductId, __ITER),
-    { headers: { Authorization: `Bearer ${data.frequentToken}`, "Content-Type": "application/json" } }
+    {
+      headers: {
+        Authorization: `Bearer ${data.frequentToken}`,
+        "Content-Type": "application/json",
+      },
+    }
   );
 
   check(res, { "reserva creada (201)": (r) => r.status === 201 });
