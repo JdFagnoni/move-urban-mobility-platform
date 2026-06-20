@@ -118,19 +118,10 @@ thresholds por escalon dentro de una misma corrida).
   Por eso `helpers/fleet.ts` pasa por el gateway para esas llamadas; la unica
   excepcion es `POST /gps/signal`, que no tiene ningun middleware de auth y
   por eso sigue yendo directo al servicio (igual que `k6/gps-burst.ts`).
-- `CLAUDE.md` lista `vehicles/` y `zones/` como modulos de
-  `reservation-service`; en el codigo actual viven en `transportation-service`
-  (`transportation-service/src/modules/{vehicles,zones}`), expuestos por el
-  gateway en `/transportations/vehicles` y `/transportations/zones`. Dos
-  colecciones de Postman (`postman/vehicles.postman_collection.json` y parte
-  de `F18-ConsultarTrasladosEnCurso.postman_collection.json`) todavia apuntan
-  a `/reservations/vehicles`, que ya no existe.
 - El catch-all protegido del gateway (`mountProtectedRoute("/")` en
   `api-gateway/src/routes/transportations.ts`) exige JWT para cualquier ruta
   de `transportations` no explicitada como publica. `POST /gps/signal` no
   esta en esa lista de publicas pese a no requerir auth en el servicio.
-- No existe ningun endpoint HTTP de seed/reset de datos de testing; el
-  workaround para "cliente frecuente" queda documentado arriba.
 - `GET /reservations/auth/me` anida el perfil en `data.user`, no en `data`
   directamente.
 - Se observaron fallos transitorios puntuales y poco frecuentes (una llamada
