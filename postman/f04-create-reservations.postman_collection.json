@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "6f0bcae3-4f64-4f55-9d0f-4edc57b4c401",
-    "name": "move-platform-reservations-f4",
+    "name": "F04 Create Reservations",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "37423762"
   },
@@ -360,13 +360,17 @@
             "method": "POST",
             "header": [
               {
+                "key": "Authorization",
+                "value": "Bearer {{admin_auth_token}}"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"{{category_keyword}}\",\n  \"descriptions\": [\"Box with {{category_keyword}} components\"]\n}",
+              "raw": "{\n  \"name\": \"{{category_keyword}}\",\n  \"spanishName\": \"{{category_keyword}} ES\",\n  \"descriptions\": [\"Box with {{category_keyword}} components\"]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -618,7 +622,7 @@
                   "});",
                   "const body = pm.response.json();",
                   "pm.expect(body.success).to.eql(true);",
-                  "pm.expect(body.data.status).to.eql('pending_quote');",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
                   "pm.expect(body.data.cargoItems).to.have.length(1);",
                   "pm.expect(body.data.cargoItems[0].categoryId).to.be.a('string').and.not.empty;",
                   "pm.collectionVariables.set('individual_classified_reservation_id', body.data.id);"
@@ -674,7 +678,7 @@
                   "});",
                   "const body = pm.response.json();",
                   "pm.expect(body.data.id).to.eql(pm.collectionVariables.get('individual_classified_reservation_id'));",
-                  "pm.expect(body.data.status).to.eql('pending_quote');"
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');"
                 ]
               }
             }
@@ -1030,7 +1034,7 @@
                   "  pm.response.to.have.status(201);",
                   "});",
                   "const body = pm.response.json();",
-                  "pm.expect(body.data.status).to.eql('pending_quote');",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
                   "pm.expect(body.data.cargoItems[0].categoryId).to.eql(pm.collectionVariables.get('category_id'));",
                   "pm.collectionVariables.set('company_preregistered_reservation_id', body.data.id);"
                 ]
@@ -1085,7 +1089,7 @@
                   "});",
                   "const body = pm.response.json();",
                   "pm.expect(body.data.id).to.eql(pm.collectionVariables.get('company_preregistered_reservation_id'));",
-                  "pm.expect(body.data.status).to.eql('pending_quote');"
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');"
                 ]
               }
             }
@@ -1125,7 +1129,7 @@
                   "  pm.response.to.have.status(201);",
                   "});",
                   "const body = pm.response.json();",
-                  "pm.expect(body.data.status).to.eql('pending_quote');",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
                   "pm.collectionVariables.set('company_manual_reservation_id', body.data.id);"
                 ]
               }
@@ -1178,7 +1182,7 @@
                   "  pm.response.to.have.status(201);",
                   "});",
                   "const body = pm.response.json();",
-                  "pm.expect(body.data.status).to.eql('pending_quote');"
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');"
                 ]
               }
             }

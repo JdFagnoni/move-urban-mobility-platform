@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "f18-consultar-traslados-en-curso",
-    "name": "F18 – Consultar Traslados en Curso",
+    "name": "F18 Active Trips Query",
     "description": "Verifica el endpoint GET /transportations/operator/trips/active con todos los filtros opcionales (vehicleId, driverId, categoryId, hasActiveAlerts) y el control de acceso por rol Operador.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },

@@ -1,7 +1,7 @@
 {
   "info": {
-    "_postman_id": "f17-complete-trip-collection",
-    "name": "F17 – Finalizar Traslado",
+    "_postman_id": "f13-start-trip-collection",
+    "name": "F13 Start Trip",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -13,13 +13,12 @@
     { "key": "admin_token",   "value": "" },
     { "key": "driver_token",  "value": "" },
     { "key": "driver2_token", "value": "" },
-    { "key": "driver1_userId", "value": "" },
-    { "key": "driver2_userId", "value": "" },
     { "key": "driverId",      "value": "" },
     { "key": "driver2Id",     "value": "" },
     { "key": "vehicleId",     "value": "" },
     { "key": "tripId",        "value": "" },
-    { "key": "assignedTripId", "value": "" }
+    { "key": "trip2Id",       "value": "" },
+    { "key": "trip3Id",       "value": "" }
   ],
   "item": [
     {
@@ -75,7 +74,7 @@
             "const users = pm.response.json().data.data;",
             "const d = users.find(u => u.email === 'driver-f13@move.local');",
             "if (d) { pm.collectionVariables.set('driver1_userId', d.id); }",
-            "pm.test('Driver1 exists in DB', () => pm.expect(d).to.not.be.undefined);"
+            "pm.test('Driver1 exists in DB (may still be client role)', () => pm.expect(d).to.not.be.undefined);"
           ]}}]
         },
         {
@@ -214,7 +213,7 @@
           ]}}]
         },
         {
-          "name": "S11 – Get Available Vehicle",
+          "name": "S11 – Get Active Vehicle",
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
@@ -233,7 +232,7 @@
           ]}}]
         },
         {
-          "name": "S12 – Create Main Trip (assigned, driver1)",
+          "name": "S12 – Create Main Trip (assigned, driver1, vehicleId)",
           "request": {
             "method": "POST",
             "header": [
@@ -243,7 +242,7 @@
             "url": "{{base_url}}/transportations/trips",
             "body": {
               "mode": "raw",
-              "raw": "{\"reservationId\":\"00000000-0000-0000-0000-000000000017\",\"vehicleId\":\"{{vehicleId}}\",\"driverId\":\"{{driverId}}\"}"
+              "raw": "{\"reservationId\":\"00000000-0000-0000-0000-000000000013\",\"vehicleId\":\"{{vehicleId}}\",\"driverId\":\"{{driverId}}\"}"
             }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -254,19 +253,7 @@
           ]}}]
         },
         {
-          "name": "S13 – Start Main Trip (driver1) → in_progress",
-          "request": {
-            "method": "PATCH",
-            "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
-            "url": "{{base_url}}/transportations/trips/{{tripId}}/start"
-          },
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Trip started (status 200)', () => pm.expect(pm.response.code).to.eql(200));",
-            "pm.test('Status is in_progress', () => pm.expect(pm.response.json().data.status).to.eql('in_progress'));"
-          ]}}]
-        },
-        {
-          "name": "S14 – Create Assigned-Only Trip (no se inicia, para BRV-1)",
+          "name": "S13 – Create BRV-5 Trip (same vehicle, driver2)",
           "request": {
             "method": "POST",
             "header": [
@@ -276,13 +263,31 @@
             "url": "{{base_url}}/transportations/trips",
             "body": {
               "mode": "raw",
-              "raw": "{\"reservationId\":\"00000000-0000-0000-0000-000000000018\",\"vehicleId\":\"ffffffff-ffff-ffff-ffff-ffffffffffff\",\"driverId\":\"{{driverId}}\"}"
+              "raw": "{\"reservationId\":\"00000000-0000-0000-0000-000000000014\",\"vehicleId\":\"{{vehicleId}}\",\"driverId\":\"{{driver2Id}}\"}"
             }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Assigned-only trip created', () => pm.expect(pm.response.code).to.eql(201));",
-            "pm.test('Status is assigned', () => pm.expect(pm.response.json().data.status).to.eql('assigned'));",
-            "pm.collectionVariables.set('assignedTripId', pm.response.json().data.id);"
+            "pm.test('BRV-5 trip created', () => pm.expect(pm.response.code).to.eql(201));",
+            "pm.collectionVariables.set('trip2Id', pm.response.json().data.id);"
+          ]}}]
+        },
+        {
+          "name": "S14 – Create BRV-6 Trip (same driver1, unused vehicle)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{base_url}}/transportations/trips",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"reservationId\":\"00000000-0000-0000-0000-000000000015\",\"vehicleId\":\"ffffffff-ffff-ffff-ffff-ffffffffffff\",\"driverId\":\"{{driverId}}\"}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('BRV-6 trip created', () => pm.expect(pm.response.code).to.eql(201));",
+            "pm.collectionVariables.set('trip3Id', pm.response.json().data.id);"
           ]}}]
         }
       ]
@@ -292,7 +297,7 @@
       "request": {
         "method": "PATCH",
         "header": [],
-        "url": "{{base_url}}/transportations/trips/00000000-0000-0000-0000-000000000099/complete"
+        "url": "{{base_url}}/transportations/trips/00000000-0000-0000-0000-000000000099/start"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 401 sin token', () => pm.expect(pm.response.code).to.eql(401));"
@@ -303,7 +308,7 @@
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer esto.no.es.un.jwt.valido" }],
-        "url": "{{base_url}}/transportations/trips/00000000-0000-0000-0000-000000000099/complete"
+        "url": "{{base_url}}/transportations/trips/00000000-0000-0000-0000-000000000099/start"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 401 token inválido', () => pm.expect(pm.response.code).to.eql(401));"
@@ -314,7 +319,7 @@
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
-        "url": "{{base_url}}/transportations/trips/00000000-0000-0000-0000-000000000000/complete"
+        "url": "{{base_url}}/transportations/trips/00000000-0000-0000-0000-000000000000/start"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 404 trip no encontrado', () => pm.expect(pm.response.code).to.eql(404));",
@@ -322,23 +327,11 @@
       ]}}]
     },
     {
-      "name": "BRV-1 – Finalizar trip no iniciado (assigned) → 409",
-      "request": {
-        "method": "PATCH",
-        "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
-        "url": "{{base_url}}/transportations/trips/{{assignedTripId}}/complete"
-      },
-      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-        "pm.test('Status 409 estado inválido', () => pm.expect(pm.response.code).to.eql(409));",
-        "pm.test('Mensaje invalid_trip_status', () => pm.expect(pm.response.json().error).to.include(\"cannot be completed from status 'assigned'\"));"
-      ]}}]
-    },
-    {
-      "name": "BRV-2 – Admin finaliza trip (no es driver) → 403",
+      "name": "BRV-3 – Admin inicia trip (no es driver) → 403",
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
-        "url": "{{base_url}}/transportations/trips/{{tripId}}/complete"
+        "url": "{{base_url}}/transportations/trips/{{tripId}}/start"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 403 caller no es driver', () => pm.expect(pm.response.code).to.eql(403));",
@@ -346,11 +339,11 @@
       ]}}]
     },
     {
-      "name": "BRV-3 – Driver2 finaliza el trip de Driver1 → 403",
+      "name": "BRV-4 – Driver2 intenta iniciar el trip de Driver1 → 403",
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer {{driver2_token}}" }],
-        "url": "{{base_url}}/transportations/trips/{{tripId}}/complete"
+        "url": "{{base_url}}/transportations/trips/{{tripId}}/start"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 403 conductor incorrecto', () => pm.expect(pm.response.code).to.eql(403));",
@@ -358,35 +351,59 @@
       ]}}]
     },
     {
-      "name": "HAPPY PATH – Driver1 finaliza su trip → 200 completed",
+      "name": "HAPPY PATH – Driver1 inicia su trip → 200 in_progress",
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
-        "url": "{{base_url}}/transportations/trips/{{tripId}}/complete"
+        "url": "{{base_url}}/transportations/trips/{{tripId}}/start"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 200', () => pm.expect(pm.response.code).to.eql(200));",
         "const trip = pm.response.json().data;",
-        "pm.test('Status cambia a completed', () => pm.expect(trip.status).to.eql('completed'));",
-        "pm.test('completedAt está presente', () => pm.expect(trip.completedAt).to.be.a('string'));",
-        "pm.test('completedAt es ISO válido', () => {",
-        "  const d = new Date(trip.completedAt);",
+        "pm.test('Status cambia a in_progress', () => pm.expect(trip.status).to.eql('in_progress'));",
+        "pm.test('startedAt está presente', () => pm.expect(trip.startedAt).to.be.a('string'));",
+        "pm.test('startedAt es ISO válido', () => {",
+        "  const d = new Date(trip.startedAt);",
         "  pm.expect(isNaN(d.getTime())).to.be.false;",
         "});",
-        "pm.test('startedAt sigue presente', () => pm.expect(trip.startedAt).to.be.a('string'));",
+        "pm.test('vehicleId correcto', () => pm.expect(trip.vehicleId).to.eql(pm.collectionVariables.get('vehicleId')));",
         "pm.test('driverId correcto', () => pm.expect(trip.driverId).to.eql(pm.collectionVariables.get('driverId')));"
       ]}}]
     },
     {
-      "name": "BRV-4 – Reintentar finalizar el mismo trip → 409",
+      "name": "BRV-2 – Reintentar iniciar el mismo trip → 409",
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
-        "url": "{{base_url}}/transportations/trips/{{tripId}}/complete"
+        "url": "{{base_url}}/transportations/trips/{{tripId}}/start"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 409 estado inválido', () => pm.expect(pm.response.code).to.eql(409));",
-        "pm.test('Mensaje invalid_trip_status', () => pm.expect(pm.response.json().error).to.include(\"cannot be completed from status 'completed'\"));"
+        "pm.test('Mensaje invalid_trip_status', () => pm.expect(pm.response.json().error).to.include(\"cannot be started from status 'in_progress'\"));"
+      ]}}]
+    },
+    {
+      "name": "BRV-5 – Driver2 inicia trip con vehículo ya ocupado → 409",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{driver2_token}}" }],
+        "url": "{{base_url}}/transportations/trips/{{trip2Id}}/start"
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status 409 vehículo en viaje activo', () => pm.expect(pm.response.code).to.eql(409));",
+        "pm.test('Mensaje vehicle_conflict', () => pm.expect(pm.response.json().error).to.include('Vehicle is already on an active trip'));"
+      ]}}]
+    },
+    {
+      "name": "BRV-6 – Driver1 intenta un segundo viaje simultáneo → 409",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
+        "url": "{{base_url}}/transportations/trips/{{trip3Id}}/start"
+      },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('Status 409 conductor ya en viaje activo', () => pm.expect(pm.response.code).to.eql(409));",
+        "pm.test('Mensaje driver_conflict', () => pm.expect(pm.response.json().error).to.include('Driver is already on an active trip'));"
       ]}}]
     }
   ]

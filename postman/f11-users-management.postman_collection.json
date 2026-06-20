@@ -1,0 +1,598 @@
+{
+  "info": {
+    "_postman_id": "f11-users",
+    "name": "F11 Users Management",
+    "description": "Coleccion E2E para administracion de usuarios, filtros, visibilidad de perfiles, self-update y cambios de estado.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gateway_url", "value": "http://localhost:3000" },
+    { "key": "auth0_domain", "value": "" },
+    { "key": "auth0_audience", "value": "" },
+    { "key": "auth0_client_id", "value": "" },
+    { "key": "auth0_client_secret", "value": "" },
+    { "key": "auth0_realm", "value": "Username-Password-Authentication" },
+    { "key": "admin_email", "value": "admin@move.local" },
+    { "key": "admin_password", "value": "Admin123" },
+    { "key": "individual_password", "value": "Secret123!" }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Initialize Run Variables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health responded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const runId = String(Date.now());",
+                  "pm.collectionVariables.set('run_id', runId);",
+                  "pm.collectionVariables.set('target_email', `qa-f11-target-${runId}@move.com`);",
+                  "pm.collectionVariables.set('other_email', `qa-f11-other-${runId}@move.com`);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admin token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.collectionVariables.set('admin_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        },
+        {
+          "name": "Register Target User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('target user registered', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{target_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA F11 Target {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Other User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('other user registered', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{other_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA F11 Other {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Get Target Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('target token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.collectionVariables.set('target_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{target_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        },
+        {
+          "name": "Get Other Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('other token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.collectionVariables.set('other_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{other_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        },
+        {
+          "name": "Find Target User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('target user found', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const users = pm.response.json().data.data;",
+                  "const user = users.find((item) => item.email === pm.collectionVariables.get('target_email'));",
+                  "pm.expect(user).to.exist;",
+                  "pm.collectionVariables.set('target_user_id', user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/users?email={{target_email}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "users"],
+              "query": [{ "key": "email", "value": "{{target_email}}" }]
+            }
+          }
+        },
+        {
+          "name": "Find Other User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('other user found', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const users = pm.response.json().data.data;",
+                  "const user = users.find((item) => item.email === pm.collectionVariables.get('other_email'));",
+                  "pm.expect(user).to.exist;",
+                  "pm.collectionVariables.set('other_user_id', user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/users?email={{other_email}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "users"],
+              "query": [{ "key": "email", "value": "{{other_email}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin List Users - Email Filter",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('admin list users succeeded', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.expect(body.data.data.length).to.be.at.least(1);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations/users?email={{target_email}}&page=1&pageSize=10",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "users"],
+          "query": [
+            { "key": "email", "value": "{{target_email}}" },
+            { "key": "page", "value": "1" },
+            { "key": "pageSize", "value": "10" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Target Get Own Profile",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('target can read own profile', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.expect(pm.response.json().data.id).to.eql(pm.collectionVariables.get('target_user_id'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{target_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations/users/{{target_user_id}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "users", "{{target_user_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Other User Get Target Profile - Forbidden",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('other user cannot read target profile', function () {",
+              "  pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{other_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations/users/{{target_user_id}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "users", "{{target_user_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Target Update Own Profile",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+              "exec": [
+                  "pm.test('target self-update succeeded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const user = pm.response.json().data;",
+                  "pm.expect(user.name).to.eql(pm.variables.replaceIn('QA F11 Target Updated {{run_id}}'));",
+                  "pm.expect(user.phone).to.eql('099000111');"
+                ]
+              }
+            }
+          ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{target_auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"QA F11 Target Updated {{run_id}}\",\n  \"phone\": \"099000111\"\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations/users/{{target_user_id}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "users", "{{target_user_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Target Attempt Role Escalation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('self role escalation ignored', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const user = pm.response.json().data;",
+              "pm.expect(user.role).to.eql('client');",
+              "pm.expect(user.status).to.eql('active');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{target_auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"admin\",\n  \"status\": \"disabled\",\n  \"name\": \"QA F11 Target Updated {{run_id}}\"\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations/users/{{target_user_id}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "users", "{{target_user_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Admin Promote Target To Operator",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('admin update succeeded', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const user = pm.response.json().data;",
+              "pm.expect(user.role).to.eql('operator');",
+              "pm.expect(user.clientType).to.eql(null);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"operator\",\n  \"clientType\": null\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations/users/{{target_user_id}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "users", "{{target_user_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Admin Suspend Target",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('target suspended', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.expect(pm.response.json().data.status).to.eql('suspended');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"suspended\"\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations/users/{{target_user_id}}/status",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "users", "{{target_user_id}}", "status"]
+        }
+      }
+    },
+    {
+      "name": "Suspended Target Auth Me - Forbidden",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('suspended user is blocked', function () {",
+              "  pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{target_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations/auth/me",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "auth", "me"]
+        }
+      }
+    },
+    {
+      "name": "Admin Reactivate Target",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('target reactivated', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.expect(pm.response.json().data.status).to.eql('active');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"active\"\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations/users/{{target_user_id}}/status",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "users", "{{target_user_id}}", "status"]
+        }
+      }
+    },
+    {
+      "name": "Admin Disable Other User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('other user disabled', function () {",
+              "  pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations/users/{{other_user_id}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "users", "{{other_user_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Disabled Other User Auth Me - Forbidden",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('disabled user is blocked', function () {",
+              "  pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{other_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations/auth/me",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "auth", "me"]
+        }
+      }
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "gps-alerts-f14-f15-f16",
-    "name": "MOVE - GPS & Alerts (F14, F15, F16)",
+    "name": "F14-F16 GPS and Alerts",
     "description": "Pruebas de ingesta GPS (F14), detección de situaciones (F15) y generación de alertas (F16).\n\nFlujo recomendado:\n1. Ejecutar 'Setup' para crear vehículo y zona roja\n2. Ejecutar 'F14 - GPS Ingestion'\n3. Ejecutar 'F15-F16 - Alerts'\n4. Ejecutar 'Alert Management'\n\nNota: Los requests de GPS van directo al transportation-service (port 3002, sin auth).\nLos requests de alerts van por el gateway (port 3000, requieren token).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
