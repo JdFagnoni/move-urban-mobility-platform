@@ -93,44 +93,44 @@ export async function createCategory(dto: CreateCategoryDTO): Promise<CategoryDT
 }
 
 export async function updateCategory(id: string, dto: UpdateCategoryDTO): Promise<CategoryDTO> {
+  const found = await CategoryModel.findByPk(id);
+  if (!found) {
+    throw new HttpError(404, "Category not found", "category_not_found");
+  }
+
+  if (dto.name !== undefined) {
+    const name = dto.name.trim();
+    if (!name) {
+      throw new HttpError(400, "Category name is required", "invalid_category");
+    }
+    found.name = name;
+  }
+
+  if (dto.spanishName !== undefined) {
+    const spanishName = dto.spanishName.trim();
+    if (!spanishName) {
+      throw new HttpError(400, "Category spanishName is required", "invalid_category");
+    }
+    found.spanishName = spanishName;
+  }
+
+  if (dto.descriptions !== undefined) {
+    found.descriptions = normalizeCategoryDescriptions(dto.descriptions);
+  }
+
+  if (dto.pricing !== undefined) {
+    found.pricing = normalizeCategoryPricingConfig(dto.pricing);
+  }
+
+  if (dto.behavior !== undefined) {
+    found.behavior = normalizeCategoryBehaviorConfig(dto.behavior);
+  }
+
+  if (dto.active !== undefined) {
+    found.active = dto.active;
+  }
+
   const category = await sequelize.transaction(async (transaction) => {
-    const found = await CategoryModel.findByPk(id, { transaction });
-    if (!found) {
-      throw new HttpError(404, "Category not found", "category_not_found");
-    }
-
-    if (dto.name !== undefined) {
-      const name = dto.name.trim();
-      if (!name) {
-        throw new HttpError(400, "Category name is required", "invalid_category");
-      }
-      found.name = name;
-    }
-
-    if (dto.spanishName !== undefined) {
-      const spanishName = dto.spanishName.trim();
-      if (!spanishName) {
-        throw new HttpError(400, "Category spanishName is required", "invalid_category");
-      }
-      found.spanishName = spanishName;
-    }
-
-    if (dto.descriptions !== undefined) {
-      found.descriptions = normalizeCategoryDescriptions(dto.descriptions);
-    }
-
-    if (dto.pricing !== undefined) {
-      found.pricing = normalizeCategoryPricingConfig(dto.pricing);
-    }
-
-    if (dto.behavior !== undefined) {
-      found.behavior = normalizeCategoryBehaviorConfig(dto.behavior);
-    }
-
-    if (dto.active !== undefined) {
-      found.active = dto.active;
-    }
-
     await found.save({ transaction });
     await enqueueCategoryChanged(id, "updated", transaction);
     return found;
