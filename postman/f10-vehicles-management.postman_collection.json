@@ -7,6 +7,116 @@
 	},
 	"item": [
 		{
+			"name": "Setup",
+			"description": "Verificar gateway y obtener tokens antes de correr las demás carpetas.",
+			"item": [
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Gateway responde 200', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["health"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Admin Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Token de admin obtenido', () => pm.response.to.have.status(200));",
+									"pm.collectionVariables.set('auth_token', pm.response.json().access_token);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{auth0_domain}}/oauth/token",
+							"protocol": "https",
+							"host": ["{{auth0_domain}}"],
+							"path": ["oauth", "token"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Client Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Token de cliente obtenido', () => pm.response.to.have.status(200));",
+									"pm.collectionVariables.set('client_token', pm.response.json().access_token);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{client_email}}\",\n  \"password\": \"{{client_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{auth0_domain}}/oauth/token",
+							"protocol": "https",
+							"host": ["{{auth0_domain}}"],
+							"path": ["oauth", "token"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Vehicles (F10)",
 			"item": [
 				{
@@ -797,6 +907,42 @@
 		},
 		{
 			"key": "vehicle_id_2",
+			"value": ""
+		},
+		{
+			"key": "auth0_domain",
+			"value": ""
+		},
+		{
+			"key": "auth0_audience",
+			"value": "https://move-platform-api"
+		},
+		{
+			"key": "auth0_client_id",
+			"value": ""
+		},
+		{
+			"key": "auth0_client_secret",
+			"value": ""
+		},
+		{
+			"key": "auth0_realm",
+			"value": "Username-Password-Authentication"
+		},
+		{
+			"key": "admin_email",
+			"value": "admin@move.local"
+		},
+		{
+			"key": "admin_password",
+			"value": "Admin123"
+		},
+		{
+			"key": "client_email",
+			"value": ""
+		},
+		{
+			"key": "client_password",
 			"value": ""
 		}
 	]
