@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "rabbitmq-observability",
-    "name": "MOVE - RabbitMQ Observabilidad y Demo",
+    "name": "R04 Observability RabbitMQ",
     "description": "Consultas a la API de management de RabbitMQ (:15672) para observar la topologia, la profundidad de las colas de trabajo y el contenido de las DLQ. Tambien incluye los endpoints de metricas y health de aplicacion de los 4 servicios.\n\nApoya R4 (metricas) y la demo de R5/R7:\n- Mostrar que gps.detection absorbe la rafaga (profundidad de cola).\n- Mostrar reintentos y mensajes parqueados en las DLQ.\n- Inspeccionar el outbox (via reservation-service) y la recuperacion ante caidas.\n- Mostrar requests por endpoint, pedidos por categoria, alertas por tipo y el estado de las dependencias (Postgres/Redis/RabbitMQ/Ollama) por servicio.\n\nAuth: basic move/move_secret para RabbitMQ (coincide con docker-compose); los endpoints de metricas/health de los servicios no requieren autenticacion.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -151,6 +151,36 @@
           "raw": "{{rabbitmq_mgmt_url}}/api/queues/%2F/notifications.email",
           "host": ["{{rabbitmq_mgmt_url}}"],
           "path": ["api", "queues", "%2F", "notifications.email"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Inspeccionar mensajes notifications.email",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "console.log(`Mensajes notifications.email inspeccionados: ${body.length}`);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"count\": 5,\n  \"ackmode\": \"ack_requeue_true\",\n  \"encoding\": \"auto\"\n}"
+        },
+        "url": {
+          "raw": "{{rabbitmq_mgmt_url}}/api/queues/%2F/notifications.email/get",
+          "host": ["{{rabbitmq_mgmt_url}}"],
+          "path": ["api", "queues", "%2F", "notifications.email", "get"]
         }
       },
       "response": []

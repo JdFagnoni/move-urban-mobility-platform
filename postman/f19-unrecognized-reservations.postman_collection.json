@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "b5d2a8f0-4641-4f02-8b89-5df0b52f0a31",
-    "name": "move-platform-reservations-f19",
+    "name": "F19 Unrecognized Reservations",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "37423762",
     "description": "End-to-end collection for F19 / pending-classification operator flow. Requires a valid {{admin_auth_token}} to promote an operator candidate."

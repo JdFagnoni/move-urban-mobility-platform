@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "f1f89b17-66a9-4af2-a48d-2c628f5b0d7f",
-		"name": "move-platform-preregistrations-f3",
+		"name": "F03 Company Preregistrations",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "37423762"
 	},
@@ -248,13 +248,17 @@
 						"method": "POST",
 						"header": [
 							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_auth_token}}"
+							},
+							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Electronics F3 {{run_id}}\",\n  \"descriptions\": [\"monitors and laptops\"]\n}",
+							"raw": "{\n  \"name\": \"Electronics F3 {{run_id}}\",\n  \"spanishName\": \"Electronica F3 {{run_id}}\",\n  \"descriptions\": [\"monitors and laptops\"]\n}",
 							"options": {
 								"raw": {
 									"language": "json"

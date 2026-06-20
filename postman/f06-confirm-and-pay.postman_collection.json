@@ -1,0 +1,509 @@
+{
+  "info": {
+    "_postman_id": "payments-f6",
+    "name": "F06 Confirm and Pay",
+    "description": "Cubre F6 con inicio de pago pendiente, webhooks firmados de aceptacion/rechazo y escenario manual de proveedor fuera de servicio.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gateway_url", "value": "http://localhost:3000" },
+    { "key": "auth0_domain", "value": "" },
+    { "key": "auth0_audience", "value": "" },
+    { "key": "auth0_client_id", "value": "" },
+    { "key": "auth0_client_secret", "value": "" },
+    { "key": "auth0_realm", "value": "Username-Password-Authentication" },
+    { "key": "admin_email", "value": "admin@move.local" },
+    { "key": "admin_password", "value": "Admin123" },
+    { "key": "individual_password", "value": "Secret123!" },
+    { "key": "stripe_webhook_secret", "value": "" },
+    { "key": "stripe_payment_method_id", "value": "pm_card_visa" }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Initialize Run Variables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health responded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const runId = String(Date.now());",
+                  "pm.collectionVariables.set('run_id', runId);",
+                  "pm.collectionVariables.set('client_email', `qa-f6-client-${runId}@move.com`);",
+                  "pm.collectionVariables.set('category_keyword', `f6-keyword-${runId}`);",
+                  "pm.collectionVariables.set('future_date_one', new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString());",
+                  "pm.collectionVariables.set('future_date_two', new Date(Date.now() + 96 * 60 * 60 * 1000).toISOString());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admin token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.collectionVariables.set('admin_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        },
+        {
+          "name": "Register Client",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('client registered', () => pm.response.to.have.status(201));"] }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA F6 Client {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Get Client Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('client token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.collectionVariables.set('client_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{client_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        },
+        {
+          "name": "Create Payment Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('category created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.collectionVariables.set('category_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"F6 {{category_keyword}}\",\n  \"spanishName\": \"F6 {{category_keyword}} ES\",\n  \"descriptions\": [\"fragile {{category_keyword}}\"],\n  \"pricing\": {\n    \"baseFare\": 120,\n    \"pricePerKm\": 11,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/categories",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "categories"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Accepted Flow",
+      "item": [
+        {
+          "name": "Create Reservation - Accepted Flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('accepted-flow reservation created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "pm.collectionVariables.set('accepted_reservation_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{client_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date_one}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"fragile {{category_keyword}} accepted\",\n      \"estimatedValue\": 1500,\n      \"size\": \"medium\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations"]
+            }
+          }
+        },
+        {
+          "name": "Confirm Payment - Start Pending Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('payment initiation accepted', function () {",
+                  "  pm.response.to.have.status(202);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.payment.status).to.eql('pending');",
+                  "pm.collectionVariables.set('accepted_payment_id', body.data.payment.id);",
+                  "pm.collectionVariables.set('accepted_provider_payment_id', body.data.payment.providerPaymentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{client_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethodId\": \"{{stripe_payment_method_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{accepted_reservation_id}}/confirm-payment",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{accepted_reservation_id}}", "confirm-payment"]
+            }
+          }
+        },
+        {
+          "name": "List Accepted Flow Payments",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('payments listed', () => pm.response.to.have.status(200));", "pm.expect(pm.response.json().data[0].status).to.eql('pending');"] }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{accepted_reservation_id}}/payments",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{accepted_reservation_id}}", "payments"]
+            }
+          }
+        },
+        {
+          "name": "Stripe Webhook - Accepted",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const payload = {",
+                  "  id: `evt_accept_${Date.now()}`,",
+                  "  type: 'payment_intent.succeeded',",
+                  "  data: {",
+                  "    object: {",
+                  "      id: pm.collectionVariables.get('accepted_provider_payment_id'),",
+                  "      status: 'succeeded',",
+                  "      payment_method_types: ['card']",
+                  "    }",
+                  "  }",
+                  "};",
+                  "const payloadString = JSON.stringify(payload);",
+                  "const timestamp = Math.floor(Date.now() / 1000).toString();",
+                  "const signature = CryptoJS.HmacSHA256(`${timestamp}.${payloadString}`, pm.variables.get('stripe_webhook_secret')).toString(CryptoJS.enc.Hex);",
+                  "pm.variables.set('stripe_payload', payloadString);",
+                  "pm.variables.set('stripe_signature', `t=${timestamp},v1=${signature}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('accepted webhook processed', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.expect(pm.response.json().data.payment.status).to.eql('accepted');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Stripe-Signature", "value": "{{stripe_signature}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{stripe_payload}}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/webhooks/stripe",
+              "host": ["{{gateway_url}}"],
+              "path": ["webhooks", "stripe"]
+            }
+          }
+        },
+        {
+          "name": "Get Reservation - Confirmed After Accepted Webhook",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('reservation confirmed', () => pm.response.to.have.status(200));", "pm.expect(pm.response.json().data.status).to.eql('confirmed');"] }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{accepted_reservation_id}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{accepted_reservation_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rejected Flow",
+      "item": [
+        {
+          "name": "Create Reservation - Rejected Flow",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('rejected-flow reservation created', () => pm.response.to.have.status(201));", "pm.collectionVariables.set('rejected_reservation_id', pm.response.json().data.id);"] }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{client_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date_two}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1912, -34.8937]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1501, -34.9062]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"fragile {{category_keyword}} rejected\",\n      \"estimatedValue\": 900,\n      \"size\": \"small\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations"]
+            }
+          }
+        },
+        {
+          "name": "Confirm Payment - Rejected Flow",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('rejected-flow pending payment created', () => pm.response.to.have.status(202));", "pm.collectionVariables.set('rejected_payment_id', pm.response.json().data.payment.id);", "pm.collectionVariables.set('rejected_provider_payment_id', pm.response.json().data.payment.providerPaymentId);"] }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{client_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethodId\": \"{{stripe_payment_method_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{rejected_reservation_id}}/confirm-payment",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{rejected_reservation_id}}", "confirm-payment"]
+            }
+          }
+        },
+        {
+          "name": "Stripe Webhook - Rejected",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const payload = {",
+                  "  id: `evt_reject_${Date.now()}`,",
+                  "  type: 'payment_intent.payment_failed',",
+                  "  data: {",
+                  "    object: {",
+                  "      id: pm.collectionVariables.get('rejected_provider_payment_id'),",
+                  "      status: 'requires_payment_method',",
+                  "      payment_method_types: ['card'],",
+                  "      last_payment_error: {",
+                  "        code: 'card_declined',",
+                  "        message: 'Card declined in QA flow'",
+                  "      }",
+                  "    }",
+                  "  }",
+                  "};",
+                  "const payloadString = JSON.stringify(payload);",
+                  "const timestamp = Math.floor(Date.now() / 1000).toString();",
+                  "const signature = CryptoJS.HmacSHA256(`${timestamp}.${payloadString}`, pm.variables.get('stripe_webhook_secret')).toString(CryptoJS.enc.Hex);",
+                  "pm.variables.set('stripe_payload', payloadString);",
+                  "pm.variables.set('stripe_signature', `t=${timestamp},v1=${signature}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rejected webhook processed', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.expect(pm.response.json().data.payment.status).to.eql('rejected');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Stripe-Signature", "value": "{{stripe_signature}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{stripe_payload}}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/webhooks/stripe",
+              "host": ["{{gateway_url}}"],
+              "path": ["webhooks", "stripe"]
+            }
+          }
+        },
+        {
+          "name": "List Rejected Flow Payments",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('rejected payment listed', () => pm.response.to.have.status(200));", "pm.expect(pm.response.json().data[0].status).to.eql('rejected');"] }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{rejected_reservation_id}}/payments",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{rejected_reservation_id}}", "payments"]
+            }
+          }
+        },
+        {
+          "name": "Get Reservation - Still Pending Confirmation",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('reservation still pending confirmation', () => pm.response.to.have.status(200));", "pm.expect(pm.response.json().data.status).to.eql('pending_confirmation');"] }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+            "url": {
+              "raw": "{{gateway_url}}/reservations/reservations/{{rejected_reservation_id}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations", "reservations", "{{rejected_reservation_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Confirm Payment - Provider Unavailable",
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('provider unavailable returns 503', () => pm.response.to.have.status(503));"] }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{client_auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paymentMethodId\": \"{{stripe_payment_method_id}}\"\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations/reservations/{{rejected_reservation_id}}/confirm-payment",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations", "reservations", "{{rejected_reservation_id}}", "confirm-payment"]
+        },
+        "description": "Run this only after setting PAYMENT_SIMULATION_MODE=unavailable in reservation-service."
+      }
+    }
+  ]
+}
