@@ -20,6 +20,9 @@ export class OutboxEventModel extends Model {
   declare type: string;
 
   @Column({ type: DataType.STRING, allowNull: false })
+  declare exchange: string;
+
+  @Column({ type: DataType.STRING, allowNull: false })
   declare routingKey: string;
 
   @Column({ type: DataType.JSONB, allowNull: false })

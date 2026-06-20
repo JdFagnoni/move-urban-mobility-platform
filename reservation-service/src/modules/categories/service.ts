@@ -1,6 +1,10 @@
 import type { CategoryDTO, CreateCategoryDTO, UpdateCategoryDTO } from "@move/shared";
-import { EXCHANGES, HttpError, publish, ROUTING_KEYS } from "@move/shared";
+import { EXCHANGES, HttpError, ROUTING_KEYS } from "@move/shared";
+import type { Transaction } from "sequelize";
 import { CargoItemModel, CategoryModel, CompanyProductModel } from "../../db/models";
+import { sequelize } from "../../db/sequelize";
+import { OUTBOX_EVENT_TYPES } from "../../messaging/events";
+import { enqueueOutboxEvent } from "../../messaging/outbox";
 import { refreshCategoryQuoteCache } from "../reservations/fast-path-cache";
 import {
   normalizeCategoryBehaviorConfig,
@@ -8,15 +12,20 @@ import {
   normalizeCategoryPricingConfig,
 } from "./config";
 
-function publishCategoryChanged(trigger: "created" | "updated" | "deleted"): void {
-  publish(EXCHANGES.categories, ROUTING_KEYS.categoryChanged, { trigger }).catch(
-    (error: unknown) => {
-      console.warn(
-        `[reservations] failed to publish category.changed (${trigger}): ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    }
+async function enqueueCategoryChanged(
+  categoryId: string,
+  trigger: "created" | "updated" | "deleted",
+  transaction: Transaction,
+): Promise<void> {
+  await enqueueOutboxEvent(
+    {
+      aggregateId: categoryId,
+      type: OUTBOX_EVENT_TYPES.categoryChanged,
+      exchange: EXCHANGES.categories,
+      routingKey: ROUTING_KEYS.categoryChanged,
+      payload: { trigger },
+    },
+    transaction,
   );
 }
 
@@ -63,74 +72,85 @@ export async function createCategory(dto: CreateCategoryDTO): Promise<CategoryDT
     throw new HttpError(400, "Category spanishName is required", "invalid_category");
   }
 
-  const category = await CategoryModel.create({
-    id: crypto.randomUUID(),
-    name,
-    spanishName,
-    active: dto.active ?? true,
-    descriptions: normalizeCategoryDescriptions(dto.descriptions),
-    pricing: normalizeCategoryPricingConfig(dto.pricing),
-    behavior: normalizeCategoryBehaviorConfig(dto.behavior),
+  const category = await sequelize.transaction(async (transaction) => {
+    const created = await CategoryModel.create(
+      {
+        id: crypto.randomUUID(),
+        name,
+        spanishName,
+        active: dto.active ?? true,
+        descriptions: normalizeCategoryDescriptions(dto.descriptions),
+        pricing: normalizeCategoryPricingConfig(dto.pricing),
+        behavior: normalizeCategoryBehaviorConfig(dto.behavior),
+      },
+      { transaction },
+    );
+    await enqueueCategoryChanged(created.id, "created", transaction);
+    return created;
   });
   await refreshCategoryQuoteCache();
-  publishCategoryChanged("created");
   return mapCategory(category);
 }
 
 export async function updateCategory(id: string, dto: UpdateCategoryDTO): Promise<CategoryDTO> {
-  const category = await CategoryModel.findByPk(id);
-  if (!category) {
-    throw new HttpError(404, "Category not found", "category_not_found");
-  }
-
-  if (dto.name !== undefined) {
-    const name = dto.name.trim();
-    if (!name) {
-      throw new HttpError(400, "Category name is required", "invalid_category");
+  const category = await sequelize.transaction(async (transaction) => {
+    const found = await CategoryModel.findByPk(id, { transaction });
+    if (!found) {
+      throw new HttpError(404, "Category not found", "category_not_found");
     }
-    category.name = name;
-  }
 
-  if (dto.spanishName !== undefined) {
-    const spanishName = dto.spanishName.trim();
-    if (!spanishName) {
-      throw new HttpError(400, "Category spanishName is required", "invalid_category");
+    if (dto.name !== undefined) {
+      const name = dto.name.trim();
+      if (!name) {
+        throw new HttpError(400, "Category name is required", "invalid_category");
+      }
+      found.name = name;
     }
-    category.spanishName = spanishName;
-  }
 
-  if (dto.descriptions !== undefined) {
-    category.descriptions = normalizeCategoryDescriptions(dto.descriptions);
-  }
+    if (dto.spanishName !== undefined) {
+      const spanishName = dto.spanishName.trim();
+      if (!spanishName) {
+        throw new HttpError(400, "Category spanishName is required", "invalid_category");
+      }
+      found.spanishName = spanishName;
+    }
 
-  if (dto.pricing !== undefined) {
-    category.pricing = normalizeCategoryPricingConfig(dto.pricing);
-  }
+    if (dto.descriptions !== undefined) {
+      found.descriptions = normalizeCategoryDescriptions(dto.descriptions);
+    }
 
-  if (dto.behavior !== undefined) {
-    category.behavior = normalizeCategoryBehaviorConfig(dto.behavior);
-  }
+    if (dto.pricing !== undefined) {
+      found.pricing = normalizeCategoryPricingConfig(dto.pricing);
+    }
 
-  if (dto.active !== undefined) {
-    category.active = dto.active;
-  }
+    if (dto.behavior !== undefined) {
+      found.behavior = normalizeCategoryBehaviorConfig(dto.behavior);
+    }
 
-  await category.save();
+    if (dto.active !== undefined) {
+      found.active = dto.active;
+    }
+
+    await found.save({ transaction });
+    await enqueueCategoryChanged(id, "updated", transaction);
+    return found;
+  });
   await refreshCategoryQuoteCache();
-  publishCategoryChanged("updated");
   return mapCategory(category);
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const category = await CategoryModel.findByPk(id);
-  if (!category) {
-    throw new HttpError(404, "Category not found", "category_not_found");
-  }
+  await sequelize.transaction(async (transaction) => {
+    const category = await CategoryModel.findByPk(id, { transaction });
+    if (!category) {
+      throw new HttpError(404, "Category not found", "category_not_found");
+    }
 
-  await ensureCategoryIsNotInUse(category.id);
-  await category.destroy();
+    await ensureCategoryIsNotInUse(category.id);
+    await category.destroy({ transaction });
+    await enqueueCategoryChanged(id, "deleted", transaction);
+  });
   await refreshCategoryQuoteCache();
-  publishCategoryChanged("deleted");
 }
 
 async function ensureCategoryIsNotInUse(categoryId: string): Promise<void> {

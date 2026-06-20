@@ -1,4 +1,4 @@
-import { HttpError, ROUTING_KEYS } from "@move/shared";
+import { EXCHANGES, HttpError, ROUTING_KEYS } from "@move/shared";
 import type {
   AssignReservationDTO,
   CargoItemDTO,
@@ -437,6 +437,7 @@ export async function rejectReservation(
         {
           aggregateId: reservation.id,
           type: OUTBOX_EVENT_TYPES.reservationUnsupported,
+          exchange: EXCHANGES.reservations,
           routingKey: ROUTING_KEYS.reservationUnsupported,
           payload: {
             reservationId: reservation.id,
@@ -631,6 +632,7 @@ export async function assignReservation(
       {
         aggregateId: reservationId,
         type: OUTBOX_EVENT_TYPES.reservationAssigned,
+        exchange: EXCHANGES.reservations,
         routingKey: ROUTING_KEYS.reservationAssigned,
         payload: {
           reservationId,

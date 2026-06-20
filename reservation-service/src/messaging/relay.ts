@@ -46,7 +46,7 @@ async function publishPendingBatch(): Promise<number> {
     });
 
     for (const event of events) {
-      await publish(EXCHANGES.reservations, event.routingKey, event.payload, {
+      await publish(event.exchange || EXCHANGES.reservations, event.routingKey, event.payload, {
         messageId: event.id,
       });
       event.status = "published";
