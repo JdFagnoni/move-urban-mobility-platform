@@ -25,6 +25,7 @@ import {
   BASE_URL,
 } from "../helpers/config";
 import { registerAndLogin } from "../helpers/auth";
+import { ensureCompanyProduct } from "../helpers/companies";
 import { companyReservationPayload } from "../helpers/payloads";
 
 // Umbral real: "top 20 por cantidad de reservas en los ultimos 7 dias". En
@@ -45,37 +46,6 @@ export const options = {
   },
 };
 
-function firstCategoryId(token: string): string {
-  const res = http.get(`${BASE_URL}/reservations/categories`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (res.status !== 200) {
-    throw new Error(`Could not list categories: ${res.status} ${res.body}`);
-  }
-
-  const categories = (res.json() as { data: Array<{ id: string; active?: boolean }> }).data;
-  if (categories.length === 0) {
-    throw new Error("No categories available to seed company products");
-  }
-
-  return (categories.find((c) => c.active !== false) ?? categories[0]).id;
-}
-
-function createCompanyProduct(token: string, categoryId: string, label: string): string {
-  const res = http.post(
-    `${BASE_URL}/reservations/preregistrations/products`,
-    JSON.stringify({ productName: `Seed Product ${label}`, categoryId }),
-    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
-  );
-
-  if (res.status !== 201) {
-    throw new Error(`Could not create company product for ${label}: ${res.status} ${res.body}`);
-  }
-
-  return (res.json() as { data: { id: string } }).data.id;
-}
-
 function seedCompany(
   email: string,
   password: string,
@@ -87,8 +57,7 @@ function seedCompany(
     taxId: `RUT-SEED-${label}`,
   });
 
-  const categoryId = firstCategoryId(token);
-  const companyProductId = createCompanyProduct(token, categoryId, label);
+  const companyProductId = ensureCompanyProduct(token, label);
 
   let created = 0;
   for (let i = 0; i < reservationCount; i++) {
