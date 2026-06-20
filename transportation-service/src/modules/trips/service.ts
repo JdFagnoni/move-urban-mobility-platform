@@ -7,6 +7,7 @@ import type {
   TripStatus,
 } from "@move/shared";
 import { HttpError, query } from "@move/shared";
+import { resolveUserByAuthSubject } from "../../clients/reservation-service";
 
 interface TripRow {
   id: string;
@@ -73,6 +74,21 @@ export async function getTrip(id: string): Promise<TripDTO | null> {
   return row !== undefined ? rowToDTO(row) : null;
 }
 
+// Valida que el llamador sea el conductor asignado al traslado, resolviendo su
+// identidad via reservation-service en vez de consultar la tabla users directamente.
+async function assertCallerIsTripDriver(
+  callerAuthSubject: string,
+  driverId: string
+): Promise<void> {
+  const caller = await resolveUserByAuthSubject(callerAuthSubject);
+  if (!caller || caller.role !== "driver") {
+    throw new HttpError(403, "Caller is not a registered driver", "caller_not_driver");
+  }
+  if (caller.id !== driverId) {
+    throw new HttpError(403, "You are not the assigned driver for this trip", "driver_mismatch");
+  }
+}
+
 export async function startTrip(id: string, callerAuthSubject: string): Promise<TripDTO> {
   const tripResult = await query<TripRow>("SELECT * FROM trips WHERE id = $1", [id]);
   const trip = tripResult.rows[0];
@@ -88,18 +104,7 @@ export async function startTrip(id: string, callerAuthSubject: string): Promise<
     );
   }
 
-  const userResult = await query<{ id: string }>(
-    "SELECT id FROM users WHERE auth_subject = $1 AND role = 'driver'",
-    [callerAuthSubject]
-  );
-  const callerUser = userResult.rows[0];
-  if (callerUser === undefined) {
-    throw new HttpError(403, "Caller is not a registered driver", "caller_not_driver");
-  }
-
-  if (callerUser.id !== trip.driver_id) {
-    throw new HttpError(403, "You are not the assigned driver for this trip", "driver_mismatch");
-  }
+  await assertCallerIsTripDriver(callerAuthSubject, trip.driver_id);
 
   const vehicleConflict = await query<{ id: string }>(
     "SELECT id FROM trips WHERE vehicle_id = $1 AND status = 'in_progress' AND id != $2",
@@ -142,18 +147,7 @@ export async function completeTrip(id: string, callerAuthSubject: string): Promi
     );
   }
 
-  const userResult = await query<{ id: string }>(
-    "SELECT id FROM users WHERE auth_subject = $1 AND role = 'driver'",
-    [callerAuthSubject]
-  );
-  const callerUser = userResult.rows[0];
-  if (callerUser === undefined) {
-    throw new HttpError(403, "Caller is not a registered driver", "caller_not_driver");
-  }
-
-  if (callerUser.id !== trip.driver_id) {
-    throw new HttpError(403, "You are not the assigned driver for this trip", "driver_mismatch");
-  }
+  await assertCallerIsTripDriver(callerAuthSubject, trip.driver_id);
 
   const updated = await query<TripRow>(
     `UPDATE trips
