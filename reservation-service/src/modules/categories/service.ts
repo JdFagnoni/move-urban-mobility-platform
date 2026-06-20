@@ -15,7 +15,7 @@ import {
 async function enqueueCategoryChanged(
   categoryId: string,
   trigger: "created" | "updated" | "deleted",
-  transaction: Transaction,
+  transaction: Transaction
 ): Promise<void> {
   await enqueueOutboxEvent(
     {
@@ -25,7 +25,7 @@ async function enqueueCategoryChanged(
       routingKey: ROUTING_KEYS.categoryChanged,
       payload: { trigger },
     },
-    transaction,
+    transaction
   );
 }
 
@@ -83,7 +83,7 @@ export async function createCategory(dto: CreateCategoryDTO): Promise<CategoryDT
         pricing: normalizeCategoryPricingConfig(dto.pricing),
         behavior: normalizeCategoryBehaviorConfig(dto.behavior),
       },
-      { transaction },
+      { transaction }
     );
     await enqueueCategoryChanged(created.id, "created", transaction);
     return created;

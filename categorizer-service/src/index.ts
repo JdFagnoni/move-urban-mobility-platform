@@ -77,9 +77,7 @@ async function registerConsumers(): Promise<void> {
     console.log(`[categorizer] received category.changed (${event.trigger}), refreshing cache`);
     await warmSemanticSearchCacheService();
     const status = getSemanticSearchCacheStatus();
-    console.log(
-      `[categorizer] cache refreshed: ${status.categoryCount} categories`
-    );
+    console.log(`[categorizer] cache refreshed: ${status.categoryCount} categories`);
   });
 }
 
