@@ -46,10 +46,20 @@ export async function createTrip(dto: CreateTripDTO): Promise<TripDTO> {
 
 export async function ensureTripForReservation(event: ReservationAssignedEvent): Promise<void> {
   await query(
-    `INSERT INTO trips (reservation_id, vehicle_id, driver_id)
-     VALUES ($1, $2, $3)
+    `INSERT INTO trips
+       (reservation_id, vehicle_id, driver_id, origin, destination, driver_name, driver_email, category_ids)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      ON CONFLICT (reservation_id) DO NOTHING`,
-    [event.reservationId, event.vehicleId, event.driverId]
+    [
+      event.reservationId,
+      event.vehicleId,
+      event.driverId,
+      event.origin ? JSON.stringify(event.origin) : null,
+      event.destination ? JSON.stringify(event.destination) : null,
+      event.driverName ?? null,
+      event.driverEmail ?? null,
+      event.categoryIds ?? null,
+    ]
   );
 }
 
