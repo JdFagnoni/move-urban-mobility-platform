@@ -23,6 +23,7 @@ import { preregistrationsRouter } from "./modules/preregistrations/router";
 import { usersRouter } from "./modules/users/router";
 import { paymentsRouter } from "./modules/payments/router";
 import { metricsRouter } from "./modules/metrics/router";
+import { internalRouter } from "./modules/internal/router";
 import { startReservationMessaging } from "./messaging";
 import { startFrequentClientRankingRefresh } from "./modules/reservations/fast-path-cache";
 
@@ -62,6 +63,7 @@ async function isPostgresUp(): Promise<boolean> {
 }
 
 app.use("/metrics", metricsRouter);
+app.use("/internal", internalRouter);
 
 app.use("/auth", authRouter);
 app.use("/webhooks", paymentsRouter);

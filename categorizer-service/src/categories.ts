@@ -1,106 +1,40 @@
-import {
-  DEFAULT_CATEGORY_BEHAVIOR,
-  DEFAULT_CATEGORY_PRICING,
-  type CategoryBehaviorConfig,
-  type CategoryDTO,
-  type CategoryPricingConfig,
-} from "@move/shared";
-import { Pool } from "pg";
+import { recordExternalCall, type CategoryDTO } from "@move/shared";
 
-interface CategoryRow {
-  id: string;
-  name: string;
-  spanish_name: string | null;
-  descriptions: unknown;
-  pricing: unknown;
-  behavior: unknown;
-  active: boolean;
+function getReservationsBaseUrl(): string {
+  const url = process.env["RESERVATIONS_URL"];
+  if (!url) {
+    throw new Error("RESERVATIONS_URL is not configured");
+  }
+  return url.replace(/\/+$/u, "");
 }
 
-let pool: Pool | null = null;
+interface CategoriesResponse {
+  success: boolean;
+  data: CategoryDTO[];
+}
 
 export async function loadActiveCategories(): Promise<CategoryDTO[]> {
-  const result = await getPool().query<CategoryRow>(
-    `SELECT id, name, spanish_name, descriptions, pricing, behavior, active
-       FROM categories
-      WHERE active = true
-      ORDER BY name ASC`
-  );
+  const start = Date.now();
+  let response: Response;
 
-  return result.rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    spanishName: row.spanish_name ?? row.name,
-    descriptions: normalizeDescriptions(row.descriptions),
-    pricing: normalizePricing(row.pricing),
-    behavior: normalizeBehavior(row.behavior),
-    active: row.active,
-  }));
-}
-
-function getPool(): Pool {
-  if (pool) {
-    return pool;
+  try {
+    response = await fetch(`${getReservationsBaseUrl()}/categories`);
+    recordExternalCall(
+      "reservation-service",
+      response.ok ? "success" : "error",
+      Date.now() - start
+    );
+  } catch (error) {
+    recordExternalCall("reservation-service", "error", Date.now() - start);
+    throw new Error(
+      `Failed to fetch categories from reservation-service: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 
-  const connectionString = process.env["DATABASE_URL"];
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not configured");
+  if (!response.ok) {
+    throw new Error(`Failed to fetch categories from reservation-service: HTTP ${response.status}`);
   }
 
-  pool = new Pool({ connectionString });
-  return pool;
-}
-
-function normalizeDescriptions(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .filter((entry): entry is string => typeof entry === "string")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
-}
-
-function normalizePricing(value: unknown): CategoryPricingConfig {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return DEFAULT_CATEGORY_PRICING;
-  }
-
-  const pricing = value as Partial<CategoryPricingConfig>;
-  return {
-    baseFare:
-      typeof pricing.baseFare === "number" ? pricing.baseFare : DEFAULT_CATEGORY_PRICING.baseFare,
-    pricePerKm:
-      typeof pricing.pricePerKm === "number"
-        ? pricing.pricePerKm
-        : DEFAULT_CATEGORY_PRICING.pricePerKm,
-    surchargeType:
-      pricing.surchargeType === "fixed" || pricing.surchargeType === "percentage"
-        ? pricing.surchargeType
-        : DEFAULT_CATEGORY_PRICING.surchargeType,
-    surchargeValue:
-      typeof pricing.surchargeValue === "number"
-        ? pricing.surchargeValue
-        : DEFAULT_CATEGORY_PRICING.surchargeValue,
-  };
-}
-
-function normalizeBehavior(value: unknown): CategoryBehaviorConfig {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return DEFAULT_CATEGORY_BEHAVIOR;
-  }
-
-  const behavior = value as Partial<CategoryBehaviorConfig>;
-  return {
-    requiresMonitoring:
-      typeof behavior.requiresMonitoring === "boolean"
-        ? behavior.requiresMonitoring
-        : DEFAULT_CATEGORY_BEHAVIOR.requiresMonitoring,
-    generatesAlerts:
-      typeof behavior.generatesAlerts === "boolean"
-        ? behavior.generatesAlerts
-        : DEFAULT_CATEGORY_BEHAVIOR.generatesAlerts,
-  };
+  const body = (await response.json()) as CategoriesResponse;
+  return body.data.filter((category) => category.active);
 }

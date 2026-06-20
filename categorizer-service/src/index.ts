@@ -63,20 +63,37 @@ app.listen(Number(PORT), () => {
   void warmSemanticSearchCacheOnStartup();
 });
 
-async function warmSemanticSearchCacheOnStartup(): Promise<void> {
-  const startedAt = Date.now();
+const WARMUP_RETRY_DELAY_MS = 5_000;
 
-  try {
-    await warmSemanticSearchCacheService();
-    const cacheStatus = getSemanticSearchCacheStatus();
-    console.log(
-      `categorizer-service semantic cache warmed for ${cacheStatus.categoryCount} categories in ${Date.now() - startedAt}ms`
-    );
-  } catch (error) {
-    console.warn(
-      `categorizer-service semantic cache warmup failed: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// El catalogo de categorias vive en reservation-service y se obtiene por HTTP.
+// Como categorizer-service puede arrancar antes de que reservation-service este
+// disponible (o antes de que las categorias se sembren), reintentamos el warmup
+// en segundo plano hasta que tenga exito en vez de fallar una sola vez.
+async function warmSemanticSearchCacheOnStartup(): Promise<void> {
+  let attempt = 0;
+
+  for (;;) {
+    attempt += 1;
+    const startedAt = Date.now();
+
+    try {
+      await warmSemanticSearchCacheService();
+      const cacheStatus = getSemanticSearchCacheStatus();
+      console.log(
+        `categorizer-service semantic cache warmed for ${cacheStatus.categoryCount} categories in ${Date.now() - startedAt}ms (attempt ${attempt})`
+      );
+      return;
+    } catch (error) {
+      console.warn(
+        `categorizer-service semantic cache warmup attempt ${attempt} failed: ${
+          error instanceof Error ? error.message : String(error)
+        }; retrying in ${WARMUP_RETRY_DELAY_MS}ms`
+      );
+      await delay(WARMUP_RETRY_DELAY_MS);
+    }
   }
 }
