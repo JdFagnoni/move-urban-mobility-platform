@@ -13,6 +13,7 @@ const RETRY_TTL_MS = positiveIntFromEnv("RABBITMQ_RETRY_TTL_MS", 5_000);
 export async function assertTopology(channel: Channel): Promise<void> {
   await channel.assertExchange(EXCHANGES.reservations, "topic", { durable: true });
   await channel.assertExchange(EXCHANGES.gps, "topic", { durable: true });
+  await channel.assertExchange(EXCHANGES.categories, "topic", { durable: true });
   await channel.assertExchange(EXCHANGES.deadLetter, "topic", { durable: true });
 
   for (const definition of WORK_QUEUES) {

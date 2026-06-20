@@ -1,12 +1,33 @@
 import type { CategoryDTO, CreateCategoryDTO, UpdateCategoryDTO } from "@move/shared";
-import { HttpError } from "@move/shared";
+import { EXCHANGES, HttpError, ROUTING_KEYS } from "@move/shared";
+import type { Transaction } from "sequelize";
 import { CargoItemModel, CategoryModel, CompanyProductModel } from "../../db/models";
+import { sequelize } from "../../db/sequelize";
+import { OUTBOX_EVENT_TYPES } from "../../messaging/events";
+import { enqueueOutboxEvent } from "../../messaging/outbox";
 import { refreshCategoryQuoteCache } from "../reservations/fast-path-cache";
 import {
   normalizeCategoryBehaviorConfig,
   normalizeCategoryDescriptions,
   normalizeCategoryPricingConfig,
 } from "./config";
+
+async function enqueueCategoryChanged(
+  categoryId: string,
+  trigger: "created" | "updated" | "deleted",
+  transaction: Transaction
+): Promise<void> {
+  await enqueueOutboxEvent(
+    {
+      aggregateId: categoryId,
+      type: OUTBOX_EVENT_TYPES.categoryChanged,
+      exchange: EXCHANGES.categories,
+      routingKey: ROUTING_KEYS.categoryChanged,
+      payload: { trigger },
+    },
+    transaction
+  );
+}
 
 function mapCategory(category: CategoryModel): CategoryDTO {
   return {
@@ -51,22 +72,29 @@ export async function createCategory(dto: CreateCategoryDTO): Promise<CategoryDT
     throw new HttpError(400, "Category spanishName is required", "invalid_category");
   }
 
-  const category = await CategoryModel.create({
-    id: crypto.randomUUID(),
-    name,
-    spanishName,
-    active: dto.active ?? true,
-    descriptions: normalizeCategoryDescriptions(dto.descriptions),
-    pricing: normalizeCategoryPricingConfig(dto.pricing),
-    behavior: normalizeCategoryBehaviorConfig(dto.behavior),
+  const category = await sequelize.transaction(async (transaction) => {
+    const created = await CategoryModel.create(
+      {
+        id: crypto.randomUUID(),
+        name,
+        spanishName,
+        active: dto.active ?? true,
+        descriptions: normalizeCategoryDescriptions(dto.descriptions),
+        pricing: normalizeCategoryPricingConfig(dto.pricing),
+        behavior: normalizeCategoryBehaviorConfig(dto.behavior),
+      },
+      { transaction }
+    );
+    await enqueueCategoryChanged(created.id, "created", transaction);
+    return created;
   });
   await refreshCategoryQuoteCache();
   return mapCategory(category);
 }
 
 export async function updateCategory(id: string, dto: UpdateCategoryDTO): Promise<CategoryDTO> {
-  const category = await CategoryModel.findByPk(id);
-  if (!category) {
+  const found = await CategoryModel.findByPk(id);
+  if (!found) {
     throw new HttpError(404, "Category not found", "category_not_found");
   }
 
@@ -75,7 +103,7 @@ export async function updateCategory(id: string, dto: UpdateCategoryDTO): Promis
     if (!name) {
       throw new HttpError(400, "Category name is required", "invalid_category");
     }
-    category.name = name;
+    found.name = name;
   }
 
   if (dto.spanishName !== undefined) {
@@ -83,38 +111,45 @@ export async function updateCategory(id: string, dto: UpdateCategoryDTO): Promis
     if (!spanishName) {
       throw new HttpError(400, "Category spanishName is required", "invalid_category");
     }
-    category.spanishName = spanishName;
+    found.spanishName = spanishName;
   }
 
   if (dto.descriptions !== undefined) {
-    category.descriptions = normalizeCategoryDescriptions(dto.descriptions);
+    found.descriptions = normalizeCategoryDescriptions(dto.descriptions);
   }
 
   if (dto.pricing !== undefined) {
-    category.pricing = normalizeCategoryPricingConfig(dto.pricing);
+    found.pricing = normalizeCategoryPricingConfig(dto.pricing);
   }
 
   if (dto.behavior !== undefined) {
-    category.behavior = normalizeCategoryBehaviorConfig(dto.behavior);
+    found.behavior = normalizeCategoryBehaviorConfig(dto.behavior);
   }
 
   if (dto.active !== undefined) {
-    category.active = dto.active;
+    found.active = dto.active;
   }
 
-  await category.save();
+  const category = await sequelize.transaction(async (transaction) => {
+    await found.save({ transaction });
+    await enqueueCategoryChanged(id, "updated", transaction);
+    return found;
+  });
   await refreshCategoryQuoteCache();
   return mapCategory(category);
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const category = await CategoryModel.findByPk(id);
-  if (!category) {
-    throw new HttpError(404, "Category not found", "category_not_found");
-  }
+  await sequelize.transaction(async (transaction) => {
+    const category = await CategoryModel.findByPk(id, { transaction });
+    if (!category) {
+      throw new HttpError(404, "Category not found", "category_not_found");
+    }
 
-  await ensureCategoryIsNotInUse(category.id);
-  await category.destroy();
+    await ensureCategoryIsNotInUse(category.id);
+    await category.destroy({ transaction });
+    await enqueueCategoryChanged(id, "deleted", transaction);
+  });
   await refreshCategoryQuoteCache();
 }
 

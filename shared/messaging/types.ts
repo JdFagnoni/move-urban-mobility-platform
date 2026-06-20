@@ -4,6 +4,7 @@ import type { GeoPoint } from "../types/zone";
 export const EXCHANGES = {
   reservations: "move.reservations",
   gps: "move.gps",
+  categories: "move.categories",
   deadLetter: "move.dlx",
 } as const;
 
@@ -11,12 +12,14 @@ export const ROUTING_KEYS = {
   reservationAssigned: "reservation.assigned",
   reservationUnsupported: "reservation.unsupported",
   gpsSignalIngested: "gps.signal.ingested",
+  categoryChanged: "category.changed",
 } as const;
 
 export const QUEUES = {
   tripCreation: "trip.creation",
   notificationsEmail: "notifications.email",
   gpsDetection: "gps.detection",
+  categorySync: "category.sync",
 } as const;
 
 export type ExchangeName = (typeof EXCHANGES)[keyof typeof EXCHANGES];
@@ -44,6 +47,11 @@ export const WORK_QUEUES: readonly WorkQueueDefinition[] = [
     name: QUEUES.gpsDetection,
     exchange: EXCHANGES.gps,
     routingKey: ROUTING_KEYS.gpsSignalIngested,
+  },
+  {
+    name: QUEUES.categorySync,
+    exchange: EXCHANGES.categories,
+    routingKey: ROUTING_KEYS.categoryChanged,
   },
 ];
 
@@ -77,3 +85,7 @@ export interface ReservationUnsupportedEvent {
 }
 
 export type GpsSignalIngestedEvent = GpsSignalDTO;
+
+export interface CategoryChangedEvent {
+  trigger: "created" | "updated" | "deleted";
+}
