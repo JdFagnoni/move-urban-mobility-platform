@@ -1,4 +1,5 @@
 import type { GpsSignalDTO } from "../types/gps";
+import type { GeoPoint } from "../types/zone";
 
 export const EXCHANGES = {
   reservations: "move.reservations",
@@ -58,6 +59,14 @@ export interface ReservationAssignedEvent {
   reservationId: string;
   vehicleId: string;
   driverId: string;
+  // Datos desnormalizados que transportation-service persiste en la tabla trips
+  // para evitar consultar las tablas reservations/users/goods de reservation-service.
+  // Opcionales para compatibilidad con eventos en vuelo previos a este cambio.
+  origin?: GeoPoint;
+  destination?: GeoPoint;
+  driverName?: string;
+  driverEmail?: string;
+  categoryIds?: string[];
 }
 
 export interface ReservationUnsupportedEvent {
