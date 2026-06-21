@@ -379,21 +379,7 @@ export async function classifyReservationManually(
     );
   }
 
-  const quote = await quotePreparedReservation({
-    origin: reservation.origin as GeoPoint,
-    destination: reservation.destination as GeoPoint,
-    cargoItems: cargoItems.map(mapCargoItemModelToPreparedCargoItem),
-  });
-
-  await sequelize.transaction(async (transaction) => {
-    await Promise.all(cargoItems.map((cargoItem) => cargoItem.save({ transaction })));
-
-    reservation.status = "pending_confirmation";
-    reservation.quotedPrice = String(quote.quotedPrice);
-    await reservation.save({ transaction });
-
-    await acknowledgeNotification(reservation.id, operatorUser.id, transaction);
-  });
+  await finalizeClassification(reservation, cargoItems, operatorUser.id);
 
   const updatedReservation = await loadReservationWithRelations(reservationId);
   if (!updatedReservation) {
@@ -655,7 +641,31 @@ export async function assignReservation(
   return mapReservationModelToDTO(updated, sortedItems);
 }
 
-async function createClassificationNotification(
+export async function finalizeClassification(
+  reservation: ReservationModel,
+  cargoItems: CargoItemModel[],
+  acknowledgedByUserId: string | null = null
+): Promise<void> {
+  const quote = await quotePreparedReservation({
+    origin: reservation.origin as GeoPoint,
+    destination: reservation.destination as GeoPoint,
+    cargoItems: cargoItems.map(mapCargoItemModelToPreparedCargoItem),
+  });
+
+  await sequelize.transaction(async (transaction) => {
+    await Promise.all(cargoItems.map((cargoItem) => cargoItem.save({ transaction })));
+
+    reservation.status = "pending_confirmation";
+    reservation.quotedPrice = String(quote.quotedPrice);
+    await reservation.save({ transaction });
+
+    if (acknowledgedByUserId !== null) {
+      await acknowledgeNotification(reservation.id, acknowledgedByUserId, transaction);
+    }
+  });
+}
+
+export async function createClassificationNotification(
   reservationId: string,
   transaction: Transaction
 ): Promise<void> {
