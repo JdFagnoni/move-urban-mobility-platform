@@ -20,23 +20,20 @@
 // GPS_VEHICLE_COUNT=50) solo emiten GPS, sin traslado asociado -- mandar GPS
 // no requiere conductor ni token (ver helpers/fleet.ts).
 //
-// HALLAZGO (confirmado con smoke test): api-gateway aplica un rate limiter
-// global de 300 req/min por IP sobre TODAS sus rutas
-// (api-gateway/src/middleware/rate-limit.ts, valor fijo, sin variable de
-// entorno). El scenario "gps" no lo sufre porque pega directo a
-// transportation-service (TRANSPORTATIONS_BASE_URL), pero "reservas",
-// "consultas_reservas" y "consultas_traslados" si pasan por el gateway, asi
-// que sus tasas estan calibradas para sumar bastante menos de 5 req/s entre
-// los tres (100/min + 1.5/s + 1/s ≈ 4.2 req/s).
+// HALLAZGO: api-gateway aplica un rate limiter por IP sobre TODAS sus rutas
+// (api-gateway/src/middleware/rate-limit.ts), configurable por entorno
+// (RATE_LIMIT_WINDOW_MS / RATE_LIMIT_MAX_REQUESTS, default 300 req/min). El
+// scenario "gps" ya no esquiva el gateway (POST /gps/signal es publico tanto
+// ahi como en transportation-service), asi que los cuatro scenarios comparten
+// ese presupuesto. Con el default de 300 req/min, "reservas" +
+// "consultas_reservas" + "consultas_traslados" + "gps" (GPS_VEHICLE_COUNT
+// VUs, 1 señal cada 10s) ya se acercan al limite con los valores default de
+// este script; para correrlo con mas carga, subir RATE_LIMIT_MAX_REQUESTS en
+// el gateway en vez de volver a esquivarlo.
 
 import http from "k6/http";
 import { check, sleep } from "k6";
-import {
-  BASE_URL,
-  FREQUENT_COMPANY_EMAIL,
-  FREQUENT_COMPANY_PASSWORD,
-  TRANSPORTATIONS_BASE_URL,
-} from "./helpers/config.ts";
+import { BASE_URL, FREQUENT_COMPANY_EMAIL, FREQUENT_COMPANY_PASSWORD } from "./helpers/config.ts";
 import { getAdminToken, registerAndLogin, ensurePromotedUser } from "./helpers/auth.ts";
 import { ensureCompanyProduct } from "./helpers/companies.ts";
 import { createVehicle, createTrip, startTrip } from "./helpers/fleet.ts";
@@ -191,7 +188,7 @@ export function crearReserva(data: SetupData): void {
 export function enviarGps(data: SetupData): void {
   const vehicleId = data.vehicleIds[(__VU - 1) % data.vehicleIds.length];
   const res = http.post(
-    `${TRANSPORTATIONS_BASE_URL}/gps/signal`,
+    `${BASE_URL}/transportations/gps/signal`,
     gpsSignalPayload(vehicleId, montevideoPoint(__VU + __ITER)),
     { headers: { "Content-Type": "application/json" } }
   );
