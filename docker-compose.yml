@@ -43,6 +43,8 @@ services:
       AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://move-platform-api}
       INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-}
     depends_on:
       - reservations
       - transportations
