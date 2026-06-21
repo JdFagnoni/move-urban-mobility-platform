@@ -1,5 +1,4 @@
 import { HttpError, type CreateReservationDTO } from "@move/shared";
-import { classifyIndividualCargo } from "./classify-individual-cargo";
 import type { NormalizedCargoItemInput, PreparedReservationCreation } from "./types";
 import { requireGeoPoint } from "./validate-common-input";
 
@@ -40,12 +39,20 @@ export async function createIndividualReservation(
 
   const origin = requireGeoPoint(input.dto.origin, "origin");
   const destination = requireGeoPoint(input.dto.destination, "destination");
-  const classifiedCargo = await classifyIndividualCargo(input.cargoItems);
 
+  // La clasificacion se hace de forma asincrona (ver
+  // messaging/classification-consumer.ts): la reserva arranca siempre en
+  // pending_classification, sin categoria, y un worker la resuelve en
+  // segundo plano.
   return {
     origin,
     destination,
-    status: classifiedCargo.status,
-    cargoItems: classifiedCargo.cargoItems,
+    status: "pending_classification",
+    cargoItems: input.cargoItems.map((item) => ({
+      description: item.description,
+      estimatedValue: item.estimatedValue,
+      size: item.size,
+      categoryId: null,
+    })),
   };
 }

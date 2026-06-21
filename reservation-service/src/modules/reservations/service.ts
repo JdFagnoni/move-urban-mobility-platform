@@ -207,8 +207,16 @@ export async function createReservation(
       { transaction }
     );
 
-    if (finalStatus === "pending_classification") {
-      await createClassificationNotification(reservationId, transaction);
+    if (finalStatus === "pending_classification" && clientUser.clientType === "individual") {
+      await enqueueOutboxEvent(
+        {
+          aggregateId: reservationId,
+          type: OUTBOX_EVENT_TYPES.classificationRequested,
+          routingKey: ROUTING_KEYS.classificationRequested,
+          payload: { reservationId },
+        },
+        transaction
+      );
     }
   });
 

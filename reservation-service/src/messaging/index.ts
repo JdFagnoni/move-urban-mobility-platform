@@ -1,4 +1,11 @@
-import { QUEUES, consume, startMessaging, type ReservationUnsupportedEvent } from "@move/shared";
+import {
+  QUEUES,
+  consume,
+  startMessaging,
+  type ClassificationRequestedEvent,
+  type ReservationUnsupportedEvent,
+} from "@move/shared";
+import { handleClassificationRequested } from "./classification-consumer";
 import { sendUnsupportedReservationEmail } from "./email-consumer";
 import { startOutboxRelay } from "./relay";
 
@@ -12,5 +19,11 @@ async function registerConsumers(): Promise<void> {
   await consume<ReservationUnsupportedEvent>(
     QUEUES.notificationsEmail,
     sendUnsupportedReservationEmail
+  );
+  // prefetch mas bajo: cada mensaje dispara llamadas HTTP al categorizer-service.
+  await consume<ClassificationRequestedEvent>(
+    QUEUES.reservationClassification,
+    handleClassificationRequested,
+    { prefetch: 5 }
   );
 }
