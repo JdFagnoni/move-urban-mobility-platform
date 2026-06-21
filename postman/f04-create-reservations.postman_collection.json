@@ -622,10 +622,14 @@
                   "});",
                   "const body = pm.response.json();",
                   "pm.expect(body.success).to.eql(true);",
-                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "// La clasificacion de individuales es asincrona: el POST responde de",
+                  "// inmediato con pending_classification, sin categoria ni quote todavia.",
+                  "pm.expect(body.data.status).to.eql('pending_classification');",
+                  "pm.expect(body.data.quotedPrice).to.eql(null);",
                   "pm.expect(body.data.cargoItems).to.have.length(1);",
-                  "pm.expect(body.data.cargoItems[0].categoryId).to.be.a('string').and.not.empty;",
-                  "pm.collectionVariables.set('individual_classified_reservation_id', body.data.id);"
+                  "pm.expect(body.data.cargoItems[0].categoryId).to.eql(null);",
+                  "pm.collectionVariables.set('individual_classified_reservation_id', body.data.id);",
+                  "pm.collectionVariables.set('individual_classification_poll_attempts', 0);"
                 ]
               }
             }
@@ -673,12 +677,36 @@
                 "type": "text/javascript",
                 "packages": {},
                 "exec": [
-                  "pm.test('classified reservation retrieved', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const body = pm.response.json();",
-                  "pm.expect(body.data.id).to.eql(pm.collectionVariables.get('individual_classified_reservation_id'));",
-                  "pm.expect(body.data.status).to.eql('pending_confirmation');"
+                  "function sendRequestAsync(options) {",
+                  "  return new Promise((resolve, reject) => {",
+                  "    pm.sendRequest(options, (err, res) => (err ? reject(err) : resolve(res)));",
+                  "  });",
+                  "}",
+                  "",
+                  "// La clasificacion de individuales corre en un worker async (ver",
+                  "// classification-consumer.ts), asi que este GET puede llegar antes de que",
+                  "// termine. Se reintenta la misma llamada con un delay real entre intentos",
+                  "// hasta ver pending_confirmation o agotar el tiempo de espera (~10s).",
+                  "pm.test('classified reservation retrieved', async function () {",
+                  "  let body = pm.response.json();",
+                  "  pm.expect(body.data.id).to.eql(pm.collectionVariables.get('individual_classified_reservation_id'));",
+                  "",
+                  "  let attempts = 0;",
+                  "  while (body.data.status === 'pending_classification' && attempts < 20) {",
+                  "    await new Promise((resolve) => setTimeout(resolve, 500));",
+                  "    const res = await sendRequestAsync({",
+                  "      url: pm.request.url.toString(),",
+                  "      method: 'GET',",
+                  "      header: { Authorization: pm.request.headers.get('Authorization') },",
+                  "    });",
+                  "    body = res.json();",
+                  "    attempts++;",
+                  "  }",
+                  "",
+                  "  pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "  pm.expect(body.data.quotedPrice).to.be.a('number');",
+                  "  pm.expect(body.data.cargoItems[0].categoryId).to.be.a('string').and.not.empty;",
+                  "});"
                 ]
               }
             }
@@ -1592,6 +1620,10 @@
     {
       "key": "individual_classified_reservation_id",
       "value": ""
+    },
+    {
+      "key": "individual_classification_poll_attempts",
+      "value": "0"
     },
     {
       "key": "individual_pending_reservation_id",
