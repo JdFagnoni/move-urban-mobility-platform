@@ -144,5 +144,9 @@ transportationsRouter.get("/gps/vehicle/:vehicleId/latest", transportationsProxy
 transportationsRouter.get("/alerts", transportationsProxy());
 transportationsRouter.get("/trips", transportationsProxy());
 
+// GPS ingestion — public both here and in transportation-service (devices have
+// no login), so the gateway must not require a JWT to reach it either.
+transportationsRouter.post("/gps/signal", transportationsProxy());
+
 // Catch-all for existing routes (trips, gps, alerts, operator)
 mountProtectedRoute("/");
