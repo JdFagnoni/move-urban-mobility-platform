@@ -68,7 +68,7 @@ function seedCompany(
   let created = 0;
   for (let i = 0; i < reservationCount; i++) {
     const res = http.post(
-      `${BASE_URL}/reservations/reservations`,
+      `${BASE_URL}/reservations-service/reservations`,
       companyReservationPayload(companyProductId, i),
       { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
     );

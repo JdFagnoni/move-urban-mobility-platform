@@ -46,7 +46,7 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{base_url}}/reservations/auth/register",
+            "url": "{{base_url}}/reservations-service/auth/register",
             "body": {
               "mode": "raw",
               "raw": "{\"email\":\"driver-f13@move.local\",\"password\":\"Driver123!\",\"name\":\"Driver F13 Test\",\"clientType\":\"individual\"}"
@@ -62,9 +62,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
             "url": {
-              "raw": "{{base_url}}/reservations/users?role=driver&email=driver-f13@move.local",
+              "raw": "{{base_url}}/reservations-service/users?role=driver&email=driver-f13@move.local",
               "host": ["{{base_url}}"],
-              "path": ["reservations","users"],
+              "path": ["reservations-service","users"],
               "query": [
                 { "key": "role",  "value": "driver" },
                 { "key": "email", "value": "driver-f13@move.local" }
@@ -86,7 +86,7 @@
               { "key": "Content-Type",  "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{admin_token}}" }
             ],
-            "url": "{{base_url}}/reservations/users/{{driver1_userId}}",
+            "url": "{{base_url}}/reservations-service/users/{{driver1_userId}}",
             "body": {
               "mode": "raw",
               "raw": "{\"role\":\"driver\"}"
@@ -118,7 +118,7 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{base_url}}/reservations/auth/register",
+            "url": "{{base_url}}/reservations-service/auth/register",
             "body": {
               "mode": "raw",
               "raw": "{\"email\":\"driver2-f13@move.local\",\"password\":\"Driver123!\",\"name\":\"Driver2 F13 Test\",\"clientType\":\"individual\"}"
@@ -134,9 +134,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
             "url": {
-              "raw": "{{base_url}}/reservations/users?role=driver&email=driver2-f13@move.local",
+              "raw": "{{base_url}}/reservations-service/users?role=driver&email=driver2-f13@move.local",
               "host": ["{{base_url}}"],
-              "path": ["reservations","users"],
+              "path": ["reservations-service","users"],
               "query": [
                 { "key": "role",  "value": "driver" },
                 { "key": "email", "value": "driver2-f13@move.local" }
@@ -158,7 +158,7 @@
               { "key": "Content-Type",  "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{admin_token}}" }
             ],
-            "url": "{{base_url}}/reservations/users/{{driver2_userId}}",
+            "url": "{{base_url}}/reservations-service/users/{{driver2_userId}}",
             "body": {
               "mode": "raw",
               "raw": "{\"role\":\"driver\"}"
@@ -191,9 +191,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
             "url": {
-              "raw": "{{base_url}}/reservations/users?role=driver&pageSize=50",
+              "raw": "{{base_url}}/reservations-service/users?role=driver&pageSize=50",
               "host": ["{{base_url}}"],
-              "path": ["reservations","users"],
+              "path": ["reservations-service","users"],
               "query": [
                 { "key": "role",     "value": "driver" },
                 { "key": "pageSize", "value": "50" }
@@ -219,9 +219,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
             "url": {
-              "raw": "{{base_url}}/reservations/vehicles",
+              "raw": "{{base_url}}/transportations-service/vehicles",
               "host": ["{{base_url}}"],
-              "path": ["reservations","vehicles"]
+              "path": ["transportations-service","vehicles"]
             }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -240,7 +240,7 @@
               { "key": "Content-Type",  "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{admin_token}}" }
             ],
-            "url": "{{base_url}}/transportations/trips",
+            "url": "{{base_url}}/transportations-service/trips",
             "body": {
               "mode": "raw",
               "raw": "{\"reservationId\":\"00000000-0000-0000-0000-000000000017\",\"vehicleId\":\"{{vehicleId}}\",\"driverId\":\"{{driverId}}\"}"
@@ -258,7 +258,7 @@
           "request": {
             "method": "PATCH",
             "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
-            "url": "{{base_url}}/transportations/trips/{{tripId}}/start"
+            "url": "{{base_url}}/transportations-service/trips/{{tripId}}/start"
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Trip started (status 200)', () => pm.expect(pm.response.code).to.eql(200));",
@@ -273,7 +273,7 @@
               { "key": "Content-Type",  "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{admin_token}}" }
             ],
-            "url": "{{base_url}}/transportations/trips",
+            "url": "{{base_url}}/transportations-service/trips",
             "body": {
               "mode": "raw",
               "raw": "{\"reservationId\":\"00000000-0000-0000-0000-000000000018\",\"vehicleId\":\"ffffffff-ffff-ffff-ffff-ffffffffffff\",\"driverId\":\"{{driverId}}\"}"
@@ -292,7 +292,7 @@
       "request": {
         "method": "PATCH",
         "header": [],
-        "url": "{{base_url}}/transportations/trips/00000000-0000-0000-0000-000000000099/complete"
+        "url": "{{base_url}}/transportations-service/trips/00000000-0000-0000-0000-000000000099/complete"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 401 sin token', () => pm.expect(pm.response.code).to.eql(401));"
@@ -303,7 +303,7 @@
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer esto.no.es.un.jwt.valido" }],
-        "url": "{{base_url}}/transportations/trips/00000000-0000-0000-0000-000000000099/complete"
+        "url": "{{base_url}}/transportations-service/trips/00000000-0000-0000-0000-000000000099/complete"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 401 token inválido', () => pm.expect(pm.response.code).to.eql(401));"
@@ -314,7 +314,7 @@
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
-        "url": "{{base_url}}/transportations/trips/00000000-0000-0000-0000-000000000000/complete"
+        "url": "{{base_url}}/transportations-service/trips/00000000-0000-0000-0000-000000000000/complete"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 404 trip no encontrado', () => pm.expect(pm.response.code).to.eql(404));",
@@ -326,7 +326,7 @@
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
-        "url": "{{base_url}}/transportations/trips/{{assignedTripId}}/complete"
+        "url": "{{base_url}}/transportations-service/trips/{{assignedTripId}}/complete"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 409 estado inválido', () => pm.expect(pm.response.code).to.eql(409));",
@@ -338,7 +338,7 @@
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
-        "url": "{{base_url}}/transportations/trips/{{tripId}}/complete"
+        "url": "{{base_url}}/transportations-service/trips/{{tripId}}/complete"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 403 caller no es driver', () => pm.expect(pm.response.code).to.eql(403));",
@@ -350,7 +350,7 @@
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer {{driver2_token}}" }],
-        "url": "{{base_url}}/transportations/trips/{{tripId}}/complete"
+        "url": "{{base_url}}/transportations-service/trips/{{tripId}}/complete"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 403 conductor incorrecto', () => pm.expect(pm.response.code).to.eql(403));",
@@ -362,7 +362,7 @@
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
-        "url": "{{base_url}}/transportations/trips/{{tripId}}/complete"
+        "url": "{{base_url}}/transportations-service/trips/{{tripId}}/complete"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 200', () => pm.expect(pm.response.code).to.eql(200));",
@@ -382,7 +382,7 @@
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Authorization", "value": "Bearer {{driver_token}}" }],
-        "url": "{{base_url}}/transportations/trips/{{tripId}}/complete"
+        "url": "{{base_url}}/transportations-service/trips/{{tripId}}/complete"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
         "pm.test('Status 409 estado inválido', () => pm.expect(pm.response.code).to.eql(409));",

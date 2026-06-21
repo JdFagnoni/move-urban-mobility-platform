@@ -8,9 +8,111 @@
     { "key": "gateway_url", "value": "http://localhost:3000" },
     { "key": "adminToken", "value": "" },
     { "key": "userToken", "value": "" },
-    { "key": "zoneId", "value": "" }
+    { "key": "zoneId", "value": "" },
+    { "key": "auth0_domain", "value": "" },
+    { "key": "auth0_audience", "value": "https://move-platform-api" },
+    { "key": "auth0_client_id", "value": "" },
+    { "key": "auth0_client_secret", "value": "" },
+    { "key": "auth0_realm", "value": "Username-Password-Authentication" },
+    { "key": "admin_email", "value": "admin@move.local" },
+    { "key": "admin_password", "value": "Admin123" },
+    { "key": "user_email", "value": "" },
+    { "key": "user_password", "value": "" }
   ],
   "item": [
+    {
+      "name": "Setup",
+      "description": "Verificar gateway y obtener tokens antes de correr las demás carpetas.",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Gateway responde 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Admin Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Token de admin obtenido', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('adminToken', pm.response.json().access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Token de usuario obtenido', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('userToken', pm.response.json().access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
     {
       "name": "Health",
       "item": [
@@ -63,9 +165,9 @@
               "raw": "{\n  \"name\": \"Zona Roja Centro\",\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1645, -34.9050],\n        [-56.1600, -34.9050],\n        [-56.1600, -34.9015],\n        [-56.1645, -34.9015],\n        [-56.1645, -34.9050]\n      ]\n    ]\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
+              "raw": "{{gateway_url}}/transportations-service/zones",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
+              "path": ["transportations-service", "zones"]
             }
           },
           "response": []
@@ -97,9 +199,9 @@
               "raw": "{\n  \"name\": \"Zona Preferente Rambla\",\n  \"type\": \"preferred\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1880, -34.9060],\n        [-56.1820, -34.9060],\n        [-56.1820, -34.9020],\n        [-56.1880, -34.9020],\n        [-56.1880, -34.9060]\n      ]\n    ]\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
+              "raw": "{{gateway_url}}/transportations-service/zones",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
+              "path": ["transportations-service", "zones"]
             }
           },
           "response": []
@@ -134,9 +236,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
+              "raw": "{{gateway_url}}/transportations-service/zones",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
+              "path": ["transportations-service", "zones"]
             }
           },
           "response": []
@@ -161,9 +263,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones?type=red",
+              "raw": "{{gateway_url}}/transportations-service/zones?type=red",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"],
+              "path": ["transportations-service", "zones"],
               "query": [{ "key": "type", "value": "red" }]
             }
           },
@@ -189,9 +291,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones/{{zoneId}}",
+              "raw": "{{gateway_url}}/transportations-service/zones/{{zoneId}}",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones", "{{zoneId}}"]
+              "path": ["transportations-service", "zones", "{{zoneId}}"]
             }
           },
           "response": []
@@ -223,9 +325,9 @@
               "raw": "{\n  \"name\": \"Zona Roja Centro Actualizada\",\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1650, -34.9055],\n        [-56.1595, -34.9055],\n        [-56.1595, -34.9010],\n        [-56.1650, -34.9010],\n        [-56.1650, -34.9055]\n      ]\n    ]\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones/{{zoneId}}",
+              "raw": "{{gateway_url}}/transportations-service/zones/{{zoneId}}",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones", "{{zoneId}}"]
+              "path": ["transportations-service", "zones", "{{zoneId}}"]
             }
           },
           "response": []
@@ -251,9 +353,9 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones/{{zoneId}}",
+              "raw": "{{gateway_url}}/transportations-service/zones/{{zoneId}}",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones", "{{zoneId}}"]
+              "path": ["transportations-service", "zones", "{{zoneId}}"]
             }
           },
           "response": []
@@ -276,9 +378,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones/{{zoneId}}",
+              "raw": "{{gateway_url}}/transportations-service/zones/{{zoneId}}",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones", "{{zoneId}}"]
+              "path": ["transportations-service", "zones", "{{zoneId}}"]
             }
           },
           "response": []
@@ -313,9 +415,9 @@
               "raw": "{\n  \"name\": \"Sin Auth\",\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1645, -34.9050],\n        [-56.1600, -34.9050],\n        [-56.1600, -34.9015],\n        [-56.1645, -34.9015],\n        [-56.1645, -34.9050]\n      ]\n    ]\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
+              "raw": "{{gateway_url}}/transportations-service/zones",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
+              "path": ["transportations-service", "zones"]
             }
           },
           "response": []
@@ -347,9 +449,9 @@
               "raw": "{\n  \"name\": \"Sin Rol\",\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1645, -34.9050],\n        [-56.1600, -34.9050],\n        [-56.1600, -34.9015],\n        [-56.1645, -34.9015],\n        [-56.1645, -34.9050]\n      ]\n    ]\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
+              "raw": "{{gateway_url}}/transportations-service/zones",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
+              "path": ["transportations-service", "zones"]
             }
           },
           "response": []
@@ -383,9 +485,9 @@
               "raw": "{\n  \"name\": \"Zona Auth Test\",\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1645, -34.9050],\n        [-56.1600, -34.9050],\n        [-56.1600, -34.9015],\n        [-56.1645, -34.9015],\n        [-56.1645, -34.9050]\n      ]\n    ]\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
+              "raw": "{{gateway_url}}/transportations-service/zones",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
+              "path": ["transportations-service", "zones"]
             }
           },
           "response": []
@@ -414,9 +516,9 @@
               "raw": "{ \"name\": \"Sin Auth\" }"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones/00000000-0000-0000-0000-000000000001",
+              "raw": "{{gateway_url}}/transportations-service/zones/00000000-0000-0000-0000-000000000001",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones", "00000000-0000-0000-0000-000000000001"]
+              "path": ["transportations-service", "zones", "00000000-0000-0000-0000-000000000001"]
             }
           },
           "response": []
@@ -448,9 +550,9 @@
               "raw": "{ \"name\": \"Sin Rol\" }"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones/00000000-0000-0000-0000-000000000001",
+              "raw": "{{gateway_url}}/transportations-service/zones/00000000-0000-0000-0000-000000000001",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones", "00000000-0000-0000-0000-000000000001"]
+              "path": ["transportations-service", "zones", "00000000-0000-0000-0000-000000000001"]
             }
           },
           "response": []
@@ -482,9 +584,9 @@
               "raw": "{ \"name\": \"Zona Auth Test Editada\" }"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones/{{zoneId}}",
+              "raw": "{{gateway_url}}/transportations-service/zones/{{zoneId}}",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones", "{{zoneId}}"]
+              "path": ["transportations-service", "zones", "{{zoneId}}"]
             }
           },
           "response": []
@@ -509,9 +611,9 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones/00000000-0000-0000-0000-000000000001",
+              "raw": "{{gateway_url}}/transportations-service/zones/00000000-0000-0000-0000-000000000001",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones", "00000000-0000-0000-0000-000000000001"]
+              "path": ["transportations-service", "zones", "00000000-0000-0000-0000-000000000001"]
             }
           },
           "response": []
@@ -539,9 +641,9 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones/00000000-0000-0000-0000-000000000001",
+              "raw": "{{gateway_url}}/transportations-service/zones/00000000-0000-0000-0000-000000000001",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones", "00000000-0000-0000-0000-000000000001"]
+              "path": ["transportations-service", "zones", "00000000-0000-0000-0000-000000000001"]
             }
           },
           "response": []
@@ -567,9 +669,9 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones/{{zoneId}}",
+              "raw": "{{gateway_url}}/transportations-service/zones/{{zoneId}}",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones", "{{zoneId}}"]
+              "path": ["transportations-service", "zones", "{{zoneId}}"]
             }
           },
           "response": []
@@ -606,9 +708,9 @@
               "raw": "{\n  \"name\": \"Zona Invalida\",\n  \"type\": \"danger\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1645, -34.9050],\n        [-56.1600, -34.9050],\n        [-56.1600, -34.9015],\n        [-56.1645, -34.9015],\n        [-56.1645, -34.9050]\n      ]\n    ]\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
+              "raw": "{{gateway_url}}/transportations-service/zones",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
+              "path": ["transportations-service", "zones"]
             }
           },
           "response": []
@@ -638,9 +740,9 @@
               "raw": "{\n  \"name\": \"Poligono No Cerrado\",\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1645, -34.9050],\n        [-56.1600, -34.9050],\n        [-56.1600, -34.9015],\n        [-56.1645, -34.9015]\n      ]\n    ]\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
+              "raw": "{{gateway_url}}/transportations-service/zones",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
+              "path": ["transportations-service", "zones"]
             }
           },
           "response": []
@@ -670,9 +772,9 @@
               "raw": "{\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [-56.1645, -34.9050],\n        [-56.1600, -34.9050],\n        [-56.1600, -34.9015],\n        [-56.1645, -34.9015],\n        [-56.1645, -34.9050]\n      ]\n    ]\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
+              "raw": "{{gateway_url}}/transportations-service/zones",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
+              "path": ["transportations-service", "zones"]
             }
           },
           "response": []
@@ -702,9 +804,9 @@
               "raw": "{\n  \"name\": \"Zona Punto\",\n  \"type\": \"red\",\n  \"polygon\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9050]\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
+              "raw": "{{gateway_url}}/transportations-service/zones",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
+              "path": ["transportations-service", "zones"]
             }
           },
           "response": []
@@ -727,9 +829,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones/00000000-0000-0000-0000-000000000000",
+              "raw": "{{gateway_url}}/transportations-service/zones/00000000-0000-0000-0000-000000000000",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones", "00000000-0000-0000-0000-000000000000"]
+              "path": ["transportations-service", "zones", "00000000-0000-0000-0000-000000000000"]
             }
           },
           "response": []

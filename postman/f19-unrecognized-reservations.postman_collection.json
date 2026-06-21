@@ -97,12 +97,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/register",
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "auth",
                 "register"
               ]
@@ -144,12 +144,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/register",
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "auth",
                 "register"
               ]
@@ -290,12 +290,12 @@
               }
             ],
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/me",
+              "raw": "{{gateway_url}}/reservations-service/auth/me",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "auth",
                 "me"
               ]
@@ -330,12 +330,12 @@
               }
             ],
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/me",
+              "raw": "{{gateway_url}}/reservations-service/auth/me",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "auth",
                 "me"
               ]
@@ -383,12 +383,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/users/{{operator_user_id}}",
+              "raw": "{{gateway_url}}/reservations-service/users/{{operator_user_id}}",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "users",
                 "{{operator_user_id}}"
               ]
@@ -423,12 +423,12 @@
               }
             ],
             "url": {
-              "raw": "{{gateway_url}}/reservations/users/{{operator_user_id}}",
+              "raw": "{{gateway_url}}/reservations-service/users/{{operator_user_id}}",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "users",
                 "{{operator_user_id}}"
               ]
@@ -462,12 +462,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations/categories",
+              "raw": "{{gateway_url}}/reservations-service/categories",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "categories"
               ]
             }
@@ -523,12 +523,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations",
+              "raw": "{{gateway_url}}/reservations-service/reservations",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations"
               ]
             }
@@ -560,12 +560,12 @@
               }
             ],
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/pending-classification",
+              "raw": "{{gateway_url}}/reservations-service/reservations/pending-classification",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "pending-classification"
               ]
@@ -600,12 +600,12 @@
               }
             ],
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/pending-classification",
+              "raw": "{{gateway_url}}/reservations-service/reservations/pending-classification",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "pending-classification"
               ]
@@ -667,12 +667,12 @@
               }
             ],
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/classification-notifications",
+              "raw": "{{gateway_url}}/reservations-service/reservations/classification-notifications",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "classification-notifications"
               ]
@@ -707,12 +707,12 @@
               }
             ],
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/classification-notifications/{{manual_notification_id}}/acknowledge",
+              "raw": "{{gateway_url}}/reservations-service/reservations/classification-notifications/{{manual_notification_id}}/acknowledge",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "classification-notifications",
                 "{{manual_notification_id}}",
@@ -760,12 +760,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{manual_reservation_id}}/classification",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{manual_reservation_id}}/classification",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "{{manual_reservation_id}}",
                 "classification"
@@ -812,12 +812,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{manual_reservation_id}}/classification",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{manual_reservation_id}}/classification",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "{{manual_reservation_id}}",
                 "classification"
@@ -864,12 +864,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{manual_reservation_id}}/classification",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{manual_reservation_id}}/classification",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "{{manual_reservation_id}}",
                 "classification"
@@ -919,12 +919,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{manual_reservation_id}}/classification",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{manual_reservation_id}}/classification",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "{{manual_reservation_id}}",
                 "classification"
@@ -961,12 +961,12 @@
               }
             ],
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{manual_reservation_id}}",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{manual_reservation_id}}",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "{{manual_reservation_id}}"
               ]
@@ -1022,12 +1022,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations",
+              "raw": "{{gateway_url}}/reservations-service/reservations",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations"
               ]
             }
@@ -1072,12 +1072,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{reject_reservation_id}}/reject",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{reject_reservation_id}}/reject",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "{{reject_reservation_id}}",
                 "reject"
@@ -1138,12 +1138,12 @@
               }
             ],
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/classification-notifications",
+              "raw": "{{gateway_url}}/reservations-service/reservations/classification-notifications",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "classification-notifications"
               ]
@@ -1189,12 +1189,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{reject_reservation_id}}/reject",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{reject_reservation_id}}/reject",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "{{reject_reservation_id}}",
                 "reject"
@@ -1246,12 +1246,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{reject_reservation_id}}/reject",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{reject_reservation_id}}/reject",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "{{reject_reservation_id}}",
                 "reject"
@@ -1288,12 +1288,12 @@
               }
             ],
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{reject_reservation_id}}",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{reject_reservation_id}}",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "{{reject_reservation_id}}"
               ]
@@ -1339,12 +1339,12 @@
               }
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations/{{reject_reservation_id}}/reject",
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{reject_reservation_id}}/reject",
               "host": [
                 "{{gateway_url}}"
               ],
               "path": [
-                "reservations",
+                "reservations-service",
                 "reservations",
                 "{{reject_reservation_id}}",
                 "reject"

@@ -20,7 +20,7 @@ import { BASE_URL } from "./config.ts";
 
 export function createVehicle(adminToken: string, plate: string, capacity = 10): string {
   const res = http.post(
-    `${BASE_URL}/transportations/vehicles`,
+    `${BASE_URL}/transportations-service/vehicles`,
     JSON.stringify({ plate, type: "VAN", capacity, status: "available" }),
     { headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" } }
   );
@@ -34,7 +34,7 @@ export function createVehicle(adminToken: string, plate: string, capacity = 10):
 
 export function createRedZone(adminToken: string, name: string, coordinates: number[][][]): string {
   const res = http.post(
-    `${BASE_URL}/transportations/zones`,
+    `${BASE_URL}/transportations-service/zones`,
     JSON.stringify({ name, type: "red", polygon: { type: "Polygon", coordinates } }),
     { headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" } }
   );
@@ -53,7 +53,7 @@ export function createTrip(
   driverId: string
 ): string {
   const res = http.post(
-    `${BASE_URL}/transportations/trips`,
+    `${BASE_URL}/transportations-service/trips`,
     JSON.stringify({ reservationId, vehicleId, driverId }),
     { headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" } }
   );
@@ -68,7 +68,7 @@ export function createTrip(
 }
 
 export function startTrip(driverToken: string, tripId: string): void {
-  const res = http.patch(`${BASE_URL}/transportations/trips/${tripId}/start`, null, {
+  const res = http.patch(`${BASE_URL}/transportations-service/trips/${tripId}/start`, null, {
     headers: { Authorization: `Bearer ${driverToken}` },
   });
 

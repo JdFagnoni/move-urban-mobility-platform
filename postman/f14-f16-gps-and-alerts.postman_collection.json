@@ -48,9 +48,9 @@
               "raw": "{\n  \"plate\": \"GPS-TEST-01\",\n  \"type\": \"VAN\",\n  \"capacity\": 1000,\n  \"gpsDeviceId\": \"gps-device-test-01\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/vehicles",
+              "raw": "{{gateway_url}}/transportations-service/vehicles",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "vehicles"]
+              "path": ["transportations-service", "vehicles"]
             }
           },
           "response": []
@@ -84,9 +84,9 @@
               "raw": "{\n  \"name\": \"Zona Roja Test - Plaza Independencia\",\n  \"type\": \"red\",\n  \"description\": \"Zona para pruebas de geofencing\",\n  \"polygon\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [[\n      [-56.1900, -34.9080],\n      [-56.1860, -34.9080],\n      [-56.1860, -34.9050],\n      [-56.1900, -34.9050],\n      [-56.1900, -34.9080]\n    ]]\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/zones",
+              "raw": "{{gateway_url}}/transportations-service/zones",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "zones"]
+              "path": ["transportations-service", "zones"]
             }
           },
           "response": []
@@ -114,9 +114,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations/vehicles/{{vehicleId}}",
+              "raw": "{{gateway_url}}/transportations-service/vehicles/{{vehicleId}}",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "vehicles", "{{vehicleId}}"]
+              "path": ["transportations-service", "vehicles", "{{vehicleId}}"]
             }
           },
           "response": []
@@ -429,9 +429,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{gateway_url}}/transportations/alerts?vehicleId={{vehicleId}}&resolved=false",
+                  "raw": "{{gateway_url}}/transportations-service/alerts?vehicleId={{vehicleId}}&resolved=false",
                   "host": ["{{gateway_url}}"],
-                  "path": ["transportations", "alerts"],
+                  "path": ["transportations-service", "alerts"],
                   "query": [
                     { "key": "vehicleId", "value": "{{vehicleId}}" },
                     { "key": "resolved", "value": "false" }
@@ -503,9 +503,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{gateway_url}}/transportations/alerts?vehicleId={{vehicleId}}&resolved=false",
+                  "raw": "{{gateway_url}}/transportations-service/alerts?vehicleId={{vehicleId}}&resolved=false",
                   "host": ["{{gateway_url}}"],
-                  "path": ["transportations", "alerts"],
+                  "path": ["transportations-service", "alerts"],
                   "query": [
                     { "key": "vehicleId", "value": "{{vehicleId}}" },
                     { "key": "resolved", "value": "false" }
@@ -625,9 +625,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{gateway_url}}/transportations/alerts?vehicleId={{vehicleId}}&resolved=false",
+                  "raw": "{{gateway_url}}/transportations-service/alerts?vehicleId={{vehicleId}}&resolved=false",
                   "host": ["{{gateway_url}}"],
-                  "path": ["transportations", "alerts"],
+                  "path": ["transportations-service", "alerts"],
                   "query": [
                     { "key": "vehicleId", "value": "{{vehicleId}}" },
                     { "key": "resolved", "value": "false" }
@@ -675,9 +675,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/transportations/alerts",
+              "raw": "{{gateway_url}}/transportations-service/alerts",
               "host": ["{{gateway_url}}"],
-              "path": ["transportations", "alerts"]
+              "path": ["transportations-service", "alerts"]
             }
           },
           "response": []
@@ -705,9 +705,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/transportations/alerts?resolved=false",
+              "raw": "{{gateway_url}}/transportations-service/alerts?resolved=false",
               "host": ["{{gateway_url}}"],
-              "path": ["transportations", "alerts"],
+              "path": ["transportations-service", "alerts"],
               "query": [{ "key": "resolved", "value": "false" }]
             }
           },
@@ -736,9 +736,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/transportations/alerts?vehicleId={{vehicleId}}",
+              "raw": "{{gateway_url}}/transportations-service/alerts?vehicleId={{vehicleId}}",
               "host": ["{{gateway_url}}"],
-              "path": ["transportations", "alerts"],
+              "path": ["transportations-service", "alerts"],
               "query": [{ "key": "vehicleId", "value": "{{vehicleId}}" }]
             }
           },
@@ -769,9 +769,9 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/transportations/alerts/{{alertId}}/resolve",
+              "raw": "{{gateway_url}}/transportations-service/alerts/{{alertId}}/resolve",
               "host": ["{{gateway_url}}"],
-              "path": ["transportations", "alerts", "{{alertId}}", "resolve"]
+              "path": ["transportations-service", "alerts", "{{alertId}}", "resolve"]
             }
           },
           "response": []
@@ -799,9 +799,9 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/transportations/alerts/{{alertId}}/resolve",
+              "raw": "{{gateway_url}}/transportations-service/alerts/{{alertId}}/resolve",
               "host": ["{{gateway_url}}"],
-              "path": ["transportations", "alerts", "{{alertId}}", "resolve"]
+              "path": ["transportations-service", "alerts", "{{alertId}}", "resolve"]
             }
           },
           "response": []
@@ -829,9 +829,9 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/transportations/alerts/00000000-0000-0000-0000-000000000000/resolve",
+              "raw": "{{gateway_url}}/transportations-service/alerts/00000000-0000-0000-0000-000000000000/resolve",
               "host": ["{{gateway_url}}"],
-              "path": ["transportations", "alerts", "00000000-0000-0000-0000-000000000000", "resolve"]
+              "path": ["transportations-service", "alerts", "00000000-0000-0000-0000-000000000000", "resolve"]
             }
           },
           "response": []
@@ -859,9 +859,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/transportations/alerts?resolved=true",
+              "raw": "{{gateway_url}}/transportations-service/alerts?resolved=true",
               "host": ["{{gateway_url}}"],
-              "path": ["transportations", "alerts"],
+              "path": ["transportations-service", "alerts"],
               "query": [{ "key": "resolved", "value": "true" }]
             }
           },
@@ -892,9 +892,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/transportations/alerts",
+              "raw": "{{gateway_url}}/transportations-service/alerts",
               "host": ["{{gateway_url}}"],
-              "path": ["transportations", "alerts"]
+              "path": ["transportations-service", "alerts"]
             }
           },
           "response": []
@@ -918,9 +918,9 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/transportations/alerts/{{alertId}}/resolve",
+              "raw": "{{gateway_url}}/transportations-service/alerts/{{alertId}}/resolve",
               "host": ["{{gateway_url}}"],
-              "path": ["transportations", "alerts", "{{alertId}}", "resolve"]
+              "path": ["transportations-service", "alerts", "{{alertId}}", "resolve"]
             }
           },
           "response": []
@@ -957,9 +957,9 @@
               "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1712, -34.8941]\n  },\n  \"speed\": 30.0,\n  \"heading\": 90.0,\n  \"timestamp\": \"{{ts_now}}\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/transportations/gps/signal",
+              "raw": "{{gateway_url}}/transportations-service/gps/signal",
               "host": ["{{gateway_url}}"],
-              "path": ["transportations", "gps", "signal"]
+              "path": ["transportations-service", "gps", "signal"]
             }
           },
           "response": []

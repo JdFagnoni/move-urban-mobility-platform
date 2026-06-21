@@ -7,12 +7,19 @@ import {
 } from "../modules/categories/config";
 import { createUserRecord, getUserByAuthSubject, getUserByEmail } from "../modules/users/service";
 import { loadSeedCategories } from "./category-seed";
+import {
+  getCategoryTierConfig,
+  isDefaultBehavior,
+  isDefaultPricing,
+} from "./category-pricing-tiers";
 import { CategoryModel } from "./models";
 
 export async function seedDefaultCategories(): Promise<void> {
   const seedCategories = await loadSeedCategories();
 
   for (const category of seedCategories) {
+    const tier = getCategoryTierConfig(category.sourceId);
+
     const existingCategory = await CategoryModel.findOne({
       where: {
         [Op.or]: [
@@ -30,8 +37,8 @@ export async function seedDefaultCategories(): Promise<void> {
         spanishName: category.spanishName,
         descriptions: normalizeCategoryDescriptions(category.descriptions),
         active: true,
-        pricing: normalizeCategoryPricingConfig(),
-        behavior: normalizeCategoryBehaviorConfig(),
+        pricing: normalizeCategoryPricingConfig(tier.pricing),
+        behavior: normalizeCategoryBehaviorConfig(tier.behavior),
       });
       continue;
     }
@@ -40,8 +47,16 @@ export async function seedDefaultCategories(): Promise<void> {
     existingCategory.spanishName = category.spanishName;
     existingCategory.descriptions = normalizeCategoryDescriptions(category.descriptions);
     existingCategory.active = true;
-    existingCategory.pricing = normalizeCategoryPricingConfig(existingCategory.pricing);
-    existingCategory.behavior = normalizeCategoryBehaviorConfig(existingCategory.behavior);
+    // Upgrade still-default pricing/behavior to the category's tier, but never
+    // overwrite values an admin has customized through the API.
+    const currentPricing = normalizeCategoryPricingConfig(existingCategory.pricing);
+    existingCategory.pricing = isDefaultPricing(currentPricing)
+      ? normalizeCategoryPricingConfig(tier.pricing)
+      : currentPricing;
+    const currentBehavior = normalizeCategoryBehaviorConfig(existingCategory.behavior);
+    existingCategory.behavior = isDefaultBehavior(currentBehavior)
+      ? normalizeCategoryBehaviorConfig(tier.behavior)
+      : currentBehavior;
     await existingCategory.save();
   }
 }

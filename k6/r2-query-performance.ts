@@ -137,7 +137,7 @@ export function setup(): SetupData {
     );
 
     const reservationRes = http.post(
-      `${BASE_URL}/reservations/reservations`,
+      `${BASE_URL}/reservations-service/reservations`,
       companyReservationPayload(frequentProductId, i),
       { headers: { Authorization: `Bearer ${frequentToken}`, "Content-Type": "application/json" } }
     );
@@ -172,7 +172,7 @@ export function setup(): SetupData {
 
 export function crearReserva(data: SetupData): void {
   const res = http.post(
-    `${BASE_URL}/reservations/reservations`,
+    `${BASE_URL}/reservations-service/reservations`,
     companyReservationPayload(data.frequentProductId, __ITER),
     {
       headers: {
@@ -188,7 +188,7 @@ export function crearReserva(data: SetupData): void {
 export function enviarGps(data: SetupData): void {
   const vehicleId = data.vehicleIds[(__VU - 1) % data.vehicleIds.length];
   const res = http.post(
-    `${BASE_URL}/transportations/gps/signal`,
+    `${BASE_URL}/transportations-service/gps/signal`,
     gpsSignalPayload(vehicleId, montevideoPoint(__VU + __ITER)),
     { headers: { "Content-Type": "application/json" } }
   );
@@ -198,7 +198,7 @@ export function enviarGps(data: SetupData): void {
 }
 
 export function consultarReservas(data: SetupData): void {
-  const res = http.get(`${BASE_URL}/reservations/reservations?pageSize=20`, {
+  const res = http.get(`${BASE_URL}/reservations-service/reservations?pageSize=20`, {
     headers: { Authorization: `Bearer ${data.frequentToken}` },
   });
 
@@ -206,7 +206,7 @@ export function consultarReservas(data: SetupData): void {
 }
 
 export function consultarTraslados(data: SetupData): void {
-  const res = http.get(`${BASE_URL}/transportations/operator/trips/active`, {
+  const res = http.get(`${BASE_URL}/transportations-service/operator/trips/active`, {
     headers: { Authorization: `Bearer ${data.operatorToken}` },
   });
 

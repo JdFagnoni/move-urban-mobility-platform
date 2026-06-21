@@ -136,7 +136,7 @@ export default function (data: SetupData): void {
   const stage = stageLabelAt(Date.now() - data.testStartMs);
 
   const res = http.post(
-    `${BASE_URL}/reservations/reservations`,
+    `${BASE_URL}/reservations-service/reservations`,
     companyReservationPayload(data.productId, __ITER),
     {
       headers: { Authorization: `Bearer ${data.token}`, "Content-Type": "application/json" },

@@ -132,7 +132,7 @@ export function setup(): SetupData {
 }
 
 function createReservation(token: string, payload: string): void {
-  const res = http.post(`${BASE_URL}/reservations/reservations`, payload, {
+  const res = http.post(`${BASE_URL}/reservations-service/reservations`, payload, {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   });
 

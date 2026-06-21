@@ -112,9 +112,9 @@
               "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA F7 Client {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/auth/register",
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "auth", "register"]
+              "path": ["reservations-service", "auth", "register"]
             }
           }
         },
@@ -177,9 +177,9 @@
               "raw": "{\n  \"name\": \"F7 {{category_keyword}}\",\n  \"spanishName\": \"F7 {{category_keyword}} ES\",\n  \"descriptions\": [\"cargo {{category_keyword}}\"],\n  \"pricing\": {\n    \"baseFare\": 100,\n    \"pricePerKm\": 10,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 0\n  }\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/categories",
+              "raw": "{{gateway_url}}/reservations-service/categories",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "categories"]
+              "path": ["reservations-service", "categories"]
             }
           }
         },
@@ -213,9 +213,9 @@
               "raw": "{\n  \"scheduledAt\": \"{{reservation_one_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"cargo {{category_keyword}} one\",\n      \"estimatedValue\": 1200,\n      \"size\": \"medium\"\n    }\n  ]\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations",
+              "raw": "{{gateway_url}}/reservations-service/reservations",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "reservations"]
+              "path": ["reservations-service", "reservations"]
             }
           }
         },
@@ -248,9 +248,9 @@
               "raw": "{\n  \"scheduledAt\": \"{{reservation_two_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1912, -34.8937]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1501, -34.9062]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"cargo {{category_keyword}} two\",\n      \"estimatedValue\": 800,\n      \"size\": \"small\"\n    }\n  ]\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/reservations/reservations",
+              "raw": "{{gateway_url}}/reservations-service/reservations",
               "host": ["{{gateway_url}}"],
-              "path": ["reservations", "reservations"]
+              "path": ["reservations-service", "reservations"]
             }
           }
         }
@@ -279,9 +279,9 @@
         "method": "GET",
         "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
         "url": {
-          "raw": "{{gateway_url}}/reservations/reservations?status=pending_confirmation&page=1&pageSize=10",
+          "raw": "{{gateway_url}}/reservations-service/reservations?status=pending_confirmation&page=1&pageSize=10",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "reservations"],
+          "path": ["reservations-service", "reservations"],
           "query": [
             { "key": "status", "value": "pending_confirmation" },
             { "key": "page", "value": "1" },
@@ -313,9 +313,9 @@
         "method": "GET",
         "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
         "url": {
-          "raw": "{{gateway_url}}/reservations/reservations?scheduledFrom={{range_start}}&scheduledTo={{range_end}}",
+          "raw": "{{gateway_url}}/reservations-service/reservations?scheduledFrom={{range_start}}&scheduledTo={{range_end}}",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "reservations"],
+          "path": ["reservations-service", "reservations"],
           "query": [
             { "key": "scheduledFrom", "value": "{{range_start}}" },
             { "key": "scheduledTo", "value": "{{range_end}}" }
@@ -342,9 +342,9 @@
         "method": "GET",
         "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
         "url": {
-          "raw": "{{gateway_url}}/reservations/reservations?status=bogus",
+          "raw": "{{gateway_url}}/reservations-service/reservations?status=bogus",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "reservations"],
+          "path": ["reservations-service", "reservations"],
           "query": [{ "key": "status", "value": "bogus" }]
         }
       }
@@ -368,9 +368,9 @@
         "method": "GET",
         "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
         "url": {
-          "raw": "{{gateway_url}}/reservations/reservations?scheduledFrom={{reservation_two_date}}&scheduledTo={{reservation_one_date}}",
+          "raw": "{{gateway_url}}/reservations-service/reservations?scheduledFrom={{reservation_two_date}}&scheduledTo={{reservation_one_date}}",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "reservations"],
+          "path": ["reservations-service", "reservations"],
           "query": [
             { "key": "scheduledFrom", "value": "{{reservation_two_date}}" },
             { "key": "scheduledTo", "value": "{{reservation_one_date}}" }
@@ -402,9 +402,9 @@
         "method": "GET",
         "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
         "url": {
-          "raw": "{{gateway_url}}/reservations/reservations/{{reservation_one_id}}",
+          "raw": "{{gateway_url}}/reservations-service/reservations/{{reservation_one_id}}",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "reservations", "{{reservation_one_id}}"]
+          "path": ["reservations-service", "reservations", "{{reservation_one_id}}"]
         }
       }
     },
@@ -427,9 +427,9 @@
         "method": "GET",
         "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
         "url": {
-          "raw": "{{gateway_url}}/reservations/reservations/11111111-1111-4111-8111-111111111111",
+          "raw": "{{gateway_url}}/reservations-service/reservations/11111111-1111-4111-8111-111111111111",
           "host": ["{{gateway_url}}"],
-          "path": ["reservations", "reservations", "11111111-1111-4111-8111-111111111111"]
+          "path": ["reservations-service", "reservations", "11111111-1111-4111-8111-111111111111"]
         }
       }
     }

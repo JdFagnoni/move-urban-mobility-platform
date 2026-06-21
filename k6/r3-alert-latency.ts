@@ -11,7 +11,7 @@
 // alertas por vehiculo dura 24h, asi que reusar un vehiculo entre muestras
 // ocultaria la deteccion real detras del lock), manda una señal afuera de la
 // zona roja y despues una adentro (t0), y hace polling sobre
-// GET /transportations/alerts?vehicleId=...&resolved=false (publico, sin
+// GET /transportations-service/alerts?vehicleId=...&resolved=false (publico, sin
 // auth) hasta ver la alerta geofence_exit. El delta se registra en el Trend
 // "alert_detection_latency" con threshold p95 < 5000ms.
 
@@ -91,7 +91,9 @@ function sendSignal(vehicleId: string, point: Point): void {
 }
 
 function hasGeofenceAlert(vehicleId: string): boolean {
-  const res = http.get(`${BASE_URL}/transportations/alerts?vehicleId=${vehicleId}&resolved=false`);
+  const res = http.get(
+    `${BASE_URL}/transportations-service/alerts?vehicleId=${vehicleId}&resolved=false`
+  );
 
   if (res.status !== 200) {
     return false;

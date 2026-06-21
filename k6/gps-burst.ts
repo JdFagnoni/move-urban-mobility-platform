@@ -47,7 +47,7 @@ export default function () {
     timestamp: new Date().toISOString(),
   });
 
-  const res = http.post(`${BASE_URL}/transportations/gps/signal`, payload, {
+  const res = http.post(`${BASE_URL}/transportations-service/gps/signal`, payload, {
     headers: { "Content-Type": "application/json" },
   });
 
