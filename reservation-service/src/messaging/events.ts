@@ -1,6 +1,7 @@
 export const OUTBOX_EVENT_TYPES = {
   reservationAssigned: "ReservationAssigned",
   reservationUnsupported: "ReservationUnsupported",
+  classificationRequested: "ClassificationRequested",
   categoryChanged: "CategoryChanged",
 } as const;
 

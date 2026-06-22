@@ -5,13 +5,12 @@
 
 export const BASE_URL = __ENV["BASE_URL"] ?? "http://localhost:3000";
 
-// Usado SOLO para POST /gps/signal (ver helpers/payloads.ts / r2 / r3): esa
-// ruta no tiene ningun middleware de auth en transportation-service, pero el
-// catch-all protegido del gateway (mountProtectedRoute("/") en
-// api-gateway/src/routes/transportations.ts) exige JWT para cualquier ruta de
-// transportations no explicitada como publica -- y /gps/signal no esta en esa
-// lista. k6/gps-burst.ts ya esquiva esto pegandole directo al servicio; estos
-// scripts hacen lo mismo solo para esa llamada puntual. El resto de las
+// POST /gps/signal ya es publico tanto en el gateway como en
+// transportation-service, asi que gps-burst.ts y el scenario "gps" de r2/r3
+// pueden ir por BASE_URL/el gateway igual que el resto de las llamadas.
+// TRANSPORTATIONS_BASE_URL se mantiene solo porque r3-alert-latency.ts le
+// sigue pegando directo al servicio a proposito (cada muestra usa su propio
+// vehiculo, no hay necesidad de pasar por el gateway ahi). El resto de las
 // llamadas a transportation-service (vehiculos, zonas, trips) SI van por
 // BASE_URL/el gateway: transportation-service usa createAuthenticate() de
 // @move/shared, que no valida ningun JWT por su cuenta, solo confia en los

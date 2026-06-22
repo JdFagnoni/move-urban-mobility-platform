@@ -1,7 +1,12 @@
 import rateLimit from "express-rate-limit";
 
-const WINDOW_MS = 60 * 1_000;
-const MAX_REQUESTS_PER_WINDOW = 300;
+function positiveIntFromEnv(name: string, fallback: number): number {
+  const parsed = Number(process.env[name]);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const WINDOW_MS = positiveIntFromEnv("RATE_LIMIT_WINDOW_MS", 60 * 1_000);
+const MAX_REQUESTS_PER_WINDOW = positiveIntFromEnv("RATE_LIMIT_MAX_REQUESTS", 300);
 
 export const rateLimiter = rateLimit({
   windowMs: WINDOW_MS,

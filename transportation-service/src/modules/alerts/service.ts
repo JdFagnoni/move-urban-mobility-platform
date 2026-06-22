@@ -1,5 +1,12 @@
 import { query, redisClient } from "@move/shared";
-import type { AlertDTO, AlertType, AlertSeverity, GeoPoint, GpsSignalDTO } from "@move/shared";
+import type {
+  AlertDTO,
+  AlertType,
+  AlertSeverity,
+  CategoryBehaviorConfig,
+  GeoPoint,
+  GpsSignalDTO,
+} from "@move/shared";
 import { signalPipeline } from "./pipeline/setup";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -18,15 +25,43 @@ interface AlertRow {
 
 // ─── Trip lookup ─────────────────────────────────────────────────────────────
 
-async function getActiveTripId(vehicleId: string): Promise<string | null> {
+interface ActiveTrip {
+  id: string;
+  categoryIds: string[] | null;
+}
+
+async function getActiveTrip(vehicleId: string): Promise<ActiveTrip | null> {
   try {
-    const result = await query<{ id: string }>(
-      "SELECT id FROM trips WHERE vehicle_id = $1 AND status = 'in_progress' LIMIT 1",
+    const result = await query<{ id: string; category_ids: string[] | null }>(
+      "SELECT id, category_ids FROM trips WHERE vehicle_id = $1 AND status = 'in_progress' LIMIT 1",
       [vehicleId]
     );
-    return result.rows[0]?.id ?? null;
+    const row = result.rows[0];
+    return row ? { id: row.id, categoryIds: row.category_ids } : null;
   } catch {
     return null;
+  }
+}
+
+// Una categoria sin reglas configuradas (o un vehiculo sin traslado activo)
+// no debe bloquear la alerta: ante falta de informacion, se prefiere generar
+// la alerta de mas que perderla silenciosamente (fail-open, R7).
+async function resolveGeneratesAlerts(categoryIds: string[] | null): Promise<boolean> {
+  if (!categoryIds || categoryIds.length === 0) {
+    return true;
+  }
+
+  try {
+    const result = await query<{ behavior: CategoryBehaviorConfig }>(
+      "SELECT behavior FROM categories WHERE id = ANY($1::uuid[])",
+      [categoryIds]
+    );
+    if (result.rows.length === 0) {
+      return true;
+    }
+    return result.rows.some((row) => row.behavior?.generatesAlerts === true);
+  } catch {
+    return true;
   }
 }
 
@@ -101,15 +136,19 @@ export async function createAlert(params: {
   severity: AlertSeverity;
   message: string;
   location?: GeoPoint;
-}): Promise<AlertDTO> {
-  const tripId = await getActiveTripId(params.vehicleId);
+}): Promise<AlertDTO | null> {
+  const activeTrip = await getActiveTrip(params.vehicleId);
+  const generatesAlerts = await resolveGeneratesAlerts(activeTrip?.categoryIds ?? null);
+  if (!generatesAlerts) {
+    return null;
+  }
 
   const result = await query<AlertRow>(
     `INSERT INTO alerts (trip_id, vehicle_id, type, severity, message, location)
      VALUES ($1, $2, $3, $4, $5, $6::jsonb)
      RETURNING *`,
     [
-      tripId,
+      activeTrip?.id ?? null,
       params.vehicleId,
       params.type,
       params.severity,

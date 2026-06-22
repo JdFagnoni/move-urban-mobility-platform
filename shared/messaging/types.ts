@@ -12,6 +12,7 @@ export const ROUTING_KEYS = {
   reservationAssigned: "reservation.assigned",
   reservationUnsupported: "reservation.unsupported",
   gpsSignalIngested: "gps.signal.ingested",
+  classificationRequested: "reservation.classification.requested",
   categoryChanged: "category.changed",
 } as const;
 
@@ -19,6 +20,7 @@ export const QUEUES = {
   tripCreation: "trip.creation",
   notificationsEmail: "notifications.email",
   gpsDetection: "gps.detection",
+  reservationClassification: "reservation.classification",
   categorySync: "category.sync",
 } as const;
 
@@ -47,6 +49,11 @@ export const WORK_QUEUES: readonly WorkQueueDefinition[] = [
     name: QUEUES.gpsDetection,
     exchange: EXCHANGES.gps,
     routingKey: ROUTING_KEYS.gpsSignalIngested,
+  },
+  {
+    name: QUEUES.reservationClassification,
+    exchange: EXCHANGES.reservations,
+    routingKey: ROUTING_KEYS.classificationRequested,
   },
   {
     name: QUEUES.categorySync,
@@ -82,6 +89,10 @@ export interface ReservationUnsupportedEvent {
   recipientEmail: string;
   recipientName: string;
   rejectionReason: string;
+}
+
+export interface ClassificationRequestedEvent {
+  reservationId: string;
 }
 
 export type GpsSignalIngestedEvent = GpsSignalDTO;

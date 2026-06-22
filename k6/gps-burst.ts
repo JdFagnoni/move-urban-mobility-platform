@@ -2,8 +2,10 @@
 // La ingesta debe mantener latencia acotada bajo rafaga: el trabajo de deteccion
 // se publica en gps.detection y se procesa de forma asincrona, sin frenar el endpoint.
 //
-// Requiere un vehiculo existente. Crear uno (Postman F14 Setup) y pasar su id:
-//   k6 run k6/gps-burst.ts --env BASE_URL=http://localhost:3002 --env VEHICLE_ID=<uuid>
+// Por default pega al gateway (POST /gps/signal es publico tanto ahi como en
+// transportation-service). Requiere un vehiculo existente. Crear uno (Postman
+// F14 Setup) y pasar su id:
+//   k6 run k6/gps-burst.ts --env VEHICLE_ID=<uuid>
 
 import http from "k6/http";
 import { check } from "k6";
@@ -33,7 +35,7 @@ export const options = {
   },
 };
 
-const BASE_URL = __ENV["BASE_URL"] ?? "http://localhost:3002";
+const BASE_URL = __ENV["BASE_URL"] ?? "http://localhost:3000";
 const VEHICLE_ID = __ENV["VEHICLE_ID"] ?? "";
 
 export default function () {
@@ -45,7 +47,7 @@ export default function () {
     timestamp: new Date().toISOString(),
   });
 
-  const res = http.post(`${BASE_URL}/gps/signal`, payload, {
+  const res = http.post(`${BASE_URL}/transportations-service/gps/signal`, payload, {
     headers: { "Content-Type": "application/json" },
   });
 
