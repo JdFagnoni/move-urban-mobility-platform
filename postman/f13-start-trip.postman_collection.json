@@ -10,7 +10,6 @@
     { "key": "auth0_client_id",     "value": "y1zVsp6x4vS4jN5mtFUiIIMqjYRruQSz" },
     { "key": "auth0_client_secret", "value": "O_m5mem6bJ_z2vpQKNfxb_wFQT2RBPpwFWyrPR-Ub0_nIkeJeaZDbw64qYDhrW_v" },
     { "key": "auth0_audience",      "value": "https://move-platform-api" },
-    { "key": "admin_token",   "value": "" },
     { "key": "driver_token",  "value": "" },
     { "key": "driver2_token", "value": "" },
     { "key": "driverId",      "value": "" },
@@ -37,7 +36,11 @@
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Got admin token', () => pm.expect(pm.response.code).to.eql(200));",
-            "pm.collectionVariables.set('admin_token', pm.response.json().access_token);"
+            "const runId = String(Date.now());",
+            "pm.collectionVariables.set('run_id', runId);",
+            "pm.collectionVariables.set('driver1_email', `driver-f13-${runId}@move.local`);",
+            "pm.collectionVariables.set('driver2_email', `driver2-f13-${runId}@move.local`);",
+            "pm.environment.set('admin_auth_token', pm.response.json().access_token);"
           ]}}]
         },
         {
@@ -48,7 +51,7 @@
             "url": "{{base_url}}/reservations-service/auth/register",
             "body": {
               "mode": "raw",
-              "raw": "{\"email\":\"driver-f13@move.local\",\"password\":\"Driver123!\",\"name\":\"Driver F13 Test\",\"clientType\":\"individual\"}"
+              "raw": "{\"email\":\"{{driver1_email}}\",\"password\":\"Driver123!\",\"name\":\"Driver F13 Test {{run_id}}\",\"clientType\":\"individual\"}"
             }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -59,20 +62,17 @@
           "name": "S03 – Get Driver1 by Email",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
-              "raw": "{{base_url}}/reservations-service/users?role=driver&email=driver-f13@move.local",
+              "raw": "{{base_url}}/reservations-service/users?email={{driver1_email}}",
               "host": ["{{base_url}}"],
               "path": ["reservations-service","users"],
-              "query": [
-                { "key": "role",  "value": "driver" },
-                { "key": "email", "value": "driver-f13@move.local" }
-              ]
+              "query": [{ "key": "email", "value": "{{driver1_email}}" }]
             }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "const users = pm.response.json().data.data;",
-            "const d = users.find(u => u.email === 'driver-f13@move.local');",
+            "const d = users.find(u => u.email === pm.collectionVariables.get('driver1_email'));",
             "if (d) { pm.collectionVariables.set('driver1_userId', d.id); }",
             "pm.test('Driver1 exists in DB (may still be client role)', () => pm.expect(d).to.not.be.undefined);"
           ]}}]
@@ -83,7 +83,7 @@
             "method": "PATCH",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/reservations-service/users/{{driver1_userId}}",
             "body": {
@@ -104,7 +104,7 @@
             "url": "https://{{auth0_domain}}/oauth/token",
             "body": {
               "mode": "raw",
-              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"Username-Password-Authentication\",\"username\":\"driver-f13@move.local\",\"password\":\"Driver123!\"}"
+              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"Username-Password-Authentication\",\"username\":\"{{driver1_email}}\",\"password\":\"Driver123!\"}"
             }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -120,7 +120,7 @@
             "url": "{{base_url}}/reservations-service/auth/register",
             "body": {
               "mode": "raw",
-              "raw": "{\"email\":\"driver2-f13@move.local\",\"password\":\"Driver123!\",\"name\":\"Driver2 F13 Test\",\"clientType\":\"individual\"}"
+              "raw": "{\"email\":\"{{driver2_email}}\",\"password\":\"Driver123!\",\"name\":\"Driver2 F13 Test {{run_id}}\",\"clientType\":\"individual\"}"
             }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -131,20 +131,17 @@
           "name": "S07 – Get Driver2 by Email",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
-              "raw": "{{base_url}}/reservations-service/users?role=driver&email=driver2-f13@move.local",
+              "raw": "{{base_url}}/reservations-service/users?email={{driver2_email}}",
               "host": ["{{base_url}}"],
               "path": ["reservations-service","users"],
-              "query": [
-                { "key": "role",  "value": "driver" },
-                { "key": "email", "value": "driver2-f13@move.local" }
-              ]
+              "query": [{ "key": "email", "value": "{{driver2_email}}" }]
             }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "const users = pm.response.json().data.data;",
-            "const d = users.find(u => u.email === 'driver2-f13@move.local');",
+            "const d = users.find(u => u.email === pm.collectionVariables.get('driver2_email'));",
             "if (d) { pm.collectionVariables.set('driver2_userId', d.id); }",
             "pm.test('Driver2 exists in DB', () => pm.expect(d).to.not.be.undefined);"
           ]}}]
@@ -155,7 +152,7 @@
             "method": "PATCH",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/reservations-service/users/{{driver2_userId}}",
             "body": {
@@ -176,7 +173,7 @@
             "url": "https://{{auth0_domain}}/oauth/token",
             "body": {
               "mode": "raw",
-              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"Username-Password-Authentication\",\"username\":\"driver2-f13@move.local\",\"password\":\"Driver123!\"}"
+              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"Username-Password-Authentication\",\"username\":\"{{driver2_email}}\",\"password\":\"Driver123!\"}"
             }
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -188,7 +185,7 @@
           "name": "S10 – Get Drivers UUIDs",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
               "raw": "{{base_url}}/reservations-service/users?role=driver&pageSize=50",
               "host": ["{{base_url}}"],
@@ -203,11 +200,11 @@
             "pm.test('Got drivers list', () => pm.expect(pm.response.code).to.eql(200));",
             "const users = pm.response.json().data.data;",
             "",
-            "const d1 = users.find(u => u.email === 'driver-f13@move.local');",
+            "const d1 = users.find(u => u.email === pm.collectionVariables.get('driver1_email'));",
             "pm.test('Driver1 found', () => pm.expect(d1).to.not.be.undefined);",
             "pm.collectionVariables.set('driverId', d1.id);",
             "",
-            "const d2 = users.find(u => u.email === 'driver2-f13@move.local');",
+            "const d2 = users.find(u => u.email === pm.collectionVariables.get('driver2_email'));",
             "pm.test('Driver2 found', () => pm.expect(d2).to.not.be.undefined);",
             "pm.collectionVariables.set('driver2Id', d2.id);"
           ]}}]
@@ -216,7 +213,7 @@
           "name": "S11 – Get Active Vehicle",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
               "raw": "{{base_url}}/transportations-service/vehicles",
               "host": ["{{base_url}}"],
@@ -237,7 +234,7 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/transportations-service/trips",
             "body": {
@@ -258,7 +255,7 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/transportations-service/trips",
             "body": {
@@ -277,7 +274,7 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/transportations-service/trips",
             "body": {
@@ -330,7 +327,7 @@
       "name": "BRV-3 – Admin inicia trip (no es driver) → 403",
       "request": {
         "method": "PATCH",
-        "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+        "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
         "url": "{{base_url}}/transportations-service/trips/{{tripId}}/start"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [

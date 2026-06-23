@@ -11,8 +11,8 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
-    "dev": "docker-compose -f docker-compose.dev.yml up",
-    "dev:ngrok": "docker-compose -f docker-compose.dev.yml --profile ngrok up",
+    "dev": "docker compose -f docker-compose.dev.yml up --build",
+    "dev:ngrok": "docker compose -f docker-compose.dev.yml --profile ngrok up --build",
     "prod": "docker-compose up",
     "evaluate:r10:docker": "docker compose -f docker-compose.dev.yml exec -T categorizer-service sh -lc 'cd /app/categorizer-service && npm run evaluate:r10'",
     "lint": "eslint \"{api-gateway,reservation-service,transportation-service,categorizer-service,shared}/**/*.ts\" --ext .ts",
