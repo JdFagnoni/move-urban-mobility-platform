@@ -64,6 +64,11 @@
               "script": {
                 "exec": [
                   "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const runId = String(Date.now());",
+                  "pm.collectionVariables.set('run_id', runId);",
+                  "pm.collectionVariables.set('driver_email', `driver-f12-${runId}@move.local`);",
+                  "pm.collectionVariables.set('operator_email', `operator-f12-${runId}@move.local`);",
+                  "pm.collectionVariables.set('client_email', `client-f12-${runId}@move.local`);",
                   "const body = pm.response.json();",
                   "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
                   "pm.collectionVariables.set('vehicleId', body.data.id);"
@@ -218,7 +223,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"driver-f12@move.local\",\n  \"password\": \"Driver123!\",\n  \"name\": \"Driver F12 Test\",\n  \"clientType\": \"individual\"\n}"
+              "raw": "{\n  \"email\": \"{{driver_email}}\",\n  \"password\": \"Driver123!\",\n  \"name\": \"Driver F12 Test {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
             },
             "url": {
               "raw": "{{gateway_url}}/reservations-service/auth/register",
@@ -238,7 +243,7 @@
                   "pm.test('Status is 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
-                  "const driver = body.data.data.find(u => u.email === 'driver-f12@move.local');",
+                  "const driver = body.data.data.find(u => u.email === pm.collectionVariables.get('driver_email'));",
                   "pm.test('found driver user', () => pm.expect(driver).to.not.be.undefined);",
                   "if (driver) pm.collectionVariables.set('driverId', driver.id);"
                 ],
@@ -254,10 +259,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations-service/users?email=driver-f12@move.local",
+              "raw": "{{gateway_url}}/reservations-service/users?email={{driver_email}}",
               "host": ["{{gateway_url}}"],
               "path": ["reservations-service", "users"],
-              "query": [{ "key": "email", "value": "driver-f12@move.local" }]
+              "query": [{ "key": "email", "value": "{{driver_email}}" }]
             }
           },
           "response": []
@@ -354,7 +359,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"operator-f12@move.local\",\n  \"password\": \"Operator123!\",\n  \"name\": \"Operator F12 Test\",\n  \"clientType\": \"individual\"\n}"
+              "raw": "{\n  \"email\": \"{{operator_email}}\",\n  \"password\": \"Operator123!\",\n  \"name\": \"Operator F12 Test {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
             },
             "url": {
               "raw": "{{gateway_url}}/reservations-service/auth/register",
@@ -374,7 +379,7 @@
                   "pm.test('Status is 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
-                  "const operator = body.data.data.find(u => u.email === 'operator-f12@move.local');",
+                  "const operator = body.data.data.find(u => u.email === pm.collectionVariables.get('operator_email'));",
                   "pm.test('found operator user', () => pm.expect(operator).to.not.be.undefined);",
                   "if (operator) pm.collectionVariables.set('operatorUserId', operator.id);"
                 ],
@@ -390,10 +395,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations-service/users?email=operator-f12@move.local",
+              "raw": "{{gateway_url}}/reservations-service/users?email={{operator_email}}",
               "host": ["{{gateway_url}}"],
               "path": ["reservations-service", "users"],
-              "query": [{ "key": "email", "value": "operator-f12@move.local" }]
+              "query": [{ "key": "email", "value": "{{operator_email}}" }]
             }
           },
           "response": []
@@ -488,7 +493,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"operator-f12@move.local\",\n  \"password\": \"Operator123!\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{operator_email}}\",\n  \"password\": \"Operator123!\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
             },
             "url": {
               "raw": "https://{{auth0_domain}}/oauth/token",
@@ -521,7 +526,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"client-f12@move.local\",\n  \"password\": \"Secret123!\",\n  \"name\": \"Client F12 Test\",\n  \"clientType\": \"individual\"\n}"
+              "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"Secret123!\",\n  \"name\": \"Client F12 Test {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
             },
             "url": {
               "raw": "{{gateway_url}}/reservations-service/auth/register",
@@ -541,7 +546,7 @@
                   "pm.test('Status is 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
-                  "const client = body.data.data.find(u => u.email === 'client-f12@move.local');",
+                  "const client = body.data.data.find(u => u.email === pm.collectionVariables.get('client_email'));",
                   "pm.test('found client user', () => pm.expect(client).to.not.be.undefined);",
                   "if (client) pm.collectionVariables.set('clientUserId', client.id);"
                 ],
@@ -557,10 +562,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations-service/users?email=client-f12@move.local",
+              "raw": "{{gateway_url}}/reservations-service/users?email={{client_email}}",
               "host": ["{{gateway_url}}"],
               "path": ["reservations-service", "users"],
-              "query": [{ "key": "email", "value": "client-f12@move.local" }]
+              "query": [{ "key": "email", "value": "{{client_email}}" }]
             }
           },
           "response": []
@@ -620,7 +625,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"client-f12@move.local\",\n  \"password\": \"Secret123!\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{client_email}}\",\n  \"password\": \"Secret123!\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
             },
             "url": {
               "raw": "https://{{auth0_domain}}/oauth/token",
