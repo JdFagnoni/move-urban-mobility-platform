@@ -7,7 +7,9 @@
   "variable": [
     { "key": "gateway_url", "value": "http://localhost:3000" },
     { "key": "operatorToken", "value": "" },
+    { "key": "operatorUserId", "value": "" },
     { "key": "userToken", "value": "" },
+    { "key": "clientUserId", "value": "" },
     { "key": "reservationId", "value": "" },
     { "key": "secondReservationId", "value": "" },
     { "key": "vehicleId", "value": "" },
@@ -52,7 +54,7 @@
     },
     {
       "name": "Setup",
-      "description": "Pre-condition: admin_auth_token must be set in the environment. Confirmed reservations must exist before running (create via F4+F6 flow). This Setup auto-populates vehicleId, secondVehicleId, smallVehicleId, maintenanceVehicleId, driverId, adminId, reservationId, and secondReservationId.",
+      "description": "Pre-condition: admin_auth_token must be set in the environment. Confirmed reservations must exist before running (create via F4+F6 flow). This Setup auto-populates vehicleId, secondVehicleId, smallVehicleId, maintenanceVehicleId, driverId, adminId, reservationId, secondReservationId, operatorToken, and userToken.",
       "item": [
         {
           "name": "Create Main Vehicle (capacity 10)",
@@ -195,7 +197,39 @@
           "response": []
         },
         {
-          "name": "Get Active Driver",
+          "name": "Register Driver User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('driver registration completed', () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"driver-f12@move.local\",\n  \"password\": \"Driver123!\",\n  \"name\": \"Driver F12 Test\",\n  \"clientType\": \"individual\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Driver User by Email",
           "event": [
             {
               "listen": "test",
@@ -204,8 +238,8 @@
                   "pm.test('Status is 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
-                  "const driver = body.data.data.find(u => u.role === 'driver' && u.status === 'active');",
-                  "pm.test('found active driver', () => pm.expect(driver).to.not.be.undefined);",
+                  "const driver = body.data.data.find(u => u.email === 'driver-f12@move.local');",
+                  "pm.test('found driver user', () => pm.expect(driver).to.not.be.undefined);",
                   "if (driver) pm.collectionVariables.set('driverId', driver.id);"
                 ],
                 "type": "text/javascript"
@@ -220,13 +254,379 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/reservations-service/users?role=driver&status=active",
+              "raw": "{{gateway_url}}/reservations-service/users?email=driver-f12@move.local",
               "host": ["{{gateway_url}}"],
               "path": ["reservations-service", "users"],
-              "query": [
-                { "key": "role", "value": "driver" },
-                { "key": "status", "value": "active" }
-              ]
+              "query": [{ "key": "email", "value": "driver-f12@move.local" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Promote Driver User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('role is driver', () => pm.expect(body.data.role).to.eql('driver'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"driver\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/users/{{driverId}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "users", "{{driverId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Driver User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('status is active', () => pm.expect(body.data.status).to.eql('active'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/users/{{driverId}}/status",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "users", "{{driverId}}", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Operator User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('operator registration completed', () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"operator-f12@move.local\",\n  \"password\": \"Operator123!\",\n  \"name\": \"Operator F12 Test\",\n  \"clientType\": \"individual\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Operator User by Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "const operator = body.data.data.find(u => u.email === 'operator-f12@move.local');",
+                  "pm.test('found operator user', () => pm.expect(operator).to.not.be.undefined);",
+                  "if (operator) pm.collectionVariables.set('operatorUserId', operator.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/users?email=operator-f12@move.local",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "users"],
+              "query": [{ "key": "email", "value": "operator-f12@move.local" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Promote Operator User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('role is operator', () => pm.expect(body.data.role).to.eql('operator'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"operator\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/users/{{operatorUserId}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "users", "{{operatorUserId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Operator User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('status is active', () => pm.expect(body.data.status).to.eql('active'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/users/{{operatorUserId}}/status",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "users", "{{operatorUserId}}", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Operator Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('operatorToken', pm.response.json().access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"operator-f12@move.local\",\n  \"password\": \"Operator123!\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Client User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('client registration completed', () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"client-f12@move.local\",\n  \"password\": \"Secret123!\",\n  \"name\": \"Client F12 Test\",\n  \"clientType\": \"individual\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Client User by Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "const client = body.data.data.find(u => u.email === 'client-f12@move.local');",
+                  "pm.test('found client user', () => pm.expect(client).to.not.be.undefined);",
+                  "if (client) pm.collectionVariables.set('clientUserId', client.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/users?email=client-f12@move.local",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "users"],
+              "query": [{ "key": "email", "value": "client-f12@move.local" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Client User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('status is active', () => pm.expect(body.data.status).to.eql('active'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/users/{{clientUserId}}/status",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "users", "{{clientUserId}}", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Client Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('userToken', pm.response.json().access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"client-f12@move.local\",\n  \"password\": \"Secret123!\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
             }
           },
           "response": []
