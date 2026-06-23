@@ -11,7 +11,6 @@
     { "key": "auth0_client_id",     "value": "y1zVsp6x4vS4jN5mtFUiIIMqjYRruQSz" },
     { "key": "auth0_client_secret", "value": "O_m5mem6bJ_z2vpQKNfxb_wFQT2RBPpwFWyrPR-Ub0_nIkeJeaZDbw64qYDhrW_v" },
     { "key": "auth0_audience",      "value": "https://move-platform-api" },
-    { "key": "admin_token",         "value": "" },
     { "key": "operator_token",      "value": "" },
     { "key": "driver_token",        "value": "" },
     { "key": "client_token",        "value": "" },
@@ -41,7 +40,7 @@
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Got admin token', () => pm.expect(pm.response.code).to.eql(200));",
-            "pm.collectionVariables.set('admin_token', pm.response.json().access_token);"
+            "pm.environment.set('admin_auth_token', pm.response.json().access_token);"
           ]}}]
         },
         {
@@ -63,7 +62,7 @@
           "name": "S03 – Get Operator ID",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
               "raw": "{{base_url}}/reservations-service/users?email=operator-f18@move.local",
               "host": ["{{base_url}}"],
@@ -84,7 +83,7 @@
             "method": "PATCH",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/reservations-service/users/{{operator_user_id}}",
             "body": { "mode": "raw", "raw": "{\"role\":\"operator\"}" }
@@ -129,7 +128,7 @@
           "name": "S07 – Get Driver ID",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
               "raw": "{{base_url}}/reservations-service/users?email=driver-f18@move.local",
               "host": ["{{base_url}}"],
@@ -150,7 +149,7 @@
             "method": "PATCH",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/reservations-service/users/{{driver_user_id}}",
             "body": { "mode": "raw", "raw": "{\"role\":\"driver\"}" }
@@ -213,7 +212,7 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/transportations-service/vehicles",
             "body": {
@@ -232,7 +231,7 @@
           "name": "S12b – Get Vehicle by Plate (if already exists)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": "{{base_url}}/transportations-service/vehicles"
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -303,7 +302,7 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/transportations-service/trips",
             "body": {

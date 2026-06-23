@@ -10,7 +10,6 @@
     { "key": "auth0_client_id",     "value": "y1zVsp6x4vS4jN5mtFUiIIMqjYRruQSz" },
     { "key": "auth0_client_secret", "value": "O_m5mem6bJ_z2vpQKNfxb_wFQT2RBPpwFWyrPR-Ub0_nIkeJeaZDbw64qYDhrW_v" },
     { "key": "auth0_audience",      "value": "https://move-platform-api" },
-    { "key": "admin_token",   "value": "" },
     { "key": "driver_token",  "value": "" },
     { "key": "driver2_token", "value": "" },
     { "key": "driverId",      "value": "" },
@@ -37,7 +36,7 @@
           },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Got admin token', () => pm.expect(pm.response.code).to.eql(200));",
-            "pm.collectionVariables.set('admin_token', pm.response.json().access_token);"
+            "pm.environment.set('admin_auth_token', pm.response.json().access_token);"
           ]}}]
         },
         {
@@ -59,7 +58,7 @@
           "name": "S03 – Get Driver1 by Email",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
               "raw": "{{base_url}}/reservations-service/users?role=driver&email=driver-f13@move.local",
               "host": ["{{base_url}}"],
@@ -83,7 +82,7 @@
             "method": "PATCH",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/reservations-service/users/{{driver1_userId}}",
             "body": {
@@ -131,7 +130,7 @@
           "name": "S07 – Get Driver2 by Email",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
               "raw": "{{base_url}}/reservations-service/users?role=driver&email=driver2-f13@move.local",
               "host": ["{{base_url}}"],
@@ -155,7 +154,7 @@
             "method": "PATCH",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/reservations-service/users/{{driver2_userId}}",
             "body": {
@@ -188,7 +187,7 @@
           "name": "S10 – Get Drivers UUIDs",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
               "raw": "{{base_url}}/reservations-service/users?role=driver&pageSize=50",
               "host": ["{{base_url}}"],
@@ -216,7 +215,7 @@
           "name": "S11 – Get Active Vehicle",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
             "url": {
               "raw": "{{base_url}}/transportations-service/vehicles",
               "host": ["{{base_url}}"],
@@ -237,7 +236,7 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/transportations-service/trips",
             "body": {
@@ -258,7 +257,7 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/transportations-service/trips",
             "body": {
@@ -277,7 +276,7 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type",  "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }
             ],
             "url": "{{base_url}}/transportations-service/trips",
             "body": {
@@ -330,7 +329,7 @@
       "name": "BRV-3 – Admin inicia trip (no es driver) → 403",
       "request": {
         "method": "PATCH",
-        "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+        "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
         "url": "{{base_url}}/transportations-service/trips/{{tripId}}/start"
       },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [

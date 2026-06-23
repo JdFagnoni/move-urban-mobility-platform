@@ -8,7 +8,6 @@
   "variable": [
     { "key": "gateway_url", "value": "http://localhost:3000" },
     { "key": "transport_url", "value": "http://localhost:3002" },
-    { "key": "adminToken", "value": "" },
     { "key": "vehicleId", "value": "" },
     { "key": "zoneId", "value": "" },
     { "key": "alertId", "value": "" }
@@ -16,7 +15,7 @@
   "item": [
     {
       "name": "Setup",
-      "description": "Crear vehículo y zona roja. Ejecutar en orden. Requiere adminToken cargado.",
+      "description": "Crear vehículo y zona roja. Ejecutar en orden. Requiere admin_auth_token cargado en el environment.",
       "item": [
         {
           "name": "1. Crear Vehículo",
@@ -39,7 +38,7 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
             },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -75,7 +74,7 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
             },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -109,7 +108,7 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
             },
             "method": "GET",
             "header": [],
@@ -424,7 +423,7 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+                  "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
                 },
                 "method": "GET",
                 "header": [],
@@ -498,7 +497,7 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+                  "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
                 },
                 "method": "GET",
                 "header": [],
@@ -620,7 +619,7 @@
               "request": {
                 "auth": {
                   "type": "bearer",
-                  "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+                  "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
                 },
                 "method": "GET",
                 "header": [],
@@ -670,7 +669,7 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
             },
             "method": "GET",
             "header": [],
@@ -700,7 +699,7 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
             },
             "method": "GET",
             "header": [],
@@ -731,7 +730,7 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
             },
             "method": "GET",
             "header": [],
@@ -764,7 +763,7 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
             },
             "method": "PATCH",
             "header": [],
@@ -794,7 +793,7 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
             },
             "method": "PATCH",
             "header": [],
@@ -824,7 +823,7 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
             },
             "method": "PATCH",
             "header": [],
@@ -854,7 +853,7 @@
           "request": {
             "auth": {
               "type": "bearer",
-              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+              "bearer": [{ "key": "token", "value": "{{admin_auth_token}}", "type": "string" }]
             },
             "method": "GET",
             "header": [],
