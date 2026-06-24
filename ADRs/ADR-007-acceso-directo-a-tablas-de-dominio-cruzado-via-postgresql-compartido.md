@@ -1,6 +1,6 @@
 # ADR 007: Acceso directo a tablas de dominio cruzado vía PostgreSQL compartido
 
-El `transportation-service` necesita dos tipos de datos que pertenecen al dominio de `reservation-service`: la existencia de un vehículo (para validar señales GPS) y los polígonos de zonas rojas (para la detección de geofence). La arquitectura de microservicios implica que cada servicio tiene su propia responsabilidad sobre sus datos, pero en este sistema ambos servicios comparten la misma instancia de PostgreSQL (ADR-003). Existen dos formas de que `transportation-service` acceda a esos datos: llamadas HTTP a `reservation-service`, o consultas directas a las tablas compartidas.
+El `transportation-service` necesita dos tipos de datos que pertenecen al dominio de `reservation-service`: la existencia de un vehículo (para validar señales GPS) y los polígonos de zonas rojas (para la detección de geofence). Dado que la plataforma adopta una arquitectura basada en servicios con base de datos compartida (ADR-001, ADR-003), ambos servicios acceden a la misma instancia PostgreSQL. La pregunta no es si pueden compartir la base de datos, sino cómo debe `transportation-service` acceder a datos cuya responsabilidad de escritura pertenece a `reservation-service`: mediante llamadas HTTP o mediante consultas directas a las tablas.
 
 ## Decisión
 

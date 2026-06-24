@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**MOVE Platform** is a microservices-based transportation reservation and management system. Five services are deployed via Docker:
+**MOVE Platform** is a service-based transportation reservation and management system. Five services are deployed via Docker:
 
 - **api-gateway** (port 3000): Entry point handling authentication, rate limiting, and request routing
 - **reservation-service** (port 3001): Manages reservations, users, and categories
@@ -16,7 +16,7 @@ Supporting infrastructure: **PostgreSQL** (port 5432) shared across services, **
 
 ## Architecture
 
-The system follows a domain-driven microservices architecture (ADR-001). Each service is independently deployable via Docker with multi-stage builds and health checks.
+The system follows a domain-driven service-based architecture (ADR-001). Each service is independently deployable via Docker with multi-stage builds and health checks.
 
 ### Key Design Patterns
 
@@ -145,7 +145,7 @@ import { pool, query } from "@move/shared";
 ## Architectural Decisions
 
 See `ADRs/` directory for full context on:
-- ADR-001: Microservices by domain
+- ADR-001: Service-based architecture by domain
 - ADR-002: Auth0 vs. Keycloak or custom auth
 - ADR-003: PostgreSQL vs. NoSQL
 - ADR-004: Shared npm workspace vs. external package
