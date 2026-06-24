@@ -1,6 +1,6 @@
 # ADR 010: Adopción de RabbitMQ para flujos asíncronos
 
-La plataforma MOVE está compuesta por microservicios que hasta este punto se comunicaban exclusivamente mediante HTTP síncrono y resolvían sus efectos secundarios (detección de alertas, notificaciones) dentro del ciclo de request o con patrones fire-and-forget en proceso. Este enfoque presenta limitaciones frente a varios requisitos no funcionales del obligatorio:
+La plataforma MOVE está compuesta por servicios que hasta este punto se comunicaban exclusivamente mediante HTTP síncrono y resolvían sus efectos secundarios (detección de alertas, notificaciones) dentro del ciclo de request o con patrones fire-and-forget en proceso. Este enfoque presenta limitaciones frente a varios requisitos no funcionales del obligatorio:
 
 - **R7** exige que los flujos críticos no se vean afectados por fallos en otras partes del sistema y que exista operación degradada o alternativa. Con comunicación HTTP síncrona entre servicios, la caída de un servicio downstream propaga el fallo al productor y puede dejar estado inconsistente entre servicios (por ejemplo, una reserva marcada como `assigned` sin su trip asociado).
 - **R3** exige que las alertas se procesen en menos de 5 segundos desde su detección. El patrón fire-and-forget in-process no ofrece durabilidad ni reintento: si el proceso cae, el trabajo de detección se pierde.
