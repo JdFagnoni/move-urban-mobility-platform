@@ -4,7 +4,7 @@ La plataforma MOVE resuelve problemas de naturaleza distinta: gestión de reserv
 
 ## Decisión
 
-Nosotros estructuraremos la solución como una **arquitectura basada en servicios** (*service-based architecture*): un conjunto reducido de servicios de granularidad gruesa, organizados por dominio de negocio, que comparten una única instancia de base de datos PostgreSQL. En esta etapa, la arquitectura estará compuesta por `api-gateway`, `reservation-service`, `transportation-service` y `categorizer-service`, cada uno con su propio proceso y responsabilidad principal. Nosotros expondremos estos componentes como servicios HTTP independientes y coordinaremos su ejecución mediante contenedores Docker.
+Nosotros estructuraremos la solución como una **arquitectura basada en servicios** (_service-based architecture_): un conjunto reducido de servicios de granularidad gruesa, organizados por dominio de negocio, que comparten una única instancia de base de datos PostgreSQL. En esta etapa, la arquitectura estará compuesta por `api-gateway`, `reservation-service`, `transportation-service` y `categorizer-service`, cada uno con su propio proceso y responsabilidad principal. Nosotros expondremos estos componentes como servicios HTTP independientes y coordinaremos su ejecución mediante contenedores Docker.
 
 A diferencia de una arquitectura de microservicios, los servicios no tienen bases de datos propias e independientes: comparten la misma instancia PostgreSQL. Esta característica es deliberada y no una deuda técnica.
 
