@@ -21,9 +21,9 @@ import {
   CategoryModel,
   NotificationModel,
   ReservationModel,
-  VehicleReadModel,
 } from "../../db/models";
 import { sequelize } from "../../db/sequelize";
+import { getVehicleById as fetchVehicleById } from "../../clients/transportation-service";
 import { getUser } from "../users/service";
 import { createCompanyReservation } from "./helpers/create-company-reservation";
 import { createIndividualReservation } from "./helpers/create-individual-reservation";
@@ -513,10 +513,7 @@ function calculateTotalCargoSize(items: CargoItemModel[]): number {
 }
 
 async function getVehicleById(id: string) {
-  const vehicle = await VehicleReadModel.findByPk(id, {
-    attributes: ["id", "status", "capacity"],
-  });
-  return vehicle;
+  return fetchVehicleById(id);
 }
 
 const SCHEDULE_CONFLICT_WINDOW_MS = 2 * 60 * 60 * 1000; // ±2 hours

@@ -7,6 +7,7 @@ import type {
   GeoPoint,
   GpsSignalDTO,
 } from "@move/shared";
+import { getCategoryBehaviors } from "../../clients/reservation-service";
 import { signalPipeline } from "./pipeline/setup";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -52,14 +53,14 @@ async function resolveGeneratesAlerts(categoryIds: string[] | null): Promise<boo
   }
 
   try {
-    const result = await query<{ behavior: CategoryBehaviorConfig }>(
-      "SELECT behavior FROM categories WHERE id = ANY($1::uuid[])",
-      [categoryIds]
-    );
-    if (result.rows.length === 0) {
+    const behaviors = await getCategoryBehaviors();
+    const known = categoryIds
+      .map((id) => behaviors.get(id))
+      .filter((behavior): behavior is CategoryBehaviorConfig => behavior !== undefined);
+    if (known.length === 0) {
       return true;
     }
-    return result.rows.some((row) => row.behavior?.generatesAlerts === true);
+    return known.some((behavior) => behavior.generatesAlerts === true);
   } catch {
     return true;
   }
