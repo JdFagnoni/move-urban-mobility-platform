@@ -1,0 +1,549 @@
+{
+  "info": {
+    "_postman_id": "f8-categorias-reglas",
+    "name": "F08 Category Rules",
+    "description": "Coleccion E2E para gestion de categorias y validacion del impacto de pricing/behavior sobre cotizaciones.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gateway_url", "value": "http://localhost:3000" },
+    { "key": "auth0_domain", "value": "" },
+    { "key": "auth0_audience", "value": "" },
+    { "key": "auth0_client_id", "value": "" },
+    { "key": "auth0_client_secret", "value": "" },
+    { "key": "auth0_realm", "value": "Username-Password-Authentication" },
+    { "key": "admin_email", "value": "admin@move.local" },
+    { "key": "admin_password", "value": "Admin123" },
+    { "key": "individual_password", "value": "Secret123!" }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Initialize Run Variables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health responded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const runId = String(Date.now());",
+                  "pm.collectionVariables.set('run_id', runId);",
+                  "pm.collectionVariables.set('client_email', `qa-f8-client-${runId}@move.com`);",
+                  "pm.collectionVariables.set('category_keyword', `f8-keyword-${runId}`);",
+                  "pm.collectionVariables.set('future_date_one', new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString());",
+                  "pm.collectionVariables.set('future_date_two', new Date(Date.now() + 96 * 60 * 60 * 1000).toISOString());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admin token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.collectionVariables.set('admin_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        },
+        {
+          "name": "Register Client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('client registered', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA F8 Client {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Get Client Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('client token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.collectionVariables.set('client_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{client_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        },
+        {
+          "name": "Create Rule Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('category created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.collectionVariables.set('category_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"F8 {{category_keyword}}\",\n  \"spanishName\": \"F8 {{category_keyword}} ES\",\n  \"descriptions\": [\"goods {{category_keyword}}\"],\n  \"pricing\": {\n    \"baseFare\": 100,\n    \"pricePerKm\": 10,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 0\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": false,\n    \"generatesAlerts\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/categories",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "categories"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verify Seeded Tiers",
+      "item": [
+        {
+          "name": "List Categories and Verify Seeded Tiers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('categories list returned', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const categories = pm.response.json().data;",
+                  "pm.test('more than 100 seeded categories exist', function () {",
+                  "  pm.expect(categories).to.be.an('array').with.length.above(100);",
+                  "});",
+                  "",
+                  "function findByName(name) {",
+                  "  return categories.find(function (c) { return c.name === name; });",
+                  "}",
+                  "",
+                  "pm.test('Computers & Tablets -> highValue tier', function () {",
+                  "  var cat = findByName('Computers & Tablets');",
+                  "  pm.expect(cat, 'category exists').to.be.ok;",
+                  "  pm.expect(cat.pricing.baseFare).to.eql(200);",
+                  "  pm.expect(cat.pricing.pricePerKm).to.eql(15);",
+                  "  pm.expect(cat.pricing.surchargeType).to.eql('percentage');",
+                  "  pm.expect(cat.pricing.surchargeValue).to.eql(15);",
+                  "  pm.expect(cat.behavior.requiresMonitoring).to.eql(true);",
+                  "  pm.expect(cat.behavior.generatesAlerts).to.eql(false);",
+                  "});",
+                  "",
+                  "pm.test('Oils & Fluids -> hazardous tier', function () {",
+                  "  var cat = findByName('Oils & Fluids');",
+                  "  pm.expect(cat, 'category exists').to.be.ok;",
+                  "  pm.expect(cat.pricing.baseFare).to.eql(180);",
+                  "  pm.expect(cat.pricing.pricePerKm).to.eql(15);",
+                  "  pm.expect(cat.pricing.surchargeType).to.eql('fixed');",
+                  "  pm.expect(cat.pricing.surchargeValue).to.eql(20);",
+                  "  pm.expect(cat.behavior.requiresMonitoring).to.eql(true);",
+                  "  pm.expect(cat.behavior.generatesAlerts).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('Industrial Power & Hand Tools -> industrial tier', function () {",
+                  "  var cat = findByName('Industrial Power & Hand Tools');",
+                  "  pm.expect(cat, 'category exists').to.be.ok;",
+                  "  pm.expect(cat.pricing.baseFare).to.eql(300);",
+                  "  pm.expect(cat.pricing.pricePerKm).to.eql(25);",
+                  "  pm.expect(cat.pricing.surchargeType).to.eql('fixed');",
+                  "  pm.expect(cat.pricing.surchargeValue).to.eql(0);",
+                  "  pm.expect(cat.behavior.requiresMonitoring).to.eql(false);",
+                  "  pm.expect(cat.behavior.generatesAlerts).to.eql(false);",
+                  "});",
+                  "",
+                  "pm.test('Furniture -> bulky tier', function () {",
+                  "  var cat = findByName('Furniture');",
+                  "  pm.expect(cat, 'category exists').to.be.ok;",
+                  "  pm.expect(cat.pricing.baseFare).to.eql(250);",
+                  "  pm.expect(cat.pricing.pricePerKm).to.eql(20);",
+                  "  pm.expect(cat.pricing.surchargeType).to.eql('fixed');",
+                  "  pm.expect(cat.pricing.surchargeValue).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.test('Headphones & Earbuds -> fragile tier', function () {",
+                  "  var cat = findByName('Headphones & Earbuds');",
+                  "  pm.expect(cat, 'category exists').to.be.ok;",
+                  "  pm.expect(cat.pricing.baseFare).to.eql(150);",
+                  "  pm.expect(cat.pricing.pricePerKm).to.eql(12);",
+                  "  pm.expect(cat.pricing.surchargeType).to.eql('percentage');",
+                  "  pm.expect(cat.pricing.surchargeValue).to.eql(10);",
+                  "  pm.expect(cat.behavior.requiresMonitoring).to.eql(false);",
+                  "});",
+                  "",
+                  "pm.test('Professional Medical Supplies -> medical tier', function () {",
+                  "  var cat = findByName('Professional Medical Supplies');",
+                  "  pm.expect(cat, 'category exists').to.be.ok;",
+                  "  pm.expect(cat.pricing.baseFare).to.eql(200);",
+                  "  pm.expect(cat.pricing.pricePerKm).to.eql(15);",
+                  "  pm.expect(cat.pricing.surchargeType).to.eql('percentage');",
+                  "  pm.expect(cat.pricing.surchargeValue).to.eql(10);",
+                  "  pm.expect(cat.behavior.requiresMonitoring).to.eql(true);",
+                  "  pm.expect(cat.behavior.generatesAlerts).to.eql(false);",
+                  "});",
+                  "",
+                  "pm.test('Beading & Jewelry Making -> standard tier', function () {",
+                  "  var cat = findByName('Beading & Jewelry Making');",
+                  "  pm.expect(cat, 'category exists').to.be.ok;",
+                  "  pm.expect(cat.pricing.baseFare).to.eql(100);",
+                  "  pm.expect(cat.pricing.pricePerKm).to.eql(10);",
+                  "  pm.expect(cat.pricing.surchargeType).to.eql('fixed');",
+                  "  pm.expect(cat.pricing.surchargeValue).to.eql(0);",
+                  "  pm.expect(cat.behavior.requiresMonitoring).to.eql(false);",
+                  "  pm.expect(cat.behavior.generatesAlerts).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/categories",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "categories"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Client Forbidden - Create Category",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('client cannot create category', function () {",
+              "  pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{client_auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Forbidden F8\",\n  \"spanishName\": \"Forbidden F8 ES\"\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/categories",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "categories"]
+        }
+      }
+    },
+    {
+      "name": "Create Reservation With Base Rules",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('base-rule reservation created', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.expect(body.data.status).to.eql('pending_confirmation');",
+              "pm.collectionVariables.set('reservation_before_id', body.data.id);",
+              "pm.collectionVariables.set('quote_before', String(body.data.quotedPrice));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{client_auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"scheduledAt\": \"{{future_date_one}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"goods {{category_keyword}} base\",\n      \"estimatedValue\": 1000,\n      \"size\": \"medium\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/reservations",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "reservations"]
+        }
+      }
+    },
+    {
+      "name": "Update Category Rules",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('category updated', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const category = pm.response.json().data;",
+              "pm.expect(category.behavior.requiresMonitoring).to.eql(true);",
+              "pm.expect(category.behavior.generatesAlerts).to.eql(true);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pricing\": {\n    \"baseFare\": 130,\n    \"pricePerKm\": 16,\n    \"surchargeType\": \"percentage\",\n    \"surchargeValue\": 25\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": true,\n    \"generatesAlerts\": true\n  }\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/categories/{{category_id}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "categories", "{{category_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Updated Category",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('updated category returned', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const category = pm.response.json().data;",
+              "pm.expect(category.pricing.baseFare).to.eql(130);",
+              "pm.expect(category.pricing.surchargeType).to.eql('percentage');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/categories/{{category_id}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "categories", "{{category_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Create Reservation With Updated Rules",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('updated-rule reservation created', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const body = pm.response.json();",
+              "const quoteBefore = Number(pm.collectionVariables.get('quote_before'));",
+              "pm.expect(body.data.status).to.eql('pending_confirmation');",
+              "pm.expect(body.data.quotedPrice).to.be.a('number').and.greaterThan(quoteBefore);",
+              "pm.collectionVariables.set('reservation_after_id', body.data.id);",
+              "pm.collectionVariables.set('quote_after', String(body.data.quotedPrice));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{client_auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"scheduledAt\": \"{{future_date_two}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"goods {{category_keyword}} updated\",\n      \"estimatedValue\": 1000,\n      \"size\": \"medium\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/reservations",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "reservations"]
+        }
+      }
+    },
+    {
+      "name": "Delete Category In Use",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('category in use cannot be deleted', function () {",
+              "  pm.response.to.have.status(409);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/categories/{{category_id}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "categories", "{{category_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Create Temporary Category",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('temporary category created', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "pm.collectionVariables.set('temporary_category_id', pm.response.json().data.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"F8 temporary {{run_id}}\",\n  \"spanishName\": \"F8 temporal {{run_id}}\"\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/categories",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "categories"]
+        }
+      }
+    },
+    {
+      "name": "Delete Temporary Category",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('temporary category deleted', function () {",
+              "  pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/categories/{{temporary_category_id}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "categories", "{{temporary_category_id}}"]
+        }
+      }
+    }
+  ]
+}

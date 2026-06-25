@@ -1,0 +1,222 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-move}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-move_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-move_platform}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pg_data_dev:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-move}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-move_secret}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - rabbitmq_data_dev:/var/lib/rabbitmq
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+      target: dev
+    ports:
+      - "${API_GATEWAY_PORT:-3000}:3000"
+    volumes:
+      - ./shared:/app/shared
+      - ./api-gateway/src:/app/api-gateway/src
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
+      RESERVATIONS_URL: ${RESERVATIONS_URL:-http://reservations:3001}
+      TRANSPORTATIONS_URL: ${TRANSPORTATIONS_URL:-http://transportations:3002}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://move-platform-api}
+      INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-}
+    depends_on:
+      - reservations
+      - transportations
+      - redis
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    profiles:
+      - ngrok
+    ports:
+      - "4040:4040"
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+      NGROK_DOMAIN: ${NGROK_DOMAIN:-}
+    depends_on:
+      - api-gateway
+    entrypoint:
+      - /bin/sh
+      - -lc
+      - |
+        if [ -n "$$NGROK_DOMAIN" ]; then
+          exec ngrok http http://api-gateway:3000 --url=https://$$NGROK_DOMAIN
+        fi
+        exec ngrok http http://api-gateway:3000
+
+  reservations:
+    build:
+      context: .
+      dockerfile: reservation-service/Dockerfile
+      target: dev
+    volumes:
+      - ./shared:/app/shared
+      - ./reservation-service/src:/app/reservation-service/src
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://move-platform-api}
+      AUTH0_DB_CONNECTION: ${AUTH0_DB_CONNECTION:-Username-Password-Authentication}
+      AUTH0_MGMT_CLIENT_ID: ${AUTH0_MGMT_CLIENT_ID:-}
+      AUTH0_MGMT_CLIENT_SECRET: ${AUTH0_MGMT_CLIENT_SECRET:-}
+      INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
+      TRANSPORTATIONS_URL: ${TRANSPORTATIONS_URL:-http://transportations:3002}
+      BOOTSTRAP_ADMIN_AUTH_SUBJECT: ${BOOTSTRAP_ADMIN_AUTH_SUBJECT:-}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-MOVE Admin}
+      CATEGORIZER_SERVICE_URL: ${CATEGORIZER_SERVICE_URL:-http://categorizer-service:3003}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-stripe}
+      PAYMENT_SIMULATION_MODE: ${PAYMENT_SIMULATION_MODE:-none}
+      ENABLE_TESTING_HOOKS: ${ENABLE_TESTING_HOOKS:-true}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_API_BASE_URL: ${STRIPE_API_BASE_URL:-https://api.stripe.com/v1}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-notifications@move.local}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-MOVE}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://move:move_secret@rabbitmq:5672}
+      PORT: "3001"
+    depends_on:
+      postgres:
+        condition: service_started
+      categorizer-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  transportations:
+    build:
+      context: .
+      dockerfile: transportation-service/Dockerfile
+      target: dev
+    ports:
+      - "${TRANSPORTATIONS_PORT:-3002}:3002"
+    volumes:
+      - ./shared:/app/shared
+      - ./transportation-service/src:/app/transportation-service/src
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
+      RESERVATIONS_URL: ${RESERVATIONS_URL:-http://reservations:3001}
+      INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://move:move_secret@rabbitmq:5672}
+      PORT: "3002"
+    depends_on:
+      postgres:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  categorizer-service:
+    build:
+      context: .
+      dockerfile: categorizer-service/Dockerfile
+      target: dev
+    ports:
+      - "${CATEGORIZER_SERVICE_PORT:-3003}:3003"
+    volumes:
+      - ./shared:/app/shared
+      - ./categorizer-service:/app/categorizer-service
+      - ./reservation-service/data:/app/reservation-service/data:ro
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgres://move:move_secret@postgres:5432/move_platform}
+      RESERVATIONS_URL: ${RESERVATIONS_URL:-http://reservations:3001}
+      PORT: "3003"
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      EMBEDDINGS_PROVIDER: ${EMBEDDINGS_PROVIDER:-openai}
+      SEMANTIC_SEARCH_DEBUG: ${SEMANTIC_SEARCH_DEBUG:-false}
+      EMBEDDINGS_TIMEOUT_MS: ${EMBEDDINGS_TIMEOUT_MS:-10000}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_EMBEDDINGS_MODEL: ${OPENAI_EMBEDDINGS_MODEL:-text-embedding-3-small}
+      OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-https://api.openai.com/v1}
+      TRANSFORMERSJS_EMBEDDINGS_MODEL: ${TRANSFORMERSJS_EMBEDDINGS_MODEL:-Xenova/paraphrase-multilingual-MiniLM-L12-v2}
+      TRANSFORMERSJS_ALLOW_REMOTE_MODELS: ${TRANSFORMERSJS_ALLOW_REMOTE_MODELS:-true}
+      TRANSFORMERSJS_LOCAL_MODEL_PATH: ${TRANSFORMERSJS_LOCAL_MODEL_PATH:-}
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://move:move_secret@rabbitmq:5672}
+    depends_on:
+      postgres:
+        condition: service_started
+      ollama:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  gps-simulator:
+    build:
+      context: .
+      dockerfile: transportation-service/simulator/Dockerfile
+      target: dev
+    environment:
+      NODE_ENV: development
+      TRANSPORTATIONS_URL: ${TRANSPORTATIONS_URL:-http://transportations:3002}
+      INTERVAL_MS: ${GPS_SIMULATOR_INTERVAL_MS:-2000}
+    depends_on:
+      - transportations
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data_dev:/root/.ollama
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  pg_data_dev:
+  ollama_data_dev:
+  rabbitmq_data_dev:

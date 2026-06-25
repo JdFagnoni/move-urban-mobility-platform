@@ -1,0 +1,32 @@
+{
+  "name": "move-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "api-gateway",
+    "reservation-service",
+    "transportation-service",
+    "categorizer-service"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev": "docker compose -f docker-compose.dev.yml up --build",
+    "dev:ngrok": "docker compose -f docker-compose.dev.yml --profile ngrok up --build",
+    "prod": "docker-compose up",
+    "evaluate:r10:docker": "docker compose -f docker-compose.dev.yml exec -T categorizer-service sh -lc 'cd /app/categorizer-service && npm run evaluate:r10'",
+    "lint": "eslint \"{api-gateway,reservation-service,transportation-service,categorizer-service,shared}/**/*.ts\" --ext .ts",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --write \"**/*.{ts,json,yml,md}\" --ignore-path .prettierignore",
+    "format:check": "prettier --check \"**/*.{ts,json,yml,md}\" --ignore-path .prettierignore"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.13.0",
+    "@typescript-eslint/parser": "^7.13.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier": "^3.3.2",
+    "typescript": "^5.4.5"
+  }
+}

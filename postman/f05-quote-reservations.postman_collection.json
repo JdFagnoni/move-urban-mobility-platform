@@ -1,0 +1,1194 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-f5f5-4c4c-9a9a-1234567890ab",
+    "name": "F05 Quote Reservations",
+    "description": "Covers F5 quoting for company and individual clients, validating price calculation by distance and category.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "37423762"
+  },
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Initialize Run Variables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('health endpoint responded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const runId = String(Date.now());",
+                  "const futureDate = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();",
+                  "pm.collectionVariables.set('run_id', runId);",
+                  "pm.collectionVariables.set('future_date', futureDate);",
+                  "pm.collectionVariables.set('company_email', `qa-company-f5-${runId}@move.com`);",
+                  "pm.collectionVariables.set('individual_email', `qa-individual-f5-${runId}@move.com`);",
+                  "pm.collectionVariables.set('individual_keyword', `f5tag${runId}`);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Company Client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company client registered', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+	          "request": {
+	            "method": "POST",
+	            "header": [
+	              {
+	                "key": "Authorization",
+	                "value": "Bearer {{admin_auth_token}}"
+	              },
+	              {
+	                "key": "Content-Type",
+	                "value": "application/json"
+	              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{company_email}}\",\n  \"password\": \"{{company_password}}\",\n  \"name\": \"QA Company F5 {{run_id}}\",\n  \"clientType\": \"company\",\n  \"companyName\": \"MOVE Logistics F5 {{run_id}}\",\n  \"taxId\": \"RUT-F5-{{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Individual Client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual client registered', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+	          "request": {
+	            "method": "POST",
+	            "header": [
+	              {
+	                "key": "Authorization",
+	                "value": "Bearer {{admin_auth_token}}"
+	              },
+	              {
+	                "key": "Content-Type",
+	                "value": "application/json"
+	              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{individual_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA Individual F5 {{run_id}}\",\n  \"clientType\": \"individual\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Company Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "pm.collectionVariables.set('company_auth_token', body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{company_email}}\",\n  \"password\": \"{{company_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": [
+                "{{auth0_domain}}"
+              ],
+              "path": [
+                "oauth",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Individual Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "pm.collectionVariables.set('individual_auth_token', body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{individual_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": [
+                "{{auth0_domain}}"
+              ],
+              "path": [
+                "oauth",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Standard Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('standard category created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.collectionVariables.set('standard_category_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+	          "request": {
+	            "method": "POST",
+	            "header": [
+	              {
+	                "key": "Authorization",
+	                "value": "Bearer {{admin_auth_token}}"
+	              },
+	              {
+	                "key": "Content-Type",
+	                "value": "application/json"
+	              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"F5 Standard {{run_id}}\",\n  \"spanishName\": \"F5 Estandar {{run_id}}\",\n  \"descriptions\": [\"standard cargo\"],\n  \"pricing\": {\n    \"baseFare\": 100,\n    \"pricePerKm\": 12,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 0\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": false,\n    \"generatesAlerts\": false\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/categories",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "categories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Premium Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('premium category created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.collectionVariables.set('premium_category_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"F5 Premium {{run_id}}\",\n  \"spanishName\": \"F5 Premium {{run_id}} ES\",\n  \"descriptions\": [\"premium cargo\"],\n  \"pricing\": {\n    \"baseFare\": 100,\n    \"pricePerKm\": 12,\n    \"surchargeType\": \"percentage\",\n    \"surchargeValue\": 25\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": true,\n    \"generatesAlerts\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/categories",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "categories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Individual Keyword Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual keyword category created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.collectionVariables.set('individual_category_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{individual_keyword}}\",\n  \"spanishName\": \"{{individual_keyword}} ES\",\n  \"descriptions\": [\"{{individual_keyword}} items\"],\n  \"pricing\": {\n    \"baseFare\": 80,\n    \"pricePerKm\": 9,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 15\n  },\n  \"behavior\": {\n    \"requiresMonitoring\": false,\n    \"generatesAlerts\": false\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/categories",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "categories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Company Standard Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company standard product created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.collectionVariables.set('company_standard_product_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productName\": \"QA Standard Product F5 {{run_id}}\",\n  \"categoryId\": \"{{standard_category_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/preregistrations/products",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "preregistrations",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Company Premium Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company premium product created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.collectionVariables.set('company_premium_product_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productName\": \"QA Premium Product F5 {{run_id}}\",\n  \"categoryId\": \"{{premium_category_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/preregistrations/products",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "preregistrations",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Company Origin Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company origin location created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('company_origin_location_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Origin F5 {{run_id}}\",\n  \"kind\": \"origin\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/preregistrations/locations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "preregistrations",
+                "locations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Company Near Destination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company near destination created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('company_destination_near_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Near Destination F5 {{run_id}}\",\n  \"kind\": \"destination\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/preregistrations/locations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "preregistrations",
+                "locations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Company Far Destination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company far destination created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('company_destination_far_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Far Destination F5 {{run_id}}\",\n  \"kind\": \"destination\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.0400, -34.8200]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/preregistrations/locations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "preregistrations",
+                "locations"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Company Client",
+      "item": [
+        {
+          "name": "Create Standard Reservation - Near Route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('near standard reservation quoted', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "pm.expect(body.data.quotedPrice).to.be.a('number').and.greaterThan(0);",
+                  "pm.expect(body.data.cargoItems[0].categoryId).to.eql(pm.collectionVariables.get('standard_category_id'));",
+                  "pm.collectionVariables.set('company_standard_reservation_id', body.data.id);",
+                  "pm.collectionVariables.set('company_standard_quote', String(body.data.quotedPrice));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"originLocationId\": \"{{company_origin_location_id}}\",\n  \"destinationLocationId\": \"{{company_destination_near_id}}\",\n  \"cargoItems\": [\n    {\n      \"description\": \"Standard cargo F5 {{run_id}}\",\n      \"estimatedValue\": 500,\n      \"size\": \"medium\",\n      \"companyProductId\": \"{{company_standard_product_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Standard Reservation - Near Route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('near standard reservation can be retrieved', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.expect(body.data.id).to.eql(pm.collectionVariables.get('company_standard_reservation_id'));",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "pm.expect(body.data.quotedPrice).to.eql(Number(pm.collectionVariables.get('company_standard_quote')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{company_standard_reservation_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{company_standard_reservation_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Standard Reservation - Far Route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('far standard reservation quoted', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "const baseQuote = Number(pm.collectionVariables.get('company_standard_quote'));",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "pm.expect(body.data.quotedPrice).to.be.a('number').and.greaterThan(baseQuote);",
+                  "pm.collectionVariables.set('company_far_reservation_id', body.data.id);",
+                  "pm.collectionVariables.set('company_far_quote', String(body.data.quotedPrice));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"originLocationId\": \"{{company_origin_location_id}}\",\n  \"destinationLocationId\": \"{{company_destination_far_id}}\",\n  \"cargoItems\": [\n    {\n      \"description\": \"Far cargo F5 {{run_id}}\",\n      \"estimatedValue\": 500,\n      \"size\": \"medium\",\n      \"companyProductId\": \"{{company_standard_product_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Premium Reservation - Near Route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('premium reservation quoted', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "const baseQuote = Number(pm.collectionVariables.get('company_standard_quote'));",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "pm.expect(body.data.quotedPrice).to.be.a('number').and.greaterThan(baseQuote);",
+                  "pm.expect(body.data.cargoItems[0].categoryId).to.eql(pm.collectionVariables.get('premium_category_id'));",
+                  "pm.collectionVariables.set('company_premium_reservation_id', body.data.id);",
+                  "pm.collectionVariables.set('company_premium_quote', String(body.data.quotedPrice));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"originLocationId\": \"{{company_origin_location_id}}\",\n  \"destinationLocationId\": \"{{company_destination_near_id}}\",\n  \"cargoItems\": [\n    {\n      \"description\": \"Premium cargo F5 {{run_id}}\",\n      \"estimatedValue\": 2500,\n      \"size\": \"medium\",\n      \"companyProductId\": \"{{company_premium_product_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Company Reservations - Pending Confirmation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('company reservations listed', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "const ids = body.data.data.map((reservation) => reservation.id);",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.expect(body.data.data.length).to.be.greaterThan(0);",
+                  "pm.expect(ids).to.include(pm.collectionVariables.get('company_standard_reservation_id'));",
+                  "pm.expect(ids).to.include(pm.collectionVariables.get('company_far_reservation_id'));",
+                  "pm.expect(ids).to.include(pm.collectionVariables.get('company_premium_reservation_id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{company_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations?status=pending_confirmation",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending_confirmation"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Individual Client",
+      "item": [
+        {
+          "name": "Create Individual Reservation - Classified and Quoted",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual reservation quoted', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "pm.expect(body.data.quotedPrice).to.be.a('number').and.greaterThan(0);",
+                  "pm.expect(body.data.cargoItems).to.have.length(1);",
+                  "pm.expect(body.data.cargoItems[0].categoryId).to.eql(pm.collectionVariables.get('individual_category_id'));",
+                  "pm.collectionVariables.set('individual_reservation_id', body.data.id);",
+                  "pm.collectionVariables.set('individual_quote', String(body.data.quotedPrice));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1920, -34.9055]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"{{individual_keyword}} package for F5 {{run_id}}\",\n      \"estimatedValue\": 900,\n      \"size\": \"small\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Individual Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual reservation can be retrieved', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.eql(true);",
+                  "pm.expect(body.data.id).to.eql(pm.collectionVariables.get('individual_reservation_id'));",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "pm.expect(body.data.quotedPrice).to.eql(Number(pm.collectionVariables.get('individual_quote')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{individual_reservation_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{individual_reservation_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "auth0_domain",
+      "value": ""
+    },
+    {
+      "key": "auth0_audience",
+      "value": ""
+    },
+    {
+      "key": "auth0_client_id",
+      "value": ""
+    },
+    {
+      "key": "auth0_client_secret",
+      "value": ""
+    },
+    {
+      "key": "auth0_realm",
+      "value": ""
+    },
+    {
+      "key": "company_password",
+      "value": "Secret123!"
+    },
+    {
+      "key": "individual_password",
+      "value": "Secret123!"
+    },
+    {
+      "key": "run_id",
+      "value": ""
+    },
+    {
+      "key": "future_date",
+      "value": ""
+    },
+    {
+      "key": "company_email",
+      "value": ""
+    },
+    {
+      "key": "individual_email",
+      "value": ""
+    },
+    {
+      "key": "individual_keyword",
+      "value": ""
+    },
+    {
+      "key": "company_auth_token",
+      "value": ""
+    },
+    {
+      "key": "individual_auth_token",
+      "value": ""
+    },
+    {
+      "key": "admin_auth_token",
+      "value": ""
+    },
+    {
+      "key": "standard_category_id",
+      "value": ""
+    },
+    {
+      "key": "premium_category_id",
+      "value": ""
+    },
+    {
+      "key": "individual_category_id",
+      "value": ""
+    },
+    {
+      "key": "company_standard_product_id",
+      "value": ""
+    },
+    {
+      "key": "company_premium_product_id",
+      "value": ""
+    },
+    {
+      "key": "company_origin_location_id",
+      "value": ""
+    },
+    {
+      "key": "company_destination_near_id",
+      "value": ""
+    },
+    {
+      "key": "company_destination_far_id",
+      "value": ""
+    },
+    {
+      "key": "company_standard_reservation_id",
+      "value": ""
+    },
+    {
+      "key": "company_far_reservation_id",
+      "value": ""
+    },
+    {
+      "key": "company_premium_reservation_id",
+      "value": ""
+    },
+    {
+      "key": "individual_reservation_id",
+      "value": ""
+    },
+    {
+      "key": "company_standard_quote",
+      "value": ""
+    },
+    {
+      "key": "company_far_quote",
+      "value": ""
+    },
+    {
+      "key": "company_premium_quote",
+      "value": ""
+    },
+    {
+      "key": "individual_quote",
+      "value": ""
+    }
+  ]
+}

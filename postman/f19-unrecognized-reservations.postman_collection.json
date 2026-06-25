@@ -1,0 +1,1359 @@
+{
+  "info": {
+    "_postman_id": "b5d2a8f0-4641-4f02-8b89-5df0b52f0a31",
+    "name": "F19 Unrecognized Reservations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "37423762",
+    "description": "End-to-end collection for F19 / pending-classification operator flow. Requires a valid {{admin_auth_token}} to promote an operator candidate."
+  },
+  "variable": [
+    { "key": "gateway_url", "value": "http://localhost:3000" },
+    { "key": "admin_auth_token", "value": "" },
+    { "key": "auth0_domain", "value": "" },
+    { "key": "auth0_audience", "value": "" },
+    { "key": "auth0_client_id", "value": "" },
+    { "key": "auth0_client_secret", "value": "" },
+    { "key": "auth0_realm", "value": "Username-Password-Authentication" },
+    { "key": "individual_password", "value": "Secret123!" },
+    { "key": "operator_candidate_password", "value": "Secret123!" },
+    { "key": "invalid_category_id", "value": "11111111-1111-4111-8111-111111111111" },
+    { "key": "invalid_notification_id", "value": "22222222-2222-4222-8222-222222222222" }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Initialize Run Variables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('gateway health responded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const runId = String(Date.now());",
+                  "const futureDate = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();",
+                  "pm.collectionVariables.set('run_id', runId);",
+                  "pm.collectionVariables.set('future_date', futureDate);",
+                  "pm.collectionVariables.set('individual_email', `qa-f19-individual-${runId}@move.com`);",
+                  "pm.collectionVariables.set('operator_candidate_email', `qa-f19-operator-${runId}@move.com`);",
+                  "pm.collectionVariables.set('manual_unknown_desc_1', `f19-unknown-alpha-${runId}`);",
+                  "pm.collectionVariables.set('manual_unknown_desc_2', `f19-unknown-beta-${runId}`);",
+                  "pm.collectionVariables.set('reject_unknown_desc', `f19-unknown-reject-${runId}`);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Individual Client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual client registered', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{individual_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA F19 Individual {{run_id}}\",\n  \"clientType\": \"individual\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Operator Candidate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('operator candidate registered', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{operator_candidate_email}}\",\n  \"password\": \"{{operator_candidate_password}}\",\n  \"name\": \"QA F19 Operator {{run_id}}\",\n  \"clientType\": \"individual\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Individual Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "pm.collectionVariables.set('individual_auth_token', body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{individual_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": [
+                "{{auth0_domain}}"
+              ],
+              "path": [
+                "oauth",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Operator Candidate Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('operator candidate token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "pm.collectionVariables.set('operator_auth_token', body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{operator_candidate_email}}\",\n  \"password\": \"{{operator_candidate_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": [
+                "{{auth0_domain}}"
+              ],
+              "path": [
+                "oauth",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User - Individual",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('individual profile loaded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('individual_user_id', body.data.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/me",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User - Operator Candidate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('operator candidate profile loaded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('operator_user_id', body.data.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/me",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Promote Operator Candidate To Operator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('operator candidate promoted', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.role).to.eql('operator');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"operator\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/users/{{operator_user_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "users",
+                "{{operator_user_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Operator Role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('operator profile reflects operator role', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.role).to.eql('operator');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/users/{{operator_user_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "users",
+                "{{operator_user_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Categories And Pick Valid Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('categories listed', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data).to.be.an('array').and.not.empty;",
+                  "const category = body.data.find((item) => item.active !== false) || body.data[0];",
+                  "pm.expect(category).to.exist;",
+                  "pm.collectionVariables.set('valid_category_id', category.id);",
+                  "pm.collectionVariables.set('valid_category_name', category.name);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/categories",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "categories"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Manual Classification Flow",
+      "item": [
+        {
+          "name": "Create Pending Classification Reservation - Manual Flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('manual-flow reservation created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('pending_classification');",
+                  "pm.expect(body.data.cargoItems).to.have.length(2);",
+                  "pm.collectionVariables.set('manual_reservation_id', body.data.id);",
+                  "pm.collectionVariables.set('manual_cargo_item_id_1', body.data.cargoItems[0].id);",
+                  "pm.collectionVariables.set('manual_cargo_item_id_2', body.data.cargoItems[1].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"{{manual_unknown_desc_1}}\",\n      \"estimatedValue\": 1200,\n      \"size\": \"medium\"\n    },\n    {\n      \"description\": \"{{manual_unknown_desc_2}}\",\n      \"estimatedValue\": 300,\n      \"size\": \"small\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Client Forbidden - List Pending Classification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('client is forbidden from operator listing', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/pending-classification",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "pending-classification"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator List Pending Classification Reservations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('operator listed pending reservations', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.data.some((item) => item.id === pm.collectionVariables.get('manual_reservation_id'))).to.eql(true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/pending-classification",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "pending-classification"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator List Notifications - Capture Manual Notification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "function sendRequestAsync(options) {",
+                  "  return new Promise((resolve, reject) => {",
+                  "    pm.sendRequest(options, (err, res) => (err ? reject(err) : resolve(res)));",
+                  "  });",
+                  "}",
+                  "",
+                  "// La notificacion la crea el worker async solo cuando no puede clasificar",
+                  "// (ver classification-consumer.ts) -- puede no estar lista justo despues de",
+                  "// crear la reserva, asi que se reintenta con un delay real hasta verla o",
+                  "// agotar el tiempo de espera (~10s).",
+                  "pm.test('operator listed pending notifications', async function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  let body = pm.response.json();",
+                  "  const reservationId = pm.collectionVariables.get('manual_reservation_id');",
+                  "  let notification = body.data.find((item) => item.reservationId === reservationId);",
+                  "",
+                  "  let attempts = 0;",
+                  "  while (!notification && attempts < 20) {",
+                  "    await new Promise((resolve) => setTimeout(resolve, 500));",
+                  "    const res = await sendRequestAsync({",
+                  "      url: pm.request.url.toString(),",
+                  "      method: 'GET',",
+                  "      header: { Authorization: pm.request.headers.get('Authorization') },",
+                  "    });",
+                  "    body = res.json();",
+                  "    notification = body.data.find((item) => item.reservationId === reservationId);",
+                  "    attempts++;",
+                  "  }",
+                  "",
+                  "  pm.expect(notification).to.exist;",
+                  "  pm.collectionVariables.set('manual_notification_id', notification.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/classification-notifications",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "classification-notifications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator Acknowledge Notification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('notification acknowledged', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('acknowledged');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/classification-notifications/{{manual_notification_id}}/acknowledge",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "classification-notifications",
+                "{{manual_notification_id}}",
+                "acknowledge"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator Classify - Invalid Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('classification fails for invalid category', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoItems\": [\n    {\n      \"cargoItemId\": \"{{manual_cargo_item_id_1}}\",\n      \"categoryId\": \"{{invalid_category_id}}\"\n    },\n    {\n      \"cargoItemId\": \"{{manual_cargo_item_id_2}}\",\n      \"categoryId\": \"{{invalid_category_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{manual_reservation_id}}/classification",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{manual_reservation_id}}",
+                "classification"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator Classify - Duplicate Cargo Item IDs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('classification fails for duplicate cargo item ids', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoItems\": [\n    {\n      \"cargoItemId\": \"{{manual_cargo_item_id_1}}\",\n      \"categoryId\": \"{{valid_category_id}}\"\n    },\n    {\n      \"cargoItemId\": \"{{manual_cargo_item_id_1}}\",\n      \"categoryId\": \"{{valid_category_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{manual_reservation_id}}/classification",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{manual_reservation_id}}",
+                "classification"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator Classify - Partial Classification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('classification fails when cargo remains unclassified', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoItems\": [\n    {\n      \"cargoItemId\": \"{{manual_cargo_item_id_1}}\",\n      \"categoryId\": \"{{valid_category_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{manual_reservation_id}}/classification",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{manual_reservation_id}}",
+                "classification"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator Classify Successfully",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('reservation classified successfully', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "pm.expect(body.data.quotedPrice).to.be.a('number');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoItems\": [\n    {\n      \"cargoItemId\": \"{{manual_cargo_item_id_1}}\",\n      \"categoryId\": \"{{valid_category_id}}\"\n    },\n    {\n      \"cargoItemId\": \"{{manual_cargo_item_id_2}}\",\n      \"categoryId\": \"{{valid_category_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{manual_reservation_id}}/classification",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{manual_reservation_id}}",
+                "classification"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Client Get Classified Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('client sees reservation ready for confirmation', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "pm.expect(body.data.quotedPrice).to.be.a('number');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{manual_reservation_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{manual_reservation_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Rejection Flow",
+      "item": [
+        {
+          "name": "Create Pending Classification Reservation - Rejection Flow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('rejection-flow reservation created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('pending_classification');",
+                  "pm.expect(body.data.cargoItems).to.have.length(1);",
+                  "pm.collectionVariables.set('reject_reservation_id', body.data.id);",
+                  "pm.collectionVariables.set('reject_cargo_item_id_1', body.data.cargoItems[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{future_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"{{reject_unknown_desc}}\",\n      \"estimatedValue\": 9999,\n      \"size\": \"large\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Client Forbidden - Reject Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('client is forbidden from rejecting reservations', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Client should not be allowed to reject\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{reject_reservation_id}}/reject",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{reject_reservation_id}}",
+                "reject"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator List Notifications - Capture Rejection Notification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "function sendRequestAsync(options) {",
+                  "  return new Promise((resolve, reject) => {",
+                  "    pm.sendRequest(options, (err, res) => (err ? reject(err) : resolve(res)));",
+                  "  });",
+                  "}",
+                  "",
+                  "// Mismo caso que en Manual Classification Flow: la notificacion la crea el",
+                  "// worker async, puede no estar lista todavia.",
+                  "pm.test('operator listed pending notifications for rejection flow', async function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  let body = pm.response.json();",
+                  "  const reservationId = pm.collectionVariables.get('reject_reservation_id');",
+                  "  let notification = body.data.find((item) => item.reservationId === reservationId);",
+                  "",
+                  "  let attempts = 0;",
+                  "  while (!notification && attempts < 20) {",
+                  "    await new Promise((resolve) => setTimeout(resolve, 500));",
+                  "    const res = await sendRequestAsync({",
+                  "      url: pm.request.url.toString(),",
+                  "      method: 'GET',",
+                  "      header: { Authorization: pm.request.headers.get('Authorization') },",
+                  "    });",
+                  "    body = res.json();",
+                  "    notification = body.data.find((item) => item.reservationId === reservationId);",
+                  "    attempts++;",
+                  "  }",
+                  "",
+                  "  pm.expect(notification).to.exist;",
+                  "  pm.collectionVariables.set('reject_notification_id', notification.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/classification-notifications",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "classification-notifications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator Reject - Missing Reason",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('rejection fails when reason is missing', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{reject_reservation_id}}/reject",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{reject_reservation_id}}",
+                "reject"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator Reject Successfully",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('reservation rejected successfully', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('rejected');",
+                  "pm.expect(body.data.rejectionReason).to.eql('MOVE cannot handle this cargo type');",
+                  "pm.expect(body.data.rejectedAt).to.be.a('string');",
+                  "pm.expect(body.data.rejectedByUserId).to.eql(pm.collectionVariables.get('operator_user_id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"MOVE cannot handle this cargo type\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{reject_reservation_id}}/reject",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{reject_reservation_id}}",
+                "reject"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Client Get Rejected Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('client sees rejected reservation details', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('rejected');",
+                  "pm.expect(body.data.rejectionReason).to.eql('MOVE cannot handle this cargo type');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{individual_auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{reject_reservation_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{reject_reservation_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operator Reject Already Rejected Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "packages": {},
+                "exec": [
+                  "pm.test('already rejected reservation cannot be rejected again', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Duplicate rejection attempt\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations/{{reject_reservation_id}}/reject",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "reservations-service",
+                "reservations",
+                "{{reject_reservation_id}}",
+                "reject"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

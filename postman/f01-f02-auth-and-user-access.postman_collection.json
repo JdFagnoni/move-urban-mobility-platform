@@ -1,0 +1,368 @@
+{
+  "info": {
+    "_postman_id": "client-auth-users",
+    "name": "F01-F02 Auth and User Access",
+    "description": "Cubre F1/F2 y el control de acceso base para usuarios.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gateway_url", "value": "http://localhost:3000" },
+    { "key": "auth0_domain", "value": "" },
+    { "key": "auth0_audience", "value": "https://move-platform-api" },
+    { "key": "auth0_client_id", "value": "" },
+    { "key": "auth0_client_secret", "value": "" },
+    { "key": "auth0_realm", "value": "Username-Password-Authentication" },
+    { "key": "admin_email", "value": "admin@move.local" },
+    { "key": "admin_password", "value": "Admin123" },
+    { "key": "individual_password", "value": "Secret123!" },
+    { "key": "company_password", "value": "Secret123!" }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Initialize Run Variables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('gateway health responded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const runId = String(Date.now());",
+                  "pm.collectionVariables.set('run_id', runId);",
+                  "pm.collectionVariables.set('individual_email', `qa-auth-individual-${runId}@move.com`);",
+                  "pm.collectionVariables.set('company_email', `qa-auth-company-${runId}@move.com`);",
+                  "pm.collectionVariables.set('default_email', `qa-auth-default-${runId}@move.com`);",
+                  "pm.collectionVariables.set('invalid_email', `qa-auth-invalid-${runId}@move.com`);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admin token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.collectionVariables.set('admin_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "F1 Registration",
+      "item": [
+        {
+          "name": "Register Client - Individual",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('individual registered', () => pm.response.to.have.status(201));"] }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{individual_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA Auth Individual {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Client - Company",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('company registered', () => pm.response.to.have.status(201));"] }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{company_email}}\",\n  \"password\": \"{{company_password}}\",\n  \"name\": \"QA Auth Company {{run_id}}\",\n  \"clientType\": \"company\",\n  \"companyName\": \"MOVE QA {{run_id}}\",\n  \"taxId\": \"RUT-{{run_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Client - Default Client Type",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('default client registered', () => pm.response.to.have.status(201));"] }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{default_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA Auth Default {{run_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Client - Invalid Client Type",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('invalid client type rejected', () => pm.response.to.have.status(400));"] }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{invalid_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA Auth Invalid {{run_id}}\",\n  \"clientType\": \"vip\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Client - Duplicate User",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('duplicate user rejected', () => pm.response.to.have.status(409));"] }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{individual_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA Auth Individual {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "register"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "F2 Authentication",
+      "item": [
+        {
+          "name": "Get Individual Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('individual token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.collectionVariables.set('client_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{individual_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('current user returned', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const user = pm.response.json().data;",
+                  "pm.expect(user.role).to.eql('client');",
+                  "pm.expect(user.clientType).to.eql('individual');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/me",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Login - Invalid Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('invalid credentials rejected', function () {",
+                  "  pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{individual_email}}\",\n  \"password\": \"WrongPass123!\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        },
+        {
+          "name": "Access With Invalid Bearer Token",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('invalid bearer rejected', () => pm.response.to.have.status(401));"] }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer invalid-token" }],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/me",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Get Auth Audit Logs - Admin",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('admin audit logs returned', () => pm.response.to.have.status(200));"] }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/audit-logs",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "audit-logs"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authorization",
+      "item": [
+        {
+          "name": "List Users - Client Forbidden",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('client cannot list users', () => pm.response.to.have.status(403));"] }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/users?page=1&pageSize=20",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Users - Admin",
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('admin can list users', () => pm.response.to.have.status(200));"] }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/users?page=1&pageSize=20",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

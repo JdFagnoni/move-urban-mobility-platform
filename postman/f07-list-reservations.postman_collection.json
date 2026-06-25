@@ -1,0 +1,437 @@
+{
+  "info": {
+    "_postman_id": "f7-consultar-reservas",
+    "name": "F07 List Reservations",
+    "description": "Coleccion E2E para validar consulta de reservas con filtros por fecha y estado, y recupero de detalle de reserva.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gateway_url", "value": "http://localhost:3000" },
+    { "key": "auth0_domain", "value": "" },
+    { "key": "auth0_audience", "value": "" },
+    { "key": "auth0_client_id", "value": "" },
+    { "key": "auth0_client_secret", "value": "" },
+    { "key": "auth0_realm", "value": "Username-Password-Authentication" },
+    { "key": "admin_email", "value": "admin@move.local" },
+    { "key": "admin_password", "value": "Admin123" },
+    { "key": "individual_password", "value": "Secret123!" }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Initialize Run Variables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health responded', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const runId = String(Date.now());",
+                  "const reservationOneDate = new Date(Date.now() + 72 * 60 * 60 * 1000);",
+                  "const reservationTwoDate = new Date(Date.now() + 96 * 60 * 60 * 1000);",
+                  "const rangeStart = new Date(reservationOneDate.getTime() - 60 * 60 * 1000).toISOString();",
+                  "const rangeEnd = new Date(reservationOneDate.getTime() + 60 * 60 * 1000).toISOString();",
+                  "pm.collectionVariables.set('run_id', runId);",
+                  "pm.collectionVariables.set('reservation_one_date', reservationOneDate.toISOString());",
+                  "pm.collectionVariables.set('reservation_two_date', reservationTwoDate.toISOString());",
+                  "pm.collectionVariables.set('range_start', rangeStart);",
+                  "pm.collectionVariables.set('range_end', rangeEnd);",
+                  "pm.collectionVariables.set('client_email', `qa-f7-client-${runId}@move.com`);",
+                  "pm.collectionVariables.set('category_keyword', `f7-keyword-${runId}`);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admin token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.collectionVariables.set('admin_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        },
+        {
+          "name": "Register Client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('client registered', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA F7 Client {{run_id}}\",\n  \"clientType\": \"individual\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Get Client Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('client token acquired', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.collectionVariables.set('client_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"{{client_email}}\",\n  \"password\": \"{{individual_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}"
+            },
+            "url": {
+              "raw": "https://{{auth0_domain}}/oauth/token",
+              "protocol": "https",
+              "host": ["{{auth0_domain}}"],
+              "path": ["oauth", "token"]
+            }
+          }
+        },
+        {
+          "name": "Create Searchable Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('category created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.collectionVariables.set('category_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"F7 {{category_keyword}}\",\n  \"spanishName\": \"F7 {{category_keyword}} ES\",\n  \"descriptions\": [\"cargo {{category_keyword}}\"],\n  \"pricing\": {\n    \"baseFare\": 100,\n    \"pricePerKm\": 10,\n    \"surchargeType\": \"fixed\",\n    \"surchargeValue\": 0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/categories",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Create Reservation One",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reservation one created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "pm.expect(body.data.quotedPrice).to.be.a('number').and.greaterThan(0);",
+                  "pm.collectionVariables.set('reservation_one_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{client_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{reservation_one_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1645, -34.9011]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1882, -34.9033]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"cargo {{category_keyword}} one\",\n      \"estimatedValue\": 1200,\n      \"size\": \"medium\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "reservations"]
+            }
+          }
+        },
+        {
+          "name": "Create Reservation Two",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reservation two created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "pm.collectionVariables.set('reservation_two_id', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{client_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{reservation_two_date}}\",\n  \"origin\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1912, -34.8937]\n  },\n  \"destination\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.1501, -34.9062]\n  },\n  \"cargoItems\": [\n    {\n      \"description\": \"cargo {{category_keyword}} two\",\n      \"estimatedValue\": 800,\n      \"size\": \"small\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/reservations-service/reservations",
+              "host": ["{{gateway_url}}"],
+              "path": ["reservations-service", "reservations"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Reservations - Status Filter",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status filter succeeded', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.expect(body.success).to.eql(true);",
+              "pm.expect(body.data.data.length).to.be.at.least(2);",
+              "body.data.data.forEach((reservation) => pm.expect(reservation.status).to.eql('pending_confirmation'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/reservations?status=pending_confirmation&page=1&pageSize=10",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "reservations"],
+          "query": [
+            { "key": "status", "value": "pending_confirmation" },
+            { "key": "page", "value": "1" },
+            { "key": "pageSize", "value": "10" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "List Reservations - Date Range Filter",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('date range filter succeeded', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json().data.data;",
+              "const ids = data.map((reservation) => reservation.id);",
+              "pm.expect(ids).to.include(pm.collectionVariables.get('reservation_one_id'));",
+              "pm.expect(ids).to.not.include(pm.collectionVariables.get('reservation_two_id'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/reservations?scheduledFrom={{range_start}}&scheduledTo={{range_end}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "reservations"],
+          "query": [
+            { "key": "scheduledFrom", "value": "{{range_start}}" },
+            { "key": "scheduledTo", "value": "{{range_end}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "List Reservations - Invalid Status",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('invalid status rejected', function () {",
+              "  pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/reservations?status=bogus",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "reservations"],
+          "query": [{ "key": "status", "value": "bogus" }]
+        }
+      }
+    },
+    {
+      "name": "List Reservations - Invalid Date Range",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('invalid date range rejected', function () {",
+              "  pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/reservations?scheduledFrom={{reservation_two_date}}&scheduledTo={{reservation_one_date}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "reservations"],
+          "query": [
+            { "key": "scheduledFrom", "value": "{{reservation_two_date}}" },
+            { "key": "scheduledTo", "value": "{{reservation_one_date}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Reservation Detail",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('reservation detail returned', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const reservation = pm.response.json().data;",
+              "pm.expect(reservation.id).to.eql(pm.collectionVariables.get('reservation_one_id'));",
+              "pm.expect(reservation.cargoItems).to.have.length(1);",
+              "pm.expect(reservation.cargoItems[0].categoryId).to.be.a('string').and.not.empty;",
+              "pm.expect(reservation.quotedPrice).to.be.a('number').and.greaterThan(0);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/reservations/{{reservation_one_id}}",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "reservations", "{{reservation_one_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Non-existent Reservation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('non-existent reservation returns 404', function () {",
+              "  pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{client_auth_token}}" }],
+        "url": {
+          "raw": "{{gateway_url}}/reservations-service/reservations/11111111-1111-4111-8111-111111111111",
+          "host": ["{{gateway_url}}"],
+          "path": ["reservations-service", "reservations", "11111111-1111-4111-8111-111111111111"]
+        }
+      }
+    }
+  ]
+}

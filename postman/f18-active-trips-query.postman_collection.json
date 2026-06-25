@@ -1,0 +1,1616 @@
+{
+  "info": {
+    "_postman_id": "f18-active-trips-human-readable",
+    "name": "F18 Active Trips Query",
+    "description": "Coleccion autocontenida para F18. Crea zonas con nombres legibles, genera dos traslados en curso (uno con alerta activa y otro sin alertas) y valida la salida enriquecida de GET /transportations-service/operator/trips/active.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000" },
+    { "key": "auth0_domain", "value": "dev-v18wbrah03r8lc5v.us.auth0.com" },
+    { "key": "auth0_client_id", "value": "y1zVsp6x4vS4jN5mtFUiIIMqjYRruQSz" },
+    { "key": "auth0_client_secret", "value": "O_m5mem6bJ_z2vpQKNfxb_wFQT2RBPpwFWyrPR-Ub0_nIkeJeaZDbw64qYDhrW_v" },
+    { "key": "auth0_audience", "value": "https://move-platform-api" },
+    { "key": "auth0_realm", "value": "Username-Password-Authentication" },
+    { "key": "stripe_webhook_secret", "value": "" },
+    { "key": "stripe_payment_method_id", "value": "pm_card_visa" },
+    { "key": "nonexistent_uuid", "value": "00000000-0000-4000-8000-000000000000" }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "S01 - Initialize Run Variables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('gateway healthy', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const runId = String(Date.now());",
+                  "const shortRunId = runId.slice(-6);",
+                  "pm.collectionVariables.set('run_id', runId);",
+                  "pm.collectionVariables.set('operator_email', `operator-f18-${runId}@move.local`);",
+                  "pm.collectionVariables.set('driver_alert_email', `driver-alert-f18-${runId}@move.local`);",
+                  "pm.collectionVariables.set('driver_safe_email', `driver-safe-f18-${runId}@move.local`);",
+                  "pm.collectionVariables.set('client_email', `client-f18-${runId}@move.local`);",
+                  "pm.collectionVariables.set('alert_plate', `F18A-${shortRunId}`);",
+                  "pm.collectionVariables.set('safe_plate', `F18B-${shortRunId}`);",
+                  "pm.collectionVariables.set('zone_centro_name', `Centro F18 ${runId}`);",
+                  "pm.collectionVariables.set('zone_aeropuerto_name', `Aeropuerto F18 ${runId}`);",
+                  "pm.collectionVariables.set('zone_tres_cruces_name', `Tres Cruces F18 ${runId}`);",
+                  "pm.collectionVariables.set('zone_pocitos_name', `Pocitos F18 ${runId}`);",
+                  "pm.collectionVariables.set('zone_roja_name', `Zona Roja F18 ${runId}`);",
+                  "pm.collectionVariables.set('future_date_alert', new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString());",
+                  "pm.collectionVariables.set('future_date_safe', new Date(Date.now() + 96 * 60 * 60 * 1000).toISOString());",
+                  "const round = (value) => Number(value.toFixed(6));",
+                  "const point = (lon, lat) => ({ type: 'Point', coordinates: [round(lon), round(lat)] });",
+                  "const box = (lon, lat, dx = 0.0015, dy = 0.0015) => ({",
+                  "  type: 'Polygon',",
+                  "  coordinates: [[",
+                  "    [round(lon - dx), round(lat - dy)],",
+                  "    [round(lon + dx), round(lat - dy)],",
+                  "    [round(lon + dx), round(lat + dy)],",
+                  "    [round(lon - dx), round(lat + dy)],",
+                  "    [round(lon - dx), round(lat - dy)]",
+                  "  ]]",
+                  "});",
+                  "const seed = Number(shortRunId);",
+                  "const lonOffset = ((seed % 100) - 50) * 0.002;",
+                  "const latOffset = ((Math.floor(seed / 100) % 100) - 50) * 0.0015;",
+                  "const centro = point(-56.2645 + lonOffset, -34.9011 + latOffset);",
+                  "const aeropuerto = point(-56.03 + lonOffset, -34.838 + latOffset);",
+                  "const tresCruces = point(-56.1712 + lonOffset, -34.8942 + latOffset);",
+                  "const pocitos = point(-56.152 + lonOffset, -34.908 + latOffset);",
+                  "const zonaRoja = point(-56.288 + lonOffset, -34.906 + latOffset);",
+                  "pm.collectionVariables.set('zone_centro_payload', JSON.stringify({ name: pm.collectionVariables.get('zone_centro_name'), type: 'preferred', description: 'Origen legible para F18', polygon: box(centro.coordinates[0], centro.coordinates[1]) }));",
+                  "pm.collectionVariables.set('zone_aeropuerto_payload', JSON.stringify({ name: pm.collectionVariables.get('zone_aeropuerto_name'), type: 'preferred', description: 'Destino legible para F18', polygon: box(aeropuerto.coordinates[0], aeropuerto.coordinates[1]) }));",
+                  "pm.collectionVariables.set('zone_tres_cruces_payload', JSON.stringify({ name: pm.collectionVariables.get('zone_tres_cruces_name'), type: 'preferred', description: 'Segundo origen legible para F18', polygon: box(tresCruces.coordinates[0], tresCruces.coordinates[1]) }));",
+                  "pm.collectionVariables.set('zone_pocitos_payload', JSON.stringify({ name: pm.collectionVariables.get('zone_pocitos_name'), type: 'preferred', description: 'Segundo destino legible para F18', polygon: box(pocitos.coordinates[0], pocitos.coordinates[1]) }));",
+                  "pm.collectionVariables.set('zone_roja_payload', JSON.stringify({ name: pm.collectionVariables.get('zone_roja_name'), type: 'red', description: 'Zona roja para alerta geofence F18', polygon: box(zonaRoja.coordinates[0], zonaRoja.coordinates[1]) }));",
+                  "pm.collectionVariables.set('alert_origin_json', JSON.stringify(centro));",
+                  "pm.collectionVariables.set('alert_destination_json', JSON.stringify(aeropuerto));",
+                  "pm.collectionVariables.set('safe_origin_json', JSON.stringify(tresCruces));",
+                  "pm.collectionVariables.set('safe_destination_json', JSON.stringify(pocitos));",
+                  "pm.collectionVariables.set('red_alert_point_json', JSON.stringify(zonaRoja));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health"
+          }
+        },
+        {
+          "name": "S02 - Admin Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('got admin token', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.collectionVariables.set('admin_auth_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"{{auth0_realm}}\",\"username\":\"admin@move.local\",\"password\":\"Admin123\"}"
+            },
+            "url": "https://{{auth0_domain}}/oauth/token"
+          }
+        },
+        {
+          "name": "S03 - Register Operator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('operator registered or already exists', () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{operator_email}}\",\"password\":\"Operator123!\",\"name\":\"Operator F18 {{run_id}}\",\"clientType\":\"individual\"}"
+            },
+            "url": "{{base_url}}/reservations-service/auth/register"
+          }
+        },
+        {
+          "name": "S04 - Get Operator ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const users = pm.response.json().data.data;",
+                  "const user = users.find((item) => item.email === pm.collectionVariables.get('operator_email'));",
+                  "pm.test('operator found', () => pm.expect(user).to.not.be.undefined);",
+                  "if (user) pm.collectionVariables.set('operator_user_id', user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
+            "url": "{{base_url}}/reservations-service/users?email={{operator_email}}"
+          }
+        },
+        {
+          "name": "S05 - Promote Operator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('operator promoted', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data.role).to.eql('operator');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"role\":\"operator\"}" },
+            "url": "{{base_url}}/reservations-service/users/{{operator_user_id}}"
+          }
+        },
+        {
+          "name": "S06 - Operator Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('got operator token', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.collectionVariables.set('operator_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"{{auth0_realm}}\",\"username\":\"{{operator_email}}\",\"password\":\"Operator123!\"}"
+            },
+            "url": "https://{{auth0_domain}}/oauth/token"
+          }
+        },
+        {
+          "name": "S07 - Register Driver Alert",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('driver alert registered or already exists', () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{driver_alert_email}}\",\"password\":\"Driver123!\",\"name\":\"Laura Silva F18 {{run_id}}\",\"clientType\":\"individual\"}"
+            },
+            "url": "{{base_url}}/reservations-service/auth/register"
+          }
+        },
+        {
+          "name": "S08 - Get Driver Alert ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const users = pm.response.json().data.data;",
+                  "const user = users.find((item) => item.email === pm.collectionVariables.get('driver_alert_email'));",
+                  "pm.test('driver alert found', () => pm.expect(user).to.not.be.undefined);",
+                  "if (user) pm.collectionVariables.set('driver_alert_user_id', user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
+            "url": "{{base_url}}/reservations-service/users?email={{driver_alert_email}}"
+          }
+        },
+        {
+          "name": "S09 - Promote Driver Alert",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('driver alert promoted', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data.role).to.eql('driver');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"role\":\"driver\"}" },
+            "url": "{{base_url}}/reservations-service/users/{{driver_alert_user_id}}"
+          }
+        },
+        {
+          "name": "S10 - Driver Alert Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('got driver alert token', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.collectionVariables.set('driver_alert_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"{{auth0_realm}}\",\"username\":\"{{driver_alert_email}}\",\"password\":\"Driver123!\"}"
+            },
+            "url": "https://{{auth0_domain}}/oauth/token"
+          }
+        },
+        {
+          "name": "S11 - Register Driver Safe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('driver safe registered or already exists', () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{driver_safe_email}}\",\"password\":\"Driver123!\",\"name\":\"Martin Lopez F18 {{run_id}}\",\"clientType\":\"individual\"}"
+            },
+            "url": "{{base_url}}/reservations-service/auth/register"
+          }
+        },
+        {
+          "name": "S12 - Get Driver Safe ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const users = pm.response.json().data.data;",
+                  "const user = users.find((item) => item.email === pm.collectionVariables.get('driver_safe_email'));",
+                  "pm.test('driver safe found', () => pm.expect(user).to.not.be.undefined);",
+                  "if (user) pm.collectionVariables.set('driver_safe_user_id', user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_auth_token}}" }],
+            "url": "{{base_url}}/reservations-service/users?email={{driver_safe_email}}"
+          }
+        },
+        {
+          "name": "S13 - Promote Driver Safe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('driver safe promoted', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data.role).to.eql('driver');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"role\":\"driver\"}" },
+            "url": "{{base_url}}/reservations-service/users/{{driver_safe_user_id}}"
+          }
+        },
+        {
+          "name": "S14 - Driver Safe Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('got driver safe token', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.collectionVariables.set('driver_safe_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"{{auth0_realm}}\",\"username\":\"{{driver_safe_email}}\",\"password\":\"Driver123!\"}"
+            },
+            "url": "https://{{auth0_domain}}/oauth/token"
+          }
+        },
+        {
+          "name": "S15 - Register Client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('client registered or already exists', () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{client_email}}\",\"password\":\"Client123!\",\"name\":\"Client F18 {{run_id}}\",\"clientType\":\"individual\"}"
+            },
+            "url": "{{base_url}}/reservations-service/auth/register"
+          }
+        },
+        {
+          "name": "S16 - Client Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('got client token', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.collectionVariables.set('client_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"client_id\":\"{{auth0_client_id}}\",\"client_secret\":\"{{auth0_client_secret}}\",\"audience\":\"{{auth0_audience}}\",\"grant_type\":\"http://auth0.com/oauth/grant-type/password-realm\",\"realm\":\"{{auth0_realm}}\",\"username\":\"{{client_email}}\",\"password\":\"Client123!\"}"
+            },
+            "url": "https://{{auth0_domain}}/oauth/token"
+          }
+        },
+        {
+          "name": "S17 - Create Alert Vehicle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('alert vehicle created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "pm.collectionVariables.set('vehicle_alert_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"plate\":\"{{alert_plate}}\",\"type\":\"van\",\"capacity\":3,\"status\":\"available\"}"
+            },
+            "url": "{{base_url}}/transportations-service/vehicles"
+          }
+        },
+        {
+          "name": "S18 - Create Safe Vehicle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('safe vehicle created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "pm.collectionVariables.set('vehicle_safe_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"plate\":\"{{safe_plate}}\",\"type\":\"auto\",\"capacity\":3,\"status\":\"available\"}"
+            },
+            "url": "{{base_url}}/transportations-service/vehicles"
+          }
+        },
+        {
+          "name": "S19 - Create F18 Alerts Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('category created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "const category = pm.response.json().data;",
+                  "pm.expect(category.behavior.generatesAlerts).to.be.true;",
+                  "pm.collectionVariables.set('alert_category_id', category.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"F18 alerts {{run_id}}\",\"spanishName\":\"F18 alertas {{run_id}}\",\"descriptions\":[\"f18-alerts-{{run_id}}\"],\"pricing\":{\"baseFare\":100,\"pricePerKm\":10,\"surchargeType\":\"fixed\",\"surchargeValue\":0},\"behavior\":{\"requiresMonitoring\":true,\"generatesAlerts\":true},\"active\":true}"
+            },
+            "url": "{{base_url}}/reservations-service/categories"
+          }
+        },
+        {
+          "name": "S20 - Create Zone Centro",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('zone centro created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "pm.collectionVariables.set('zone_centro_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{zone_centro_payload}}"
+            },
+            "url": "{{base_url}}/transportations-service/zones"
+          }
+        },
+        {
+          "name": "S21 - Create Zone Aeropuerto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('zone aeropuerto created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "pm.collectionVariables.set('zone_aeropuerto_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{zone_aeropuerto_payload}}"
+            },
+            "url": "{{base_url}}/transportations-service/zones"
+          }
+        },
+        {
+          "name": "S22 - Create Zone Tres Cruces",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('zone tres cruces created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "pm.collectionVariables.set('zone_tres_cruces_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{zone_tres_cruces_payload}}"
+            },
+            "url": "{{base_url}}/transportations-service/zones"
+          }
+        },
+        {
+          "name": "S23 - Create Zone Pocitos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('zone pocitos created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "pm.collectionVariables.set('zone_pocitos_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{zone_pocitos_payload}}"
+            },
+            "url": "{{base_url}}/transportations-service/zones"
+          }
+        },
+        {
+          "name": "S24 - Create Zone Roja",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('red zone created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "pm.collectionVariables.set('zone_red_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{zone_roja_payload}}"
+            },
+            "url": "{{base_url}}/transportations-service/zones"
+          }
+        },
+        {
+          "name": "S25 - Create Alert Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('alert reservation created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "const body = pm.response.json().data;",
+                  "pm.collectionVariables.set('reservation_alert_id', body.id);",
+                  "pm.collectionVariables.set('cargo_alert_id', body.cargoItems[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{client_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"scheduledAt\":\"{{future_date_alert}}\",\"origin\":{{alert_origin_json}},\"destination\":{{alert_destination_json}},\"cargoItems\":[{\"description\":\"f18-alert-cargo-{{run_id}}\",\"estimatedValue\":500,\"size\":\"small\"}]}"
+            },
+            "url": "{{base_url}}/reservations-service/reservations"
+          }
+        },
+        {
+          "name": "S26 - Classify Alert Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('manual classification accepted or already handled', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{operator_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"cargoItems\":[{\"cargoItemId\":\"{{cargo_alert_id}}\",\"categoryId\":\"{{alert_category_id}}\"}]}"
+            },
+            "url": "{{base_url}}/reservations-service/reservations/{{reservation_alert_id}}/classification"
+          }
+        },
+        {
+          "name": "S27 - Wait Alert Reservation Pending Confirmation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function sendRequestAsync(options) {",
+                  "  return new Promise((resolve, reject) => {",
+                  "    pm.sendRequest(options, (error, response) => (error ? reject(error) : resolve(response)));",
+                  "  });",
+                  "}",
+                  "pm.test('alert reservation reached pending_confirmation', async function () {",
+                  "  let body = pm.response.json();",
+                  "  let attempts = 0;",
+                  "  while (body.data.status === 'pending_classification' && attempts < 30) {",
+                  "    await new Promise((resolve) => setTimeout(resolve, 500));",
+                  "    const response = await sendRequestAsync({",
+                  "      url: pm.request.url.toString(),",
+                  "      method: 'GET',",
+                  "      header: { Authorization: pm.request.headers.get('Authorization') }",
+                  "    });",
+                  "    body = response.json();",
+                  "    attempts++;",
+                  "  }",
+                  "  pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "  pm.expect(body.data.quotedPrice).to.be.a('number');",
+                  "  pm.collectionVariables.set('alert_category_id', body.data.cargoItems[0].categoryId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{client_token}}" }],
+            "url": "{{base_url}}/reservations-service/reservations/{{reservation_alert_id}}"
+          }
+        },
+        {
+          "name": "S28 - Confirm Alert Reservation Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('alert payment initiated', () => pm.expect(pm.response.code).to.eql(202));",
+                  "const payment = pm.response.json().data.payment;",
+                  "pm.expect(payment.status).to.eql('pending');",
+                  "pm.collectionVariables.set('alert_provider_payment_id', payment.providerPaymentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{client_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"paymentMethodId\":\"{{stripe_payment_method_id}}\"}"
+            },
+            "url": "{{base_url}}/reservations-service/reservations/{{reservation_alert_id}}/confirm-payment"
+          }
+        },
+        {
+          "name": "S29 - Stripe Webhook Alert Accepted",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const secret = pm.variables.get('stripe_webhook_secret');",
+                  "pm.expect(secret, 'stripe_webhook_secret must be configured').to.be.a('string').and.not.empty;",
+                  "const payload = {",
+                  "  id: `evt_accept_alert_${Date.now()}`,",
+                  "  type: 'payment_intent.succeeded',",
+                  "  data: {",
+                  "    object: {",
+                  "      id: pm.collectionVariables.get('alert_provider_payment_id'),",
+                  "      status: 'succeeded',",
+                  "      payment_method_types: ['card']",
+                  "    }",
+                  "  }",
+                  "};",
+                  "const payloadString = JSON.stringify(payload);",
+                  "const timestamp = Math.floor(Date.now() / 1000).toString();",
+                  "const signature = CryptoJS.HmacSHA256(`${timestamp}.${payloadString}`, secret).toString(CryptoJS.enc.Hex);",
+                  "pm.variables.set('stripe_payload', payloadString);",
+                  "pm.variables.set('stripe_signature', `t=${timestamp},v1=${signature}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('alert payment accepted', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data.payment.status).to.eql('accepted');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Stripe-Signature", "value": "{{stripe_signature}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{stripe_payload}}"
+            },
+            "url": "{{base_url}}/webhooks/stripe"
+          }
+        },
+        {
+          "name": "S30 - Get Alert Reservation Confirmed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('alert reservation confirmed', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data.status).to.eql('confirmed');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{client_token}}" }],
+            "url": "{{base_url}}/reservations-service/reservations/{{reservation_alert_id}}"
+          }
+        },
+        {
+          "name": "S31 - Assign Alert Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('alert reservation assigned', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data.status).to.eql('assigned');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{operator_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"vehicleId\":\"{{vehicle_alert_id}}\",\"driverId\":\"{{driver_alert_user_id}}\"}"
+            },
+            "url": "{{base_url}}/reservations-service/reservations/{{reservation_alert_id}}/assign"
+          }
+        },
+        {
+          "name": "S32 - Wait Alert Trip Materialized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function sendRequestAsync(options) {",
+                  "  return new Promise((resolve, reject) => {",
+                  "    pm.sendRequest(options, (error, response) => (error ? reject(error) : resolve(response)));",
+                  "  });",
+                  "}",
+                  "pm.test('alert trip materialized with named labels', async function () {",
+                  "  let body = pm.response.json();",
+                  "  let trip = body.data.find((item) => item.vehicle.id === pm.collectionVariables.get('vehicle_alert_id'));",
+                  "  let attempts = 0;",
+                  "  while (!trip && attempts < 30) {",
+                  "    await new Promise((resolve) => setTimeout(resolve, 500));",
+                  "    const response = await sendRequestAsync({",
+                  "      url: pm.request.url.toString(),",
+                  "      method: 'GET',",
+                  "      header: { Authorization: pm.request.headers.get('Authorization') }",
+                  "    });",
+                  "    body = response.json();",
+                  "    trip = body.data.find((item) => item.vehicle.id === pm.collectionVariables.get('vehicle_alert_id'));",
+                  "    attempts++;",
+                  "  }",
+                  "  pm.expect(trip).to.exist;",
+                  "  pm.expect(trip.originLabel).to.eql(pm.collectionVariables.get('zone_centro_name'));",
+                  "  pm.expect(trip.destinationLabel).to.eql(pm.collectionVariables.get('zone_aeropuerto_name'));",
+                  "  pm.expect(trip.driver.name).to.include('Laura Silva');",
+                  "  pm.collectionVariables.set('trip_alert_id', trip.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?vehicleId={{vehicle_alert_id}}"
+          }
+        },
+        {
+          "name": "S33 - Start Alert Trip",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('alert trip started', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data.status).to.eql('in_progress');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{driver_alert_token}}" }],
+            "url": "{{base_url}}/transportations-service/trips/{{trip_alert_id}}/start"
+          }
+        },
+        {
+          "name": "S34 - Wait Alert Trip In Progress",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function sendRequestAsync(options) {",
+                  "  return new Promise((resolve, reject) => {",
+                  "    pm.sendRequest(options, (error, response) => (error ? reject(error) : resolve(response)));",
+                  "  });",
+                  "}",
+                  "pm.test('alert trip visible as in_progress', async function () {",
+                  "  let body = pm.response.json();",
+                  "  let trip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_alert_id'));",
+                  "  let attempts = 0;",
+                  "  while ((!trip || trip.status !== 'in_progress') && attempts < 12) {",
+                  "    await new Promise((resolve) => setTimeout(resolve, 500));",
+                  "    const response = await sendRequestAsync({",
+                  "      url: pm.request.url.toString(),",
+                  "      method: 'GET',",
+                  "      header: { Authorization: pm.request.headers.get('Authorization') }",
+                  "    });",
+                  "    body = response.json();",
+                  "    trip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_alert_id'));",
+                  "    attempts++;",
+                  "  }",
+                  "  pm.expect(trip).to.exist;",
+                  "  pm.expect(trip.status).to.eql('in_progress');",
+                  "  pm.expect(trip.statusLabel).to.eql('En curso');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?vehicleId={{vehicle_alert_id}}"
+          }
+        },
+        {
+          "name": "S35 - Create Safe Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('safe reservation created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "const body = pm.response.json().data;",
+                  "pm.collectionVariables.set('reservation_safe_id', body.id);",
+                  "pm.collectionVariables.set('cargo_safe_id', body.cargoItems[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{client_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"scheduledAt\":\"{{future_date_safe}}\",\"origin\":{{safe_origin_json}},\"destination\":{{safe_destination_json}},\"cargoItems\":[{\"description\":\"f18-safe-cargo-{{run_id}}\",\"estimatedValue\":450,\"size\":\"small\"}]}"
+            },
+            "url": "{{base_url}}/reservations-service/reservations"
+          }
+        },
+        {
+          "name": "S36 - Classify Safe Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('manual safe classification accepted or already handled', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{operator_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"cargoItems\":[{\"cargoItemId\":\"{{cargo_safe_id}}\",\"categoryId\":\"{{alert_category_id}}\"}]}"
+            },
+            "url": "{{base_url}}/reservations-service/reservations/{{reservation_safe_id}}/classification"
+          }
+        },
+        {
+          "name": "S37 - Wait Safe Reservation Pending Confirmation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function sendRequestAsync(options) {",
+                  "  return new Promise((resolve, reject) => {",
+                  "    pm.sendRequest(options, (error, response) => (error ? reject(error) : resolve(response)));",
+                  "  });",
+                  "}",
+                  "pm.test('safe reservation reached pending_confirmation', async function () {",
+                  "  let body = pm.response.json();",
+                  "  let attempts = 0;",
+                  "  while (body.data.status === 'pending_classification' && attempts < 30) {",
+                  "    await new Promise((resolve) => setTimeout(resolve, 500));",
+                  "    const response = await sendRequestAsync({",
+                  "      url: pm.request.url.toString(),",
+                  "      method: 'GET',",
+                  "      header: { Authorization: pm.request.headers.get('Authorization') }",
+                  "    });",
+                  "    body = response.json();",
+                  "    attempts++;",
+                  "  }",
+                  "  pm.expect(body.data.status).to.eql('pending_confirmation');",
+                  "  pm.expect(body.data.quotedPrice).to.be.a('number');",
+                  "  pm.collectionVariables.set('safe_category_id', body.data.cargoItems[0].categoryId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{client_token}}" }],
+            "url": "{{base_url}}/reservations-service/reservations/{{reservation_safe_id}}"
+          }
+        },
+        {
+          "name": "S38 - Confirm Safe Reservation Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('safe payment initiated', () => pm.expect(pm.response.code).to.eql(202));",
+                  "const payment = pm.response.json().data.payment;",
+                  "pm.expect(payment.status).to.eql('pending');",
+                  "pm.collectionVariables.set('safe_provider_payment_id', payment.providerPaymentId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{client_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"paymentMethodId\":\"{{stripe_payment_method_id}}\"}"
+            },
+            "url": "{{base_url}}/reservations-service/reservations/{{reservation_safe_id}}/confirm-payment"
+          }
+        },
+        {
+          "name": "S39 - Stripe Webhook Safe Accepted",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const secret = pm.variables.get('stripe_webhook_secret');",
+                  "pm.expect(secret, 'stripe_webhook_secret must be configured').to.be.a('string').and.not.empty;",
+                  "const payload = {",
+                  "  id: `evt_accept_safe_${Date.now()}`,",
+                  "  type: 'payment_intent.succeeded',",
+                  "  data: {",
+                  "    object: {",
+                  "      id: pm.collectionVariables.get('safe_provider_payment_id'),",
+                  "      status: 'succeeded',",
+                  "      payment_method_types: ['card']",
+                  "    }",
+                  "  }",
+                  "};",
+                  "const payloadString = JSON.stringify(payload);",
+                  "const timestamp = Math.floor(Date.now() / 1000).toString();",
+                  "const signature = CryptoJS.HmacSHA256(`${timestamp}.${payloadString}`, secret).toString(CryptoJS.enc.Hex);",
+                  "pm.variables.set('stripe_payload', payloadString);",
+                  "pm.variables.set('stripe_signature', `t=${timestamp},v1=${signature}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('safe payment accepted', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data.payment.status).to.eql('accepted');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Stripe-Signature", "value": "{{stripe_signature}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{stripe_payload}}"
+            },
+            "url": "{{base_url}}/webhooks/stripe"
+          }
+        },
+        {
+          "name": "S40 - Get Safe Reservation Confirmed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('safe reservation confirmed', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data.status).to.eql('confirmed');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{client_token}}" }],
+            "url": "{{base_url}}/reservations-service/reservations/{{reservation_safe_id}}"
+          }
+        },
+        {
+          "name": "S41 - Assign Safe Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('safe reservation assigned', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data.status).to.eql('assigned');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{operator_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"vehicleId\":\"{{vehicle_safe_id}}\",\"driverId\":\"{{driver_safe_user_id}}\"}"
+            },
+            "url": "{{base_url}}/reservations-service/reservations/{{reservation_safe_id}}/assign"
+          }
+        },
+        {
+          "name": "S42 - Wait Safe Trip Materialized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function sendRequestAsync(options) {",
+                  "  return new Promise((resolve, reject) => {",
+                  "    pm.sendRequest(options, (error, response) => (error ? reject(error) : resolve(response)));",
+                  "  });",
+                  "}",
+                  "pm.test('safe trip materialized with named labels', async function () {",
+                  "  let body = pm.response.json();",
+                  "  let trip = body.data.find((item) => item.vehicle.id === pm.collectionVariables.get('vehicle_safe_id'));",
+                  "  let attempts = 0;",
+                  "  while (!trip && attempts < 30) {",
+                  "    await new Promise((resolve) => setTimeout(resolve, 500));",
+                  "    const response = await sendRequestAsync({",
+                  "      url: pm.request.url.toString(),",
+                  "      method: 'GET',",
+                  "      header: { Authorization: pm.request.headers.get('Authorization') }",
+                  "    });",
+                  "    body = response.json();",
+                  "    trip = body.data.find((item) => item.vehicle.id === pm.collectionVariables.get('vehicle_safe_id'));",
+                  "    attempts++;",
+                  "  }",
+                  "  pm.expect(trip).to.exist;",
+                  "  pm.expect(trip.originLabel).to.eql(pm.collectionVariables.get('zone_tres_cruces_name'));",
+                  "  pm.expect(trip.destinationLabel).to.eql(pm.collectionVariables.get('zone_pocitos_name'));",
+                  "  pm.expect(trip.driver.name).to.include('Martin Lopez');",
+                  "  pm.collectionVariables.set('trip_safe_id', trip.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?vehicleId={{vehicle_safe_id}}"
+          }
+        },
+        {
+          "name": "S43 - Start Safe Trip",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('safe trip started', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data.status).to.eql('in_progress');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{driver_safe_token}}" }],
+            "url": "{{base_url}}/transportations-service/trips/{{trip_safe_id}}/start"
+          }
+        },
+        {
+          "name": "S44 - Wait Safe Trip In Progress",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function sendRequestAsync(options) {",
+                  "  return new Promise((resolve, reject) => {",
+                  "    pm.sendRequest(options, (error, response) => (error ? reject(error) : resolve(response)));",
+                  "  });",
+                  "}",
+                  "pm.test('safe trip visible as in_progress', async function () {",
+                  "  let body = pm.response.json();",
+                  "  let trip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_safe_id'));",
+                  "  let attempts = 0;",
+                  "  while ((!trip || trip.status !== 'in_progress') && attempts < 12) {",
+                  "    await new Promise((resolve) => setTimeout(resolve, 500));",
+                  "    const response = await sendRequestAsync({",
+                  "      url: pm.request.url.toString(),",
+                  "      method: 'GET',",
+                  "      header: { Authorization: pm.request.headers.get('Authorization') }",
+                  "    });",
+                  "    body = response.json();",
+                  "    trip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_safe_id'));",
+                  "    attempts++;",
+                  "  }",
+                  "  pm.expect(trip).to.exist;",
+                  "  pm.expect(trip.status).to.eql('in_progress');",
+                  "  pm.expect(trip.statusLabel).to.eql('En curso');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?vehicleId={{vehicle_safe_id}}"
+          }
+        },
+        {
+          "name": "S45 - Generate GPS Alert For Alert Trip",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('gps signal accepted', () => pm.expect(pm.response.code).to.eql(202));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"vehicleId\":\"{{vehicle_alert_id}}\",\"location\":{{red_alert_point_json}},\"speed\":60,\"heading\":90,\"timestamp\":\"2099-12-31T10:30:00Z\"}"
+            },
+            "url": "{{base_url}}/transportations-service/gps/signal"
+          }
+        },
+        {
+          "name": "S46 - Wait Alert Trip With Active Alert",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function sendRequestAsync(options) {",
+                  "  return new Promise((resolve, reject) => {",
+                  "    pm.sendRequest(options, (error, response) => (error ? reject(error) : resolve(response)));",
+                  "  });",
+                  "}",
+                  "pm.test('alert trip shows active geofence alert', async function () {",
+                  "  let body = pm.response.json();",
+                  "  let trip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_alert_id'));",
+                  "  let attempts = 0;",
+                  "  while ((!trip || trip.activeAlerts.length === 0) && attempts < 20) {",
+                  "    await new Promise((resolve) => setTimeout(resolve, 500));",
+                  "    const response = await sendRequestAsync({",
+                  "      url: pm.request.url.toString(),",
+                  "      method: 'GET',",
+                  "      header: { Authorization: pm.request.headers.get('Authorization') }",
+                  "    });",
+                  "    body = response.json();",
+                  "    trip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_alert_id'));",
+                  "    attempts++;",
+                  "  }",
+                  "  pm.expect(trip).to.exist;",
+                  "  pm.expect(trip.hasActiveAlerts).to.be.true;",
+                  "  pm.expect(trip.activeAlerts.length).to.be.greaterThan(0);",
+                  "  pm.expect(trip.alertsLabel).to.include('con alerta');",
+                  "  pm.expect(trip.alertsLabel).to.include(pm.collectionVariables.get('zone_roja_name'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?vehicleId={{vehicle_alert_id}}&hasActiveAlerts=true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "F18 - Consultar Traslados en Curso",
+      "item": [
+        {
+          "name": "T01 - Sin filtros",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.be.true;",
+                  "pm.expect(body.data).to.be.an('array');",
+                  "const alertTrip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_alert_id'));",
+                  "const safeTrip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_safe_id'));",
+                  "pm.expect(alertTrip).to.exist;",
+                  "pm.expect(safeTrip).to.exist;",
+                  "pm.expect(alertTrip.originLabel).to.eql(pm.collectionVariables.get('zone_centro_name'));",
+                  "pm.expect(alertTrip.destinationLabel).to.eql(pm.collectionVariables.get('zone_aeropuerto_name'));",
+                  "pm.expect(alertTrip.statusLabel).to.eql('En curso');",
+                  "pm.expect(alertTrip.hasActiveAlerts).to.be.true;",
+                  "pm.expect(alertTrip.activeAlerts.length).to.be.greaterThan(0);",
+                  "pm.expect(alertTrip.operatorSummary).to.include(pm.collectionVariables.get('zone_centro_name'));",
+                  "pm.expect(alertTrip.operatorSummary).to.include(pm.collectionVariables.get('zone_aeropuerto_name'));",
+                  "pm.expect(alertTrip.operatorSummary).to.include(pm.collectionVariables.get('alert_plate'));",
+                  "pm.expect(alertTrip.operatorSummary).to.include('Laura Silva');",
+                  "pm.expect(alertTrip.operatorSummary).to.include(pm.collectionVariables.get('zone_roja_name'));",
+                  "pm.expect(safeTrip.originLabel).to.eql(pm.collectionVariables.get('zone_tres_cruces_name'));",
+                  "pm.expect(safeTrip.destinationLabel).to.eql(pm.collectionVariables.get('zone_pocitos_name'));",
+                  "pm.expect(safeTrip.statusLabel).to.eql('En curso');",
+                  "pm.expect(safeTrip.hasActiveAlerts).to.be.false;",
+                  "pm.expect(safeTrip.alertsLabel).to.eql('sin alertas');",
+                  "pm.expect(safeTrip.operatorSummary).to.include(pm.collectionVariables.get('safe_plate'));",
+                  "pm.expect(safeTrip.operatorSummary).to.include('Martin Lopez');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active"
+          }
+        },
+        {
+          "name": "T02 - Filtro por vehicleId (alert trip)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(body.data.length).to.eql(1);",
+                  "pm.expect(body.data[0].id).to.eql(pm.collectionVariables.get('trip_alert_id'));",
+                  "pm.expect(body.data[0].vehicle.id).to.eql(pm.collectionVariables.get('vehicle_alert_id'));",
+                  "pm.expect(body.data[0].hasActiveAlerts).to.be.true;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?vehicleId={{vehicle_alert_id}}"
+          }
+        },
+        {
+          "name": "T03 - Filtro por driverId (safe trip)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(body.data.length).to.be.greaterThan(0);",
+                  "body.data.forEach((trip) => pm.expect(trip.driver.id).to.eql(pm.collectionVariables.get('driver_safe_user_id')));",
+                  "const trip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_safe_id'));",
+                  "pm.expect(trip).to.exist;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?driverId={{driver_safe_user_id}}"
+          }
+        },
+        {
+          "name": "T04 - Filtro por categoryId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const trip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_alert_id'));",
+                  "pm.expect(trip).to.exist;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?categoryId={{alert_category_id}}"
+          }
+        },
+        {
+          "name": "T05 - hasActiveAlerts=false",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "body.data.forEach((trip) => pm.expect(trip.hasActiveAlerts).to.be.false);",
+                  "const safeTrip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_safe_id'));",
+                  "const alertTrip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_alert_id'));",
+                  "pm.expect(safeTrip).to.exist;",
+                  "pm.expect(alertTrip).to.be.undefined;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?hasActiveAlerts=false"
+          }
+        },
+        {
+          "name": "T06 - hasActiveAlerts=true",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "body.data.forEach((trip) => pm.expect(trip.hasActiveAlerts).to.be.true);",
+                  "const trip = body.data.find((item) => item.id === pm.collectionVariables.get('trip_alert_id'));",
+                  "pm.expect(trip).to.exist;",
+                  "pm.expect(trip.activeAlerts[0].message).to.include(pm.collectionVariables.get('zone_roja_name'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?hasActiveAlerts=true"
+          }
+        },
+        {
+          "name": "T07 - Filtros combinados (vehicleId + driverId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(body.data.length).to.eql(1);",
+                  "pm.expect(body.data[0].id).to.eql(pm.collectionVariables.get('trip_safe_id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?vehicleId={{vehicle_safe_id}}&driverId={{driver_safe_user_id}}"
+          }
+        },
+        {
+          "name": "T08 - vehicleId inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.expect(pm.response.json().data).to.eql([]);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operator_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active?vehicleId={{nonexistent_uuid}}"
+          }
+        },
+        {
+          "name": "T09 - Error 403 por rol incorrecto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.expect(pm.response.code).to.eql(403));",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.success).to.be.false;",
+                  "pm.expect(body.error).to.be.a('string').and.not.empty;"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{driver_alert_token}}" }],
+            "url": "{{base_url}}/transportations-service/operator/trips/active"
+          }
+        }
+      ]
+    }
+  ]
+}

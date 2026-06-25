@@ -1,0 +1,117 @@
+# CI override: skips ollama (too heavy) and uses in-memory DB for speed
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: move
+      POSTGRES_PASSWORD: move_secret
+      POSTGRES_DB: move_platform
+    ports:
+      - "5432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U move -d move_platform"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 3s
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: move
+      RABBITMQ_DEFAULT_PASS: move_secret
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+      target: prod
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      RESERVATIONS_URL: http://reservations:3001
+      TRANSPORTATIONS_URL: http://transportations:3002
+      AUTH0_DOMAIN: ""
+      AUTH0_AUDIENCE: https://move-platform-api
+      INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
+    depends_on:
+      - reservations
+      - transportations
+
+  reservations:
+    build:
+      context: .
+      dockerfile: reservation-service/Dockerfile
+      target: prod
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      AUTH0_DOMAIN: ""
+      AUTH0_AUDIENCE: https://move-platform-api
+      AUTH0_DB_CONNECTION: Username-Password-Authentication
+      AUTH0_MGMT_CLIENT_ID: ""
+      AUTH0_MGMT_CLIENT_SECRET: ""
+      INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
+      TRANSPORTATIONS_URL: http://transportations:3002
+      BOOTSTRAP_ADMIN_AUTH_SUBJECT: ""
+      BOOTSTRAP_ADMIN_EMAIL: ""
+      BOOTSTRAP_ADMIN_NAME: MOVE Admin
+      RABBITMQ_URL: amqp://move:move_secret@rabbitmq:5672
+      PORT: "3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  transportations:
+    build:
+      context: .
+      dockerfile: transportation-service/Dockerfile
+      target: prod
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      INTERNAL_GATEWAY_SECRET: ${INTERNAL_GATEWAY_SECRET:-}
+      RESERVATIONS_URL: http://reservations:3001
+      RABBITMQ_URL: amqp://move:move_secret@rabbitmq:5672
+      PORT: "3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  categorizer-service:
+    build:
+      context: .
+      dockerfile: categorizer-service/Dockerfile
+      target: prod
+    ports:
+      - "3003:3003"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://move:move_secret@postgres:5432/move_platform
+      PORT: "3003"
+      OLLAMA_URL: http://localhost:11434
+      RESERVATIONS_URL: http://reservations:3001
+    depends_on:
+      postgres:
+        condition: service_healthy

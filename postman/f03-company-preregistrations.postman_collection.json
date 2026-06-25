@@ -1,0 +1,861 @@
+{
+	"info": {
+		"_postman_id": "f1f89b17-66a9-4af2-a48d-2c628f5b0d7f",
+		"name": "F03 Company Preregistrations",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "37423762"
+	},
+	"item": [
+		{
+			"name": "Setup",
+			"item": [
+				{
+					"name": "Gateway Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/health",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Company Client",
+						"request": {
+							"method": "POST",
+							"header": [
+								{
+									"key": "Authorization",
+									"value": "Bearer {{admin_auth_token}}"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"qa-company-{{run_id}}@move.com\",\n  \"password\": \"{{company_password}}\",\n  \"name\": \"QA Company Client {{run_id}}\",\n  \"clientType\": \"company\",\n  \"companyName\": \"MOVE Logistics {{run_id}}\",\n  \"taxId\": \"RUT-{{run_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/auth/register",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Individual Client",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"qa-individual-{{run_id}}@move.com\",\n  \"password\": \"{{individual_password}}\",\n  \"name\": \"QA Individual Client {{run_id}}\",\n  \"clientType\": \"individual\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/auth/register",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Company Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"packages": {},
+								"exec": [
+									"const body = pm.response.json();",
+									"if (body.access_token) {",
+									"    pm.collectionVariables.set('company_auth_token', body.access_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"qa-company-{{run_id}}@move.com\",\n  \"password\": \"{{company_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{auth0_domain}}/oauth/token",
+							"protocol": "https",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Individual Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"packages": {},
+								"exec": [
+									"const body = pm.response.json();",
+									"if (body.access_token) {",
+									"    pm.collectionVariables.set('individual_auth_token', body.access_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"grant_type\": \"http://auth0.com/oauth/grant-type/password-realm\",\n  \"username\": \"qa-individual-{{run_id}}@move.com\",\n  \"password\": \"{{individual_password}}\",\n  \"audience\": \"{{auth0_audience}}\",\n  \"scope\": \"openid profile email\",\n  \"client_id\": \"{{auth0_client_id}}\",\n  \"client_secret\": \"{{auth0_client_secret}}\",\n  \"realm\": \"{{auth0_realm}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://{{auth0_domain}}/oauth/token",
+							"protocol": "https",
+							"host": [
+								"{{auth0_domain}}"
+							],
+							"path": [
+								"oauth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User - Company",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/auth/me",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"auth",
+								"me"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Categories",
+			"item": [
+				{
+					"name": "Create Category for F3",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"packages": {},
+								"exec": [
+									"const body = pm.response.json();",
+									"if (body?.data?.id) {",
+									"    pm.collectionVariables.set('category_id', body.data.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Electronics F3 {{run_id}}\",\n  \"spanishName\": \"Electronica F3 {{run_id}}\",\n  \"descriptions\": [\"monitors and laptops\"]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/categories",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/categories",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Company Products",
+			"item": [
+				{
+					"name": "Create Company Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"packages": {},
+								"exec": [
+									"const body = pm.response.json();",
+									"if (body?.data?.id) {",
+									"    pm.collectionVariables.set('company_product_id', body.data.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productName\": \"Monitor 24 {{run_id}}\",\n  \"categoryId\": \"{{category_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/products",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Company Product - Duplicate Name",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productName\": \"Monitor 24 {{run_id}}\",\n  \"categoryId\": \"{{category_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/products",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Company Product - Invalid Category",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productName\": \"Invalid Category Product {{run_id}}\",\n  \"categoryId\": \"00000000-0000-0000-0000-000000000000\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/products",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Company Products",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/products",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Company Product",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productName\": \"Updated Monitor 24 {{run_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/products/{{company_product_id}}",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"products",
+								"{{company_product_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Company Product - Forbidden for Individual",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{individual_auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productName\": \"Individual Forbidden {{run_id}}\",\n  \"categoryId\": \"{{category_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/products",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Company Product",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/products/{{company_product_id}}",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"products",
+								"{{company_product_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Company Locations",
+			"item": [
+				{
+					"name": "Create Company Location",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"packages": {},
+								"exec": [
+									"const body = pm.response.json();",
+									"if (body?.data?.id) {",
+									"    pm.collectionVariables.set('company_location_id', body.data.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"label\": \"Warehouse {{run_id}}\",\n  \"kind\": \"both\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.164532, -34.901112]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/locations",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"locations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Company Location - Duplicate Label",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"label\": \"Warehouse {{run_id}}\",\n  \"kind\": \"origin\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.190000, -34.890000]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/locations",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"locations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Company Locations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/locations",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"locations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Company Location",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"label\": \"Warehouse Updated {{run_id}}\",\n  \"kind\": \"destination\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/locations/{{company_location_id}}",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"locations",
+								"{{company_location_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Company Location - Forbidden for Individual",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{individual_auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"label\": \"Individual Forbidden Location {{run_id}}\",\n  \"kind\": \"origin\",\n  \"location\": {\n    \"type\": \"Point\",\n    \"coordinates\": [-56.155000, -34.905000]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/locations",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"locations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Company Location",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{company_auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/reservations-service/preregistrations/locations/{{company_location_id}}",
+							"host": [
+								"{{gateway_url}}"
+							],
+							"path": [
+								"reservations-service",
+								"preregistrations",
+								"locations",
+								"{{company_location_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"if (!pm.collectionVariables.get('run_id')) {",
+					"    pm.collectionVariables.set('run_id', Date.now().toString());",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "gateway_url",
+			"value": "http://localhost:3000"
+		},
+		{
+			"key": "auth0_domain",
+			"value": ""
+		},
+		{
+			"key": "auth0_audience",
+			"value": "https://move-platform-api"
+		},
+		{
+			"key": "auth0_client_id",
+			"value": ""
+		},
+		{
+			"key": "auth0_client_secret",
+			"value": ""
+		},
+		{
+			"key": "auth0_realm",
+			"value": "Username-Password-Authentication"
+		},
+		{
+			"key": "company_password",
+			"value": "Secret123!"
+		},
+		{
+			"key": "individual_password",
+			"value": "Secret123!"
+		},
+		{
+			"key": "run_id",
+			"value": ""
+		},
+		{
+			"key": "company_auth_token",
+			"value": ""
+		},
+		{
+			"key": "individual_auth_token",
+			"value": ""
+		},
+		{
+			"key": "admin_auth_token",
+			"value": ""
+		},
+		{
+			"key": "category_id",
+			"value": ""
+		},
+		{
+			"key": "company_product_id",
+			"value": ""
+		},
+		{
+			"key": "company_location_id",
+			"value": ""
+		}
+	]
+}
