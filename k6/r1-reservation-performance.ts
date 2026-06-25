@@ -1,4 +1,4 @@
-// R1 - Performance de clasificacion de reservas (F4.1 particular / F4.2 empresa).
+// R1 - Performance de creacion de reservas (F4.1 particular / F4.2 empresa).
 //
 // Tres scenarios independientes, cada uno con el SLA de la letra:
 //   - empresa_frecuente:    p95 < 600ms  (top 20, fast-path Redis)
@@ -6,8 +6,12 @@
 //                            limite superior duro, por eso el threshold usa
 //                            <1000ms (el piso de 700ms queda documentado acá
 //                            y se revisa a ojo en el resumen de p95 real).
-//   - particular:           SLA real 5000-10000ms (clasificacion via IA /
-//                            semantic search); mismo motivo, threshold <10000ms.
+//   - particular:           p95 < 500ms. Mide el camino SINCRONICO: persistir
+//                            la reserva en pending_classification y encolar el
+//                            evento reservation.classification.requested a
+//                            RabbitMQ. La clasificacion por IA (semantic search)
+//                            ocurre de forma ASINCRONA en un consumer separado
+//                            y no es medida por este test.
 //
 // IMPORTANTE: para que "empresa_frecuente" ejercite el fast-path de Redis
 // (y no caiga en el mismo camino que "empresa_no_frecuente") hay que correr
@@ -29,7 +33,8 @@
 // los tres se mantenga muy por debajo de 5 req/s.
 
 import http from "k6/http";
-import { check } from "k6";
+import { check, sleep } from "k6";
+import { Trend } from "k6/metrics";
 import {
   FREQUENT_COMPANY_EMAIL,
   FREQUENT_COMPANY_PASSWORD,
@@ -42,6 +47,9 @@ import {
 import { registerAndLogin } from "./helpers/auth.ts";
 import { ensureCompanyProduct } from "./helpers/companies.ts";
 import { companyReservationPayload, individualReservationPayload } from "./helpers/payloads.ts";
+
+// Tiempo total desde el POST hasta que la reserva alcanza pending_confirmation.
+const classificationE2eMs = new Trend("classification_e2e_ms", true);
 
 interface SetupData {
   frequentToken: string;
@@ -76,7 +84,7 @@ export const options = {
     particular: {
       executor: "constant-arrival-rate",
       rate: Number(__ENV["PARTICULAR_RATE"] ?? 1),
-      timeUnit: "4s",
+      timeUnit: "10s",
       duration: DURATION,
       preAllocatedVUs: 5,
       maxVUs: 10,
@@ -86,13 +94,14 @@ export const options = {
   thresholds: {
     "http_req_duration{scenario:empresa_frecuente}": ["p(95)<600"],
     "http_req_duration{scenario:empresa_no_frecuente}": ["p(95)<1000"],
-    "http_req_duration{scenario:particular}": ["p(95)<10000"],
-    // Acotado por scenario: las llamadas de setup() (registro de clientes,
-    // que tolera 409 si el usuario ya existe de una corrida anterior) no
-    // tienen tag de scenario y no deben contarse contra este threshold.
+    "http_req_duration{scenario:particular,type:create}": ["p(95)<500"],
+    // Tiempo total (POST + clasificacion asincrona) hasta pending_confirmation.
+    "classification_e2e_ms": ["p(95)<30000"],
+    // Acotado por scenario y type: las llamadas de setup() y las de polling
+    // no se cuentan contra el threshold de errores de creacion.
     "http_req_failed{scenario:empresa_frecuente}": ["rate<0.01"],
     "http_req_failed{scenario:empresa_no_frecuente}": ["rate<0.01"],
-    "http_req_failed{scenario:particular}": ["rate<0.01"],
+    "http_req_failed{scenario:particular,type:create}": ["rate<0.01"],
   },
 };
 
@@ -131,9 +140,13 @@ export function setup(): SetupData {
   };
 }
 
+const CLASSIFICATION_TIMEOUT_MS = 30_000;
+const POLL_INTERVAL_S = 0.5;
+
 function createReservation(token: string, payload: string): void {
   const res = http.post(`${BASE_URL}/reservations-service/reservations`, payload, {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    tags: { type: "create" },
   });
 
   check(res, { "reserva creada (201)": (r) => r.status === 201 });
@@ -151,5 +164,47 @@ export function empresaNoFrecuente(data: SetupData): void {
 }
 
 export function particular(data: SetupData): void {
-  createReservation(data.individualToken, individualReservationPayload(__ITER));
+  const start = Date.now();
+
+  const createRes = http.post(
+    `${BASE_URL}/reservations-service/reservations`,
+    individualReservationPayload(__ITER),
+    {
+      headers: {
+        Authorization: `Bearer ${data.individualToken}`,
+        "Content-Type": "application/json",
+      },
+      tags: { type: "create" },
+    }
+  );
+
+  const created = check(createRes, { "reserva creada (201)": (r) => r.status === 201 });
+  if (!created) return;
+
+  const body = createRes.json() as { data: { id: string } };
+  const reservationId = body.data.id;
+
+  let classified = false;
+  while (Date.now() - start < CLASSIFICATION_TIMEOUT_MS) {
+    sleep(POLL_INTERVAL_S);
+
+    const pollRes = http.get(
+      `${BASE_URL}/reservations-service/reservations/${reservationId}`,
+      {
+        headers: { Authorization: `Bearer ${data.individualToken}` },
+        tags: { type: "poll" },
+      }
+    );
+
+    if (pollRes.status === 200) {
+      const pollBody = pollRes.json() as { data: { status: string } };
+      if (pollBody.data.status === "pending_confirmation") {
+        classified = true;
+        break;
+      }
+    }
+  }
+
+  classificationE2eMs.add(Date.now() - start);
+  check(null, { "clasificado a tiempo": () => classified });
 }
