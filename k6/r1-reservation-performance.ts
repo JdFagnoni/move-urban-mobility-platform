@@ -96,7 +96,7 @@ export const options = {
     "http_req_duration{scenario:empresa_no_frecuente}": ["p(95)<1000"],
     "http_req_duration{scenario:particular,type:create}": ["p(95)<500"],
     // Tiempo total (POST + clasificacion asincrona) hasta pending_confirmation.
-    "classification_e2e_ms": ["p(95)<30000"],
+    classification_e2e_ms: ["p(95)<30000"],
     // Acotado por scenario y type: las llamadas de setup() y las de polling
     // no se cuentan contra el threshold de errores de creacion.
     "http_req_failed{scenario:empresa_frecuente}": ["rate<0.01"],
@@ -188,13 +188,10 @@ export function particular(data: SetupData): void {
   while (Date.now() - start < CLASSIFICATION_TIMEOUT_MS) {
     sleep(POLL_INTERVAL_S);
 
-    const pollRes = http.get(
-      `${BASE_URL}/reservations-service/reservations/${reservationId}`,
-      {
-        headers: { Authorization: `Bearer ${data.individualToken}` },
-        tags: { type: "poll" },
-      }
-    );
+    const pollRes = http.get(`${BASE_URL}/reservations-service/reservations/${reservationId}`, {
+      headers: { Authorization: `Bearer ${data.individualToken}` },
+      tags: { type: "poll" },
+    });
 
     if (pollRes.status === 200) {
       const pollBody = pollRes.json() as { data: { status: string } };
