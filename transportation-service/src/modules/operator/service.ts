@@ -1,8 +1,9 @@
-import type { GeoPoint, TripStatus, VehicleDTO } from "@move/shared";
+import type { AlertSeverity, AlertType, GeoPoint, TripStatus, VehicleDTO } from "@move/shared";
 import { HttpError, query, redisClient } from "@move/shared";
 import type { TripDTO } from "@move/shared";
-import { VehicleModel } from "../../db/models";
+import { VehicleModel, ZoneModel } from "../../db/models";
 import { resolveUserByAuthSubject } from "../../clients/reservation-service";
+import { formatGeoPoint, pointInPolygon } from "../zones/geo";
 
 export interface ActiveTripFilters {
   vehicleId?: string;
@@ -15,7 +16,10 @@ export interface ActiveTripDTO {
   id: string;
   origin: GeoPoint | null;
   destination: GeoPoint | null;
+  originLabel: string;
+  destinationLabel: string;
   status: TripStatus;
+  statusLabel: string;
   vehicle: {
     id: string;
     plate: string;
@@ -29,6 +33,9 @@ export interface ActiveTripDTO {
     email: string;
   };
   hasActiveAlerts: boolean;
+  activeAlerts: ActiveTripAlertDTO[];
+  alertsLabel: string;
+  operatorSummary: string;
 }
 
 interface ActiveTripRow {
@@ -47,12 +54,130 @@ interface ActiveTripRow {
   has_active_alerts: boolean;
 }
 
-function rowToActiveDTO(row: ActiveTripRow): ActiveTripDTO {
+interface ZoneCandidate {
+  id: string;
+  name: string;
+  polygon: {
+    coordinates: number[][][];
+  };
+}
+
+interface ActiveTripAlertRow {
+  id: string;
+  trip_id: string;
+  type: AlertType;
+  severity: AlertSeverity;
+  message: string;
+  created_at: Date | string;
+}
+
+export interface ActiveTripAlertDTO {
+  id: string;
+  type: AlertType;
+  severity: AlertSeverity;
+  message: string;
+  createdAt: string;
+}
+
+function mapStatusLabel(status: TripStatus): string {
+  switch (status) {
+    case "assigned":
+      return "Asignado";
+    case "in_progress":
+      return "En curso";
+    case "completed":
+      return "Finalizado";
+    case "cancelled":
+      return "Cancelado";
+  }
+}
+
+function findZoneName(point: GeoPoint | null, zones: readonly ZoneCandidate[]): string | null {
+  if (point === null) {
+    return null;
+  }
+
+  for (const zone of zones) {
+    const ring = zone.polygon.coordinates[0];
+    if (ring && pointInPolygon(point.coordinates, ring)) {
+      return zone.name;
+    }
+  }
+
+  return null;
+}
+
+function formatPointLabel(point: GeoPoint | null, zones: readonly ZoneCandidate[]): string {
+  if (point === null) {
+    return "Ubicacion no disponible";
+  }
+
+  const zoneName = findZoneName(point, zones);
+  if (zoneName) {
+    return zoneName;
+  }
+
+  return formatGeoPoint(point);
+}
+
+function mapActiveTripAlert(row: ActiveTripAlertRow): ActiveTripAlertDTO {
+  return {
+    id: row.id,
+    type: row.type,
+    severity: row.severity,
+    message: row.message,
+    createdAt: typeof row.created_at === "string" ? row.created_at : row.created_at.toISOString(),
+  };
+}
+
+function formatAlertsLabel(alerts: readonly ActiveTripAlertDTO[]): string {
+  if (alerts.length === 0) {
+    return "sin alertas";
+  }
+
+  if (alerts.length === 1) {
+    return `con alerta: ${alerts[0]!.message}`;
+  }
+
+  return `con ${alerts.length} alertas activas: ${alerts.map((alert) => alert.message).join("; ")}`;
+}
+
+function buildOperatorSummary(dto: {
+  id: string;
+  originLabel: string;
+  destinationLabel: string;
+  statusLabel: string;
+  vehiclePlate: string;
+  driverName: string;
+  alertsLabel: string;
+}): string {
+  return [
+    `Traslado ${dto.id}`,
+    `${dto.originLabel} -> ${dto.destinationLabel}`,
+    dto.statusLabel,
+    `vehiculo ${dto.vehiclePlate}`,
+    `conductor ${dto.driverName || "No asignado"}`,
+    dto.alertsLabel,
+  ].join(", ");
+}
+
+function rowToActiveDTO(
+  row: ActiveTripRow,
+  zones: readonly ZoneCandidate[],
+  alerts: readonly ActiveTripAlertDTO[]
+): ActiveTripDTO {
+  const status = row.status as TripStatus;
+  const originLabel = formatPointLabel(row.origin, zones);
+  const destinationLabel = formatPointLabel(row.destination, zones);
+  const alertsLabel = formatAlertsLabel(alerts);
   return {
     id: row.id,
     origin: row.origin,
     destination: row.destination,
-    status: row.status as TripStatus,
+    originLabel,
+    destinationLabel,
+    status,
+    statusLabel: mapStatusLabel(status),
     vehicle: {
       id: row.vehicle_id,
       plate: row.vehicle_plate,
@@ -66,6 +191,17 @@ function rowToActiveDTO(row: ActiveTripRow): ActiveTripDTO {
       email: row.driver_email ?? "",
     },
     hasActiveAlerts: row.has_active_alerts,
+    activeAlerts: [...alerts],
+    alertsLabel,
+    operatorSummary: buildOperatorSummary({
+      id: row.id,
+      originLabel,
+      destinationLabel,
+      statusLabel: mapStatusLabel(status),
+      vehiclePlate: row.vehicle_plate,
+      driverName: row.driver_name ?? "",
+      alertsLabel,
+    }),
   };
 }
 
@@ -160,7 +296,14 @@ export async function getActiveTrips(
     params
   );
 
-  const data = result.rows.map(rowToActiveDTO);
+  const [zones, activeAlertsByTrip] = await Promise.all([
+    listActiveZones(),
+    listActiveAlertsByTrip(result.rows.map((row) => row.id)),
+  ]);
+
+  const data = result.rows.map((row) =>
+    rowToActiveDTO(row, zones, activeAlertsByTrip.get(row.id) ?? [])
+  );
 
   redisClient
     .set(cacheKey, JSON.stringify(data), "EX", ACTIVE_TRIPS_TTL_SECONDS)
@@ -169,6 +312,45 @@ export async function getActiveTrips(
     });
 
   return data;
+}
+
+async function listActiveZones(): Promise<ZoneCandidate[]> {
+  const zones = await ZoneModel.findAll({
+    where: { active: true },
+    attributes: ["id", "name", "type", "polygon"],
+    order: [["name", "ASC"]],
+  });
+
+  return zones.map((zone) => ({
+    id: zone.id,
+    name: zone.name,
+    polygon: zone.polygon,
+  }));
+}
+
+async function listActiveAlertsByTrip(
+  tripIds: readonly string[]
+): Promise<Map<string, ActiveTripAlertDTO[]>> {
+  const alertsByTrip = new Map<string, ActiveTripAlertDTO[]>();
+  if (tripIds.length === 0) {
+    return alertsByTrip;
+  }
+
+  const result = await query<ActiveTripAlertRow>(
+    `SELECT id, trip_id, type, severity, message, created_at
+     FROM alerts
+     WHERE trip_id = ANY($1::uuid[]) AND resolved_at IS NULL
+     ORDER BY created_at DESC`,
+    [tripIds]
+  );
+
+  for (const row of result.rows) {
+    const current = alertsByTrip.get(row.trip_id) ?? [];
+    current.push(mapActiveTripAlert(row));
+    alertsByTrip.set(row.trip_id, current);
+  }
+
+  return alertsByTrip;
 }
 
 // F19 – reasignar vehículo en traslado activo

@@ -3,7 +3,7 @@ import { loadActiveCategories } from "../../categories";
 import { getEmbeddingsPort } from "./runtime";
 
 const MIN_SEMANTIC_SCORE = 0.52;
-const MIN_SEMANTIC_MARGIN = 0.012;
+const MIN_SEMANTIC_MARGIN = 0.003;
 
 interface CachedCategoryEmbedding {
   category: CategoryDTO;
@@ -20,6 +20,10 @@ let warmupPromise: Promise<void> | null = null;
 let cacheStatus: "idle" | "warming" | "ready" | "failed" = "idle";
 let categoryEmbeddingCache: CachedCategoryEmbedding[] = [];
 let lastWarmupError: Error | null = null;
+
+export async function warmEmbeddingsModel(): Promise<void> {
+  await getEmbeddingsPort().embed("warmup");
+}
 
 export async function warmSemanticSearchCache(): Promise<void> {
   if (warmupPromise) {

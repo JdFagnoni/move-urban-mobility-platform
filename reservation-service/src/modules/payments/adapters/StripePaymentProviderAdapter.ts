@@ -6,6 +6,7 @@ import type {
   PaymentProviderPort,
   PaymentWebhookEvent,
 } from "../ports/PaymentProviderPort";
+import { getPaymentSimulationMode } from "../simulation";
 
 interface StripePaymentIntent {
   id: string;
@@ -55,7 +56,7 @@ export class StripePaymentProviderAdapter implements PaymentProviderPort {
   }
 
   private async doInitiatePayment(input: InitiatePaymentInput): Promise<InitiatedPayment> {
-    if (getSimulationMode() === "unavailable") {
+    if (getPaymentSimulationMode() === "unavailable") {
       throw new HttpError(503, "Payment provider unavailable", "payment_provider_unavailable");
     }
 
@@ -182,10 +183,6 @@ function getRequiredEnv(name: string, message: string): string {
     throw new HttpError(503, message, "payment_provider_not_configured");
   }
   return value;
-}
-
-function getSimulationMode(): string {
-  return process.env["PAYMENT_SIMULATION_MODE"]?.trim().toLowerCase() ?? "none";
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {

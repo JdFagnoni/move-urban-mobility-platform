@@ -9,4 +9,3 @@ export { PaymentModel } from "./payment";
 export { SentEmailModel } from "./sent-email";
 export { ReservationModel } from "./reservation";
 export { UserModel } from "./user";
-export { VehicleReadModel } from "./vehicle";

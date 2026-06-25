@@ -34,13 +34,13 @@ export const ADMIN_PASSWORD = __ENV["ADMIN_PASSWORD"] ?? "Admin123";
 // frecuentes (Redis) se calcula sobre reservas reales de estos mismos
 // usuarios, asi que tienen que ser estables entre corridas.
 export const FREQUENT_COMPANY_EMAIL =
-  __ENV["FREQUENT_COMPANY_EMAIL"] ?? "frequent-company@move.local";
+  __ENV["FREQUENT_COMPANY_EMAIL"] ?? "frequent-company-v2@move.local";
 export const FREQUENT_COMPANY_PASSWORD = __ENV["FREQUENT_COMPANY_PASSWORD"] ?? "Secret123!";
 
 export const NONFREQUENT_COMPANY_EMAIL =
-  __ENV["NONFREQUENT_COMPANY_EMAIL"] ?? "nonfrequent-company@move.local";
+  __ENV["NONFREQUENT_COMPANY_EMAIL"] ?? "nonfrequent-company-v2@move.local";
 export const NONFREQUENT_COMPANY_PASSWORD = __ENV["NONFREQUENT_COMPANY_PASSWORD"] ?? "Secret123!";
 
 export const INDIVIDUAL_CLIENT_EMAIL =
-  __ENV["INDIVIDUAL_CLIENT_EMAIL"] ?? "individual-client@move.local";
+  __ENV["INDIVIDUAL_CLIENT_EMAIL"] ?? "individual-client-v2@move.local";
 export const INDIVIDUAL_CLIENT_PASSWORD = __ENV["INDIVIDUAL_CLIENT_PASSWORD"] ?? "Secret123!";

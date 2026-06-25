@@ -73,6 +73,7 @@ reservationsRouter.get("/health", reservationsProxy());
 reservationsRouter.get("/metrics", reservationsProxy());
 reservationsRouter.post("/auth/register", reservationsProxy());
 mountProtectedRoute("/reservations");
+mountProtectedRoute("/internal/testing/payment-simulation");
 reservationsRouter.get("/categories", reservationsProxy());
 reservationsRouter.get("/categories/:id", reservationsProxy());
 reservationsRouter.post(

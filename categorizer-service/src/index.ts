@@ -22,6 +22,7 @@ import {
 import { categorizerRouter } from "./router";
 import {
   getSemanticSearchCacheStatus,
+  warmEmbeddingsModel,
   warmSemanticSearchCache as warmSemanticSearchCacheService,
 } from "./modules/semantic-search/service";
 import { fetchOllamaResponse } from "./strategies/ollama";
@@ -91,7 +92,15 @@ function delay(ms: number): Promise<void> {
 // Como categorizer-service puede arrancar antes de que reservation-service este
 // disponible (o antes de que las categorias se sembren), reintentamos el warmup
 // en segundo plano hasta que tenga exito en vez de fallar una sola vez.
+//
+// El modelo ONNX se inicializa primero, de forma separada, para que su carga
+// (que puede tardar minutos y bloquea el event loop) no impida que el delay()
+// entre reintentos se ejecute.
 async function warmSemanticSearchCacheOnStartup(): Promise<void> {
+  console.log("categorizer-service initializing embeddings model...");
+  await warmEmbeddingsModel();
+  console.log("categorizer-service embeddings model ready");
+
   let attempt = 0;
 
   for (;;) {
