@@ -9,16 +9,16 @@ Plataforma de traslados urbanos **MOVE** — sistema de gestión de reservas con
 
 ## Servicios
 
-| Servicio | Puerto | Descripción |
-|---|---|---|
-| api-gateway | 3000 | Punto de entrada único: autenticación JWT, rate limiting y proxy |
-| reservation-service | 3001 | Reservas, usuarios, categorías y pagos |
-| transportation-service | 3002 | Viajes, GPS, alertas, vehículos y zonas |
-| categorizer-service | 3003 | Categorización de bienes con IA |
-| PostgreSQL | 5432 | Base de datos compartida |
-| RabbitMQ | 5672 / 15672 | Mensajería asíncrona + management UI |
-| Redis | 6379 | Caché y rate limiting |
-| Ollama | 11434 | Modelos de IA local |
+| Servicio               | Puerto       | Descripción                                                      |
+| ---------------------- | ------------ | ---------------------------------------------------------------- |
+| api-gateway            | 3000         | Punto de entrada único: autenticación JWT, rate limiting y proxy |
+| reservation-service    | 3001         | Reservas, usuarios, categorías y pagos                           |
+| transportation-service | 3002         | Viajes, GPS, alertas, vehículos y zonas                          |
+| categorizer-service    | 3003         | Categorización de bienes con IA                                  |
+| PostgreSQL             | 5432         | Base de datos compartida                                         |
+| RabbitMQ               | 5672 / 15672 | Mensajería asíncrona + management UI                             |
+| Redis                  | 6379         | Caché y rate limiting                                            |
+| Ollama                 | 11434        | Modelos de IA local                                              |
 
 ## Configuración
 
@@ -30,23 +30,23 @@ cp .env.example .env
 
 Variables obligatorias para que el sistema funcione:
 
-| Variable | Descripción |
-|---|---|
-| `AUTH0_DOMAIN` | Dominio del tenant de Auth0 (ej. `dev-xxx.us.auth0.com`) |
-| `AUTH0_AUDIENCE` | Audience configurado en Auth0 |
-| `AUTH0_MGMT_CLIENT_ID` / `AUTH0_MGMT_CLIENT_SECRET` | Credenciales de la Management API de Auth0 |
-| `INTERNAL_GATEWAY_SECRET` | Secret compartido para comunicación interna entre servicios |
-| `BOOTSTRAP_ADMIN_AUTH_SUBJECT` | `sub` del usuario administrador inicial en Auth0 |
-| `BOOTSTRAP_ADMIN_EMAIL` | Email del administrador inicial |
+| Variable                                            | Descripción                                                 |
+| --------------------------------------------------- | ----------------------------------------------------------- |
+| `AUTH0_DOMAIN`                                      | Dominio del tenant de Auth0 (ej. `dev-xxx.us.auth0.com`)    |
+| `AUTH0_AUDIENCE`                                    | Audience configurado en Auth0                               |
+| `AUTH0_MGMT_CLIENT_ID` / `AUTH0_MGMT_CLIENT_SECRET` | Credenciales de la Management API de Auth0                  |
+| `INTERNAL_GATEWAY_SECRET`                           | Secret compartido para comunicación interna entre servicios |
+| `BOOTSTRAP_ADMIN_AUTH_SUBJECT`                      | `sub` del usuario administrador inicial en Auth0            |
+| `BOOTSTRAP_ADMIN_EMAIL`                             | Email del administrador inicial                             |
 
 Variables opcionales según funcionalidad:
 
-| Variable | Descripción |
-|---|---|
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Para pagos reales con Stripe |
-| `OPENAI_API_KEY` | Para búsqueda semántica con embeddings de OpenAI |
-| `NGROK_AUTHTOKEN` | Para exponer el webhook de Stripe en desarrollo |
-| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` | Para envío de emails reales |
+| Variable                                      | Descripción                                      |
+| --------------------------------------------- | ------------------------------------------------ |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Para pagos reales con Stripe                     |
+| `OPENAI_API_KEY`                              | Para búsqueda semántica con embeddings de OpenAI |
+| `NGROK_AUTHTOKEN`                             | Para exponer el webhook de Stripe en desarrollo  |
+| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS`       | Para envío de emails reales                      |
 
 ## Correr en desarrollo
 
