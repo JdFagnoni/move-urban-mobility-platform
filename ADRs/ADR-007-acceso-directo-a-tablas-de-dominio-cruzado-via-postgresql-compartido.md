@@ -30,9 +30,9 @@ El riesgo principal de esta decisión es el acoplamiento estructural: si `reserv
 
 ## Estado
 
-Reemplazado por ADR-018.
+Reemplazado por la decisión posterior de canalizar el acceso de dominio cruzado por HTTP al servicio dueño.
 
-El equipo revirtió esta decisión: el acceso de dominio cruzado dejó de hacerse por consulta directa a la base compartida y pasó a realizarse mediante HTTP al servicio dueño (ver ADR-018). En particular, la lectura de `categories` desde `transportation-service` se migró a una llamada `GET /categories` a `reservation-service`. Se conserva este documento como historia de la decisión original.
+El equipo revirtió esta decisión: el acceso de dominio cruzado dejó de hacerse por consulta directa a la base compartida y pasó a realizarse mediante HTTP al servicio dueño. En particular, la lectura de `categories` desde `transportation-service` se migró a una llamada `GET /categories` a `reservation-service`. Se conserva este documento como historia de la decisión original.
 
 Nota histórica: las tablas `vehicles` y `zones` dejaron de ser acceso de dominio cruzado tras su migración al dominio de `transportation-service`; el último caso vigente bajo esta decisión era la lectura de `categories`, hoy también migrada a HTTP.
 

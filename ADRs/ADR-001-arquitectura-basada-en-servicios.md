@@ -12,7 +12,7 @@ A diferencia de una arquitectura de microservicios, los servicios no tienen base
 
 La separación por dominios refleja mejor el problema que una aplicación monolítica única. `reservation-service` concentra reglas de reservas, usuarios, categorías, pagos y preregistros; `transportation-service` concentra viajes, GPS, alertas, operatoria, vehículos y zonas; `api-gateway` resuelve preocupaciones transversales de entrada; y `categorizer-service` encapsula una capacidad especializada. Esta división permite evolucionar y escalar partes concretas sin forzar cambios en todo el sistema.
 
-La elección de **base de datos compartida** (en lugar de una base de datos por servicio) responde a múltiples factores. Primero, mantiene una única fuente de verdad por dominio y evita la replicación de datos entre servicios, simplificando la consistencia. El acceso a datos de un dominio ajeno, no obstante, no se resuelve por consulta directa a las tablas del otro dominio, sino mediante HTTP al servicio dueño (ADR-018). Segundo, reduce el costo operativo de la etapa actual: mantener múltiples instancias de base de datos con migraciones independientes escalaría la complejidad operativa sin justificación para el equipo y el alcance del proyecto. Tercero, el acoplamiento estructural resultante es aceptable porque todos los servicios pertenecen al mismo repositorio y al mismo equipo, lo que hace posible coordinar cambios de esquema de forma controlada.
+La elección de **base de datos compartida** (en lugar de una base de datos por servicio) responde a múltiples factores. Primero, mantiene una única fuente de verdad por dominio y evita la replicación de datos entre servicios, simplificando la consistencia. El acceso a datos de un dominio ajeno, no obstante, no se resuelve por consulta directa a las tablas del otro dominio, sino mediante HTTP al servicio dueño. Segundo, reduce el costo operativo de la etapa actual: mantener múltiples instancias de base de datos con migraciones independientes escalaría la complejidad operativa sin justificación para el equipo y el alcance del proyecto. Tercero, el acoplamiento estructural resultante es aceptable porque todos los servicios pertenecen al mismo repositorio y al mismo equipo, lo que hace posible coordinar cambios de esquema de forma controlada.
 
 **Alternativas consideradas y rechazadas:**
 
@@ -31,7 +31,7 @@ Aceptado.
 1. Se gana aislamiento lógico entre dominios y una estructura más alineada con el negocio.
 2. Se facilita el trabajo paralelo entre integrantes del equipo.
 3. Se habilita el escalado independiente de los procesos de cada servicio, aunque no de la capa de datos de forma independiente.
-4. La base de datos compartida reduce el costo operativo, pero introduce acoplamiento de esquema que debe gobernarse con cuidado; por ello el acceso a datos de dominio cruzado se canaliza por HTTP al servicio dueño en lugar de consultas directas a tablas ajenas (ver ADR-018).
+4. La base de datos compartida reduce el costo operativo, pero introduce acoplamiento de esquema que debe gobernarse con cuidado; por ello el acceso a datos de dominio cruzado se canaliza por HTTP al servicio dueño en lugar de consultas directas a tablas ajenas.
 5. Se incrementa la complejidad operativa respecto de un monolito: hay más procesos, más configuración y más puntos de falla.
 6. Se vuelve necesario definir y mantener contratos explícitos entre componentes.
 7. Las migraciones de esquema afectan a múltiples servicios de forma coordinada; cualquier cambio de tabla debe considerar todos los consumidores actuales.
